@@ -124,11 +124,13 @@ async function loadPronosticsSection() {
     const top15Container = document.getElementById('top15-selection');
     top15Container.innerHTML = '';
 
-    candidates.forEach(candidate => {
+    candidates.forEach((candidate, index) => {
         const label = document.createElement('label');
+        const inputId = `top15-${index}`;
         label.className = 'candidate-checkbox';
+        label.setAttribute('for', inputId);
         label.innerHTML = `
-            <input type="checkbox" value="${candidate}" data-type="top15">
+            <input type="checkbox" id="${inputId}" value="${candidate}" data-type="top15">
             <span>${candidate}</span>
         `;
         top15Container.appendChild(label);
@@ -138,11 +140,13 @@ async function loadPronosticsSection() {
     const top5Container = document.getElementById('top5-selection');
     top5Container.innerHTML = '';
 
-    candidates.forEach(candidate => {
+    candidates.forEach((candidate, index) => {
         const label = document.createElement('label');
+        const inputId = `top5-${index}`;
         label.className = 'candidate-checkbox';
+        label.setAttribute('for', inputId);
         label.innerHTML = `
-            <input type="checkbox" value="${candidate}" data-type="top5">
+            <input type="checkbox" id="${inputId}" value="${candidate}" data-type="top5">
             <span>${candidate}</span>
         `;
         top5Container.appendChild(label);
@@ -720,19 +724,23 @@ async function loadAdminInterface() {
     top15Grid.innerHTML = '';
     top5Grid.innerHTML = '';
 
-    candidates.forEach(candidate => {
+    candidates.forEach((candidate, index) => {
         // Top 15
         const label15 = document.createElement('label');
+        const inputId15 = `admin-top15-${index}`;
+        label15.setAttribute('for', inputId15);
         label15.innerHTML = `
-            <input type="checkbox" value="${candidate}" data-admin-type="top15">
+            <input type="checkbox" id="${inputId15}" value="${candidate}" data-admin-type="top15">
             ${candidate}
         `;
         top15Grid.appendChild(label15);
 
         // Top 5
         const label5 = document.createElement('label');
+        const inputId5 = `admin-top5-${index}`;
+        label5.setAttribute('for', inputId5);
         label5.innerHTML = `
-            <input type="checkbox" value="${candidate}" data-admin-type="top5">
+            <input type="checkbox" id="${inputId5}" value="${candidate}" data-admin-type="top5">
             ${candidate}
         `;
         top5Grid.appendChild(label5);
