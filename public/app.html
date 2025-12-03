@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miss France 2025 - App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>👑 MISS FRANCE 2025</h1>
+                <div class="user-info">
+                    <span id="user-pseudo"></span>
+                    <span class="score" id="user-score">0 pts</span>
+                    <button onclick="logout()" class="btn-logout">Déconnexion</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <button class="nav-btn active" onclick="showSection('home')" data-section="home">
+                🏠 Accueil
+            </button>
+            <button class="nav-btn" onclick="showSection('pronostics')" data-section="pronostics">
+                🏆 Pronostics
+            </button>
+            <button class="nav-btn" onclick="showSection('quiz')" data-section="quiz">
+                📚 Quiz
+            </button>
+            <button class="nav-btn" onclick="showSection('predictions')" data-section="predictions">
+                🎭 Prédictions Live
+            </button>
+            <button class="nav-btn" onclick="showSection('bingo')" data-section="bingo">
+                🎯 Bingo
+            </button>
+            <button class="nav-btn" onclick="showSection('defis')" data-section="defis">
+                🌟 Défis
+            </button>
+            <button class="nav-btn" onclick="showSection('leaderboard')" data-section="leaderboard">
+                📊 Classement
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Section Accueil -->
+            <section id="home" class="section active">
+                <div class="welcome-card">
+                    <h2>Bienvenue <span id="welcome-pseudo"></span> ! 🎉</h2>
+                    <div class="score-display">
+                        <div class="score-item">
+                            <span class="score-label">Score Total</span>
+                            <span class="score-value" id="total-score">0</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">Classement</span>
+                            <span class="score-value" id="user-rank">#-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="feature-card" onclick="showSection('pronostics')">
+                        <div class="card-icon">🏆</div>
+                        <h3>Pronostics</h3>
+                        <p>Choisis tes favorites avant l'émission</p>
+                        <span class="card-points" id="pronostics-score">0 pts</span>
+                    </div>
+
+                    <div class="feature-card" onclick="showSection('quiz')">
+                        <div class="card-icon">📚</div>
+                        <h3>Quiz</h3>
+                        <p>Teste ta culture Miss France</p>
+                        <span class="card-points" id="quiz-score">0 pts</span>
+                    </div>
+
+                    <div class="feature-card" onclick="showSection('predictions')">
+                        <div class="card-icon">🎭</div>
+                        <h3>Prédictions Live</h3>
+                        <p>Parie pendant l'émission</p>
+                        <span class="card-points" id="predictions-score">0 pts</span>
+                    </div>
+
+                    <div class="feature-card" onclick="showSection('bingo')">
+                        <div class="card-icon">🎯</div>
+                        <h3>Bingo</h3>
+                        <p>Coche les cases en regardant</p>
+                        <span class="card-points" id="bingo-score">0 pts</span>
+                    </div>
+
+                    <div class="feature-card" onclick="showSection('defis')">
+                        <div class="card-icon">🌟</div>
+                        <h3>Défis Bonus</h3>
+                        <p>Relève des défis amusants</p>
+                        <span class="card-points" id="defis-score">0 pts</span>
+                    </div>
+
+                    <div class="feature-card" onclick="showSection('leaderboard')">
+                        <div class="card-icon">📊</div>
+                        <h3>Classement</h3>
+                        <p>Voir le classement général</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Pronostics -->
+            <section id="pronostics" class="section">
+                <h2>🏆 Tes Pronostics</h2>
+                
+                <div class="prono-section">
+                    <h3>Les 15 Sélectionnées (5 pts chacune)</h3>
+                    <p class="hint">Choisis 15 candidates qui seront dans le top 15</p>
+                    <div id="top15-selection" class="candidates-grid"></div>
+                    
+                    <h4>Bonus Miss France (80 pts)</h4>
+                    <select id="bonus-top15" class="select-candidate">
+                        <option value="">-- Choisis une candidate --</option>
+                    </select>
+                </div>
+
+                <div class="prono-section">
+                    <h3>Les 5 Finalistes (8 pts chacune)</h3>
+                    <p class="hint">Choisis 5 candidates qui seront dans le top 5</p>
+                    <div id="top5-selection" class="candidates-grid"></div>
+                    
+                    <h4>Bonus Miss France (20 pts)</h4>
+                    <select id="bonus-top5" class="select-candidate">
+                        <option value="">-- Choisis une candidate --</option>
+                    </select>
+                </div>
+
+                <div class="prono-section">
+                    <h3>Classement Final (8 pts par bonne place)</h3>
+                    <p class="hint">Classe les 5 finalistes dans l'ordre (1 = gagnante)</p>
+                    <div id="final-ranking" class="ranking-list">
+                        <div class="rank-item">
+                            <span class="rank-number">1.</span>
+                            <select class="select-candidate select-rank" data-rank="1">
+                                <option value="">-- Choisis --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-number">2.</span>
+                            <select class="select-candidate select-rank" data-rank="2">
+                                <option value="">-- Choisis --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-number">3.</span>
+                            <select class="select-candidate select-rank" data-rank="3">
+                                <option value="">-- Choisis --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-number">4.</span>
+                            <select class="select-candidate select-rank" data-rank="4">
+                                <option value="">-- Choisis --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-number">5.</span>
+                            <select class="select-candidate select-rank" data-rank="5">
+                                <option value="">-- Choisis --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="savePronostics()" class="btn-primary btn-large">💾 Enregistrer mes pronostics</button>
+                <div id="prono-message" class="message"></div>
+            </section>
+
+            <!-- Section Quiz -->
+            <section id="quiz" class="section">
+                <h2>📚 Quiz Miss France</h2>
+                
+                <div id="quiz-intro" class="quiz-intro">
+                    <p>Teste ta culture Miss France avec 30 questions !</p>
+                    <div class="quiz-stats">
+                        <div class="stat">
+                            <span class="stat-number" id="quiz-answered">0</span>
+                            <span class="stat-label">Réponses</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="quiz-correct">0</span>
+                            <span class="stat-label">Correctes</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" id="quiz-points">0</span>
+                            <span class="stat-label">Points</span>
+                        </div>
+                    </div>
+                    <button onclick="startQuiz()" class="btn-primary btn-large">Commencer le Quiz</button>
+                </div>
+
+                <div id="quiz-game" class="quiz-game" style="display: none;">
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span id="question-number"></span>
+                            <span id="question-difficulty" class="difficulty-badge"></span>
+                        </div>
+                        <h3 id="question-text"></h3>
+                        <div id="answers-container" class="answers-grid"></div>
+                    </div>
+                    <div id="quiz-feedback" class="quiz-feedback"></div>
+                </div>
+            </section>
+
+            <!-- Section Prédictions Live -->
+            <section id="predictions" class="section">
+                <h2>🎭 Prédictions Live</h2>
+                <p class="subtitle">Fais tes prédictions pendant l'émission !</p>
+                
+                <div id="predictions-list" class="predictions-list"></div>
+            </section>
+
+            <!-- Section Bingo -->
+            <section id="bingo" class="section">
+                <h2>🎯 Bingo Miss France</h2>
+                <p class="subtitle">Coche les cases quand ça arrive ! 20 pts par ligne complète</p>
+                
+                <div id="bingo-grid" class="bingo-grid"></div>
+                
+                <div class="bingo-stats">
+                    <div class="stat">
+                        <span class="stat-number" id="bingo-lines">0</span>
+                        <span class="stat-label">Lignes complètes</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number" id="bingo-points-display">0</span>
+                        <span class="stat-label">Points</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Défis -->
+            <section id="defis" class="section">
+                <h2>🌟 Défis Bonus</h2>
+                <p class="subtitle">Relève des défis pour gagner des points !</p>
+                
+                <div id="defi-card" class="defi-card"></div>
+            </section>
+
+            <!-- Section Classement -->
+            <section id="leaderboard" class="section">
+                <h2>📊 Classement Général</h2>
+                
+                <div class="leaderboard-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rang</th>
+                                <th>Joueur</th>
+                                <th>Quiz</th>
+                                <th>Pronostics</th>
+                                <th>Prédictions</th>
+                                <th>Bingo</th>
+                                <th>Défis</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

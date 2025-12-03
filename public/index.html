@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miss France 2025 - Quiz & Pronostics</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="logo">
+            <h1>👑 MISS FRANCE 2025</h1>
+            <p>Quiz & Pronostics entre amis</p>
+        </div>
+        
+        <div class="login-form">
+            <h2>Connexion</h2>
+            <div id="error-message" class="error-message"></div>
+            
+            <input type="text" id="pseudo" placeholder="Entre ton pseudo" maxlength="20">
+            
+            <button onclick="login()" class="btn-primary">Se connecter</button>
+            <button onclick="register()" class="btn-secondary">Créer un compte</button>
+        </div>
+        
+        <div class="info-box">
+            <h3>🎯 Comment ça marche ?</h3>
+            <ul>
+                <li>📝 Remplis tes pronostics avant l'émission</li>
+                <li>🧠 Réponds au quiz Miss France</li>
+                <li>🎭 Joue en direct pendant l'émission</li>
+                <li>🏆 Gagne des points et des cadeaux !</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+            const pseudo = document.getElementById('pseudo').value.trim();
+            const errorDiv = document.getElementById('error-message');
+            
+            if (!pseudo) {
+                errorDiv.textContent = '⚠️ Entre un pseudo !';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    window.location.href = '/app.html';
+                } else {
+                    errorDiv.textContent = '⚠️ ' + data.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = '⚠️ Erreur de connexion';
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        async function register() {
+            const pseudo = document.getElementById('pseudo').value.trim();
+            const errorDiv = document.getElementById('error-message');
+            
+            if (!pseudo) {
+                errorDiv.textContent = '⚠️ Entre un pseudo !';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pseudo })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    window.location.href = '/app.html';
+                } else {
+                    errorDiv.textContent = '⚠️ ' + data.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = '⚠️ Erreur de connexion';
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        // Connexion avec Enter
+        document.getElementById('pseudo').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>
