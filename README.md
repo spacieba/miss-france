@@ -90,21 +90,35 @@ L'application sera accessible sur http://localhost:3000
 6. Relever les défis bonus
 7. Consulter le classement en temps réel
 
-### Pour l'organisateur (vous)
-Après l'émission, vous pouvez valider les résultats réels via l'endpoint admin :
+### 🔐 Pour l'organisateur - Interface Admin
 
-```bash
-POST /api/admin/validate-results
-{
-  "top15Real": ["Miss X", "Miss Y", ...],
-  "bonusTop15Real": "Miss France réelle",
-  "top5Real": ["Miss A", "Miss B", ...],
-  "bonusTop5Real": "Miss France réelle",
-  "classementFinalReal": ["1ère", "2ème", "3ème", "4ème", "5ème"]
-}
+L'application dispose d'une **interface d'administration** pour saisir les résultats en temps réel !
+
+#### Accéder à l'interface admin
+1. Aller sur `https://VOTRE-APP.up.railway.app/admin.html`
+2. Entrer le mot de passe admin : `missfranceadmin2025`
+   - ⚠️ **IMPORTANT** : Changez ce mot de passe en production via la variable d'environnement `ADMIN_PASSWORD` dans Railway
+
+#### Fonctionnalités de l'admin
+✅ **Saisie du Top 15** : Cochez les 15 candidates sélectionnées + la candidate bonus
+✅ **Saisie du Top 5** : Cochez les 5 finalistes + la candidate bonus
+✅ **Classement final** : Entrez le classement de 1 à 5 (Miss France + dauphines)
+✅ **Validation des prédictions live** : Validez chaque prédiction individuellement pendant la soirée
+✅ **Statistiques en temps réel** : Nombre d'utilisateurs, pronostics soumis, etc.
+✅ **Calcul automatique** : Les scores sont recalculés automatiquement pour tous les joueurs
+
+#### Pendant la soirée
+1. **Prédictions live** : Validez chaque prédiction au fur et à mesure (couleur de robe, nombre de "magnifique", etc.)
+2. **Top 15** : Saisissez les résultats dès l'annonce du top 15
+3. **Top 5** : Saisissez les résultats dès l'annonce du top 5
+4. **Classement final** : Saisissez le podium et cliquez sur "Valider tous les résultats"
+5. Les scores de tous les joueurs sont **recalculés instantanément** !
+
+#### Changer le mot de passe admin
+Sur Railway, dans les variables d'environnement :
 ```
-
-Vous pouvez utiliser Postman ou faire un script simple pour cela.
+ADMIN_PASSWORD=votre_mot_de_passe_securise
+```
 
 ## 🎨 Personnalisation
 

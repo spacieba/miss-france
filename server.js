@@ -102,6 +102,14 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// Middleware d'authentification admin
+const requireAdmin = (req, res, next) => {
+  if (!req.session.isAdmin) {
+    return res.status(403).json({ error: 'Accès non autorisé' });
+  }
+  next();
+};
+
 // Routes authentification
 app.post('/api/register', async (req, res) => {
   const { pseudo } = req.body;
@@ -412,16 +420,99 @@ app.get('/api/leaderboard', requireAuth, (req, res) => {
   res.json(leaderboard);
 });
 
+// ============================================
+// ROUTES ADMIN
+// ============================================
+
+// Login Admin
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+
+  // Mot de passe admin (à changer en production)
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'missfranceadmin2025';
+
+  if (password === ADMIN_PASSWORD) {
+    req.session.isAdmin = true;
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ success: false, error: 'Mot de passe incorrect' });
+  }
+});
+
+// Récupérer les candidates (pour admin)
+app.get('/api/admin/candidates', (req, res) => {
+  res.json(candidates);
+});
+
+// Récupérer les types de prédictions (pour admin)
+app.get('/api/admin/prediction-types', (req, res) => {
+  res.json(predictionTypes);
+});
+
+// Récupérer les statistiques
+app.get('/api/admin/stats', (req, res) => {
+  const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+  const totalPronostics = db.prepare('SELECT COUNT(*) as count FROM pronostics').get().count;
+  const totalPredictions = db.prepare('SELECT COUNT(*) as count FROM predictions').get().count;
+
+  res.json({
+    totalUsers,
+    totalPronostics,
+    totalPredictions
+  });
+});
+
+// Valider une prédiction individuelle
+app.post('/api/admin/validate-prediction', (req, res) => {
+  const { predictionType, correctValue } = req.body;
+
+  // Récupérer toutes les prédictions de ce type
+  const userPredictions = db.prepare('SELECT * FROM predictions WHERE prediction_type = ?').all(predictionType);
+
+  let usersAwarded = 0;
+
+  userPredictions.forEach(pred => {
+    // Vérifier si la prédiction est correcte
+    let isCorrect = false;
+
+    if (pred.prediction_value.toString().toLowerCase() === correctValue.toString().toLowerCase()) {
+      isCorrect = true;
+    }
+
+    if (isCorrect) {
+      // Trouver les points pour ce type de prédiction
+      const predType = predictionTypes.find(p => p.id === predictionType);
+      const points = predType ? predType.points : 5;
+
+      // Mettre à jour les points de la prédiction
+      db.prepare('UPDATE predictions SET points = ? WHERE id = ?').run(points, pred.id);
+
+      // Mettre à jour le score de l'utilisateur
+      const currentScore = db.prepare('SELECT predictions_score FROM scores WHERE user_id = ?').get(pred.user_id);
+      const newPredictionsScore = (currentScore.predictions_score || 0) + points;
+
+      db.prepare('UPDATE scores SET predictions_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
+        .run(newPredictionsScore, pred.user_id);
+
+      usersAwarded++;
+    }
+  });
+
+  res.json({ success: true, usersAwarded });
+});
+
 // Route admin pour valider les résultats réels
-app.post('/api/admin/validate-results', requireAuth, (req, res) => {
+app.post('/api/admin/validate-results', (req, res) => {
   const { top15Real, bonusTop15Real, top5Real, bonusTop5Real, classementFinalReal } = req.body;
-  
+
   // Récupérer tous les pronostics
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
-  
+
+  let usersUpdated = 0;
+
   allPronostics.forEach(prono => {
     let score = 0;
-    
+
     // Calculer les points pour top15
     const top15User = JSON.parse(prono.top15);
     top15User.forEach(candidate => {
@@ -429,12 +520,12 @@ app.post('/api/admin/validate-results', requireAuth, (req, res) => {
         score += 5;
       }
     });
-    
+
     // Bonus top15
     if (prono.bonus_top15 === bonusTop15Real) {
       score += 80;
     }
-    
+
     // Top5
     const top5User = JSON.parse(prono.top5);
     top5User.forEach(candidate => {
@@ -442,12 +533,12 @@ app.post('/api/admin/validate-results', requireAuth, (req, res) => {
         score += 8;
       }
     });
-    
+
     // Bonus top5
     if (prono.bonus_top5 === bonusTop5Real) {
       score += 20;
     }
-    
+
     // Classement final
     const classementUser = JSON.parse(prono.classement_final);
     classementUser.forEach((candidate, index) => {
@@ -455,13 +546,15 @@ app.post('/api/admin/validate-results', requireAuth, (req, res) => {
         score += 8;
       }
     });
-    
+
     // Mettre à jour le score
     db.prepare('UPDATE scores SET pronostics_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
       .run(score, prono.user_id);
+
+    usersUpdated++;
   });
-  
-  res.json({ success: true, message: 'Résultats validés et scores mis à jour !' });
+
+  res.json({ success: true, message: 'Résultats validés et scores mis à jour !', usersUpdated });
 });
 
 // Démarrer le serveur

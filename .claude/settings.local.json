@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add .)"
+      "Bash(git add .)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Miss France voting application\n\nApplication de vote interactive pour Miss France avec système de scoring en temps réel.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git config user.name \"damien bouillac\")",
+      "Bash(git config user.email \"kholotrash@gmail.com\")",
+      "Bash(git remote add origin https://github.com/spacieba/miss-france.git)",
+      "Bash(git branch -M main)",
+      "Bash(git push -u origin main)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd admin interface for real-time results management\n\n- Created admin.html with beautiful UI for results entry\n- Created admin.js with full admin functionality\n- Added admin authentication with password protection\n- Added routes for admin login, stats, and results validation\n- Added individual prediction validation\n- Updated README with admin interface documentation\n\nFeatures:\n- Real-time statistics dashboard\n- Top 15 selection with bonus candidate\n- Top 5 selection with bonus candidate  \n- Final ranking (1-5) entry\n- Live predictions validation\n- Automatic score calculation for all users\n\nAdmin access: /admin.html\nDefault password: missfranceadmin2025\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
