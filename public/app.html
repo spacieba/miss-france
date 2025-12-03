@@ -113,68 +113,94 @@
             <!-- Section Pronostics -->
             <section id="pronostics" class="section">
                 <h2>🏆 Tes Pronostics</h2>
-                
-                <div class="prono-section">
-                    <h3>Les 15 Sélectionnées (5 pts chacune)</h3>
-                    <p class="hint">Choisis 15 candidates qui seront dans le top 15</p>
+                <p style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                    ⏱️ <strong>Pendant la soirée :</strong> Valide tes choix au fur et à mesure ! Tu n'es pas obligé de tout remplir d'un coup.
+                </p>
+
+                <div class="prono-section" style="border: 2px solid #667eea; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">🥇 Top 15 - Les Sélectionnées</h3>
+                        <span id="top15-status" class="status-badge"></span>
+                    </div>
+                    <p class="hint">Choisis 15 candidates qui seront dans le top 15 (5 pts chacune)</p>
                     <div id="top15-selection" class="candidates-grid"></div>
-                    
-                    <h4>Bonus Miss France (80 pts)</h4>
+
+                    <h4 style="margin-top: 20px;">⭐ Bonus Miss France (80 pts)</h4>
+                    <p class="hint">Quelle candidate ne sera PAS dans le top 15 ?</p>
                     <select id="bonus-top15" class="select-candidate">
                         <option value="">-- Choisis une candidate --</option>
                     </select>
+
+                    <button onclick="saveTop15()" class="btn-primary btn-large" style="margin-top: 20px;">
+                        ✅ Valider mon Top 15
+                    </button>
+                    <div id="top15-message" class="message"></div>
                 </div>
 
-                <div class="prono-section">
-                    <h3>Les 5 Finalistes (8 pts chacune)</h3>
-                    <p class="hint">Choisis 5 candidates qui seront dans le top 5</p>
+                <div class="prono-section" style="border: 2px solid #f39c12; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">🥈 Top 5 - Les Finalistes</h3>
+                        <span id="top5-status" class="status-badge"></span>
+                    </div>
+                    <p class="hint">Choisis 5 candidates qui seront dans le top 5 (8 pts chacune)</p>
                     <div id="top5-selection" class="candidates-grid"></div>
-                    
-                    <h4>Bonus Miss France (20 pts)</h4>
+
+                    <h4 style="margin-top: 20px;">⭐ Bonus Miss France (20 pts)</h4>
+                    <p class="hint">Quelle candidate ne sera PAS dans le top 5 ?</p>
                     <select id="bonus-top5" class="select-candidate">
                         <option value="">-- Choisis une candidate --</option>
                     </select>
+
+                    <button onclick="saveTop5()" class="btn-primary btn-large" style="margin-top: 20px;">
+                        ✅ Valider mon Top 5
+                    </button>
+                    <div id="top5-message" class="message"></div>
                 </div>
 
-                <div class="prono-section">
-                    <h3>Classement Final (8 pts par bonne place)</h3>
-                    <p class="hint">Classe les 5 finalistes dans l'ordre (1 = gagnante)</p>
+                <div class="prono-section" style="border: 2px solid #e74c3c; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">🥉 Classement Final</h3>
+                        <span id="final-status" class="status-badge"></span>
+                    </div>
+                    <p class="hint">Classe les 5 finalistes dans l'ordre (8 pts par bonne place)</p>
                     <div id="final-ranking" class="ranking-list">
                         <div class="rank-item">
-                            <span class="rank-number">1.</span>
+                            <span class="rank-number">1️⃣</span>
                             <select class="select-candidate select-rank" data-rank="1">
-                                <option value="">-- Choisis --</option>
+                                <option value="">-- Miss France 2025 --</option>
                             </select>
                         </div>
                         <div class="rank-item">
-                            <span class="rank-number">2.</span>
+                            <span class="rank-number">2️⃣</span>
                             <select class="select-candidate select-rank" data-rank="2">
-                                <option value="">-- Choisis --</option>
+                                <option value="">-- 1ère Dauphine --</option>
                             </select>
                         </div>
                         <div class="rank-item">
-                            <span class="rank-number">3.</span>
+                            <span class="rank-number">3️⃣</span>
                             <select class="select-candidate select-rank" data-rank="3">
-                                <option value="">-- Choisis --</option>
+                                <option value="">-- 2ème Dauphine --</option>
                             </select>
                         </div>
                         <div class="rank-item">
-                            <span class="rank-number">4.</span>
+                            <span class="rank-number">4️⃣</span>
                             <select class="select-candidate select-rank" data-rank="4">
-                                <option value="">-- Choisis --</option>
+                                <option value="">-- 3ème Dauphine --</option>
                             </select>
                         </div>
                         <div class="rank-item">
-                            <span class="rank-number">5.</span>
+                            <span class="rank-number">5️⃣</span>
                             <select class="select-candidate select-rank" data-rank="5">
-                                <option value="">-- Choisis --</option>
+                                <option value="">-- 4ème Dauphine --</option>
                             </select>
                         </div>
                     </div>
-                </div>
 
-                <button onclick="savePronostics()" class="btn-primary btn-large">💾 Enregistrer mes pronostics</button>
-                <div id="prono-message" class="message"></div>
+                    <button onclick="saveFinalRanking()" class="btn-primary btn-large" style="margin-top: 20px;">
+                        ✅ Valider mon Classement Final
+                    </button>
+                    <div id="final-message" class="message"></div>
+                </div>
             </section>
 
             <!-- Section Quiz -->

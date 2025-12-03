@@ -290,24 +290,70 @@ app.get('/api/candidates', requireAuth, (req, res) => {
   res.json(candidates);
 });
 
-app.post('/api/pronostics', requireAuth, (req, res) => {
-  const { top15, bonusTop15, top5, bonusTop5, classementFinal } = req.body;
-  
+// Route pour sauvegarder le top 15 uniquement
+app.post('/api/pronostics/top15', requireAuth, (req, res) => {
+  const { top15, bonusTop15 } = req.body;
+
   try {
-    // Vérifier si des pronostics existent déjà
     const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
-    
+
     if (existing) {
-      db.prepare(`UPDATE pronostics 
-        SET top15 = ?, bonus_top15 = ?, top5 = ?, bonus_top5 = ?, classement_final = ?, submitted_at = CURRENT_TIMESTAMP 
+      db.prepare(`UPDATE pronostics
+        SET top15 = ?, bonus_top15 = ?, submitted_at = CURRENT_TIMESTAMP
         WHERE user_id = ?`)
-        .run(JSON.stringify(top15), bonusTop15, JSON.stringify(top5), bonusTop5, JSON.stringify(classementFinal), req.session.userId);
+        .run(JSON.stringify(top15), bonusTop15, req.session.userId);
     } else {
-      db.prepare('INSERT INTO pronostics (user_id, top15, bonus_top15, top5, bonus_top5, classement_final) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(req.session.userId, JSON.stringify(top15), bonusTop15, JSON.stringify(top5), bonusTop5, JSON.stringify(classementFinal));
+      db.prepare('INSERT INTO pronostics (user_id, top15, bonus_top15) VALUES (?, ?, ?)')
+        .run(req.session.userId, JSON.stringify(top15), bonusTop15);
     }
-    
-    res.json({ success: true, message: 'Pronostics enregistrés !' });
+
+    res.json({ success: true, message: 'Top 15 enregistré !' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de l\'enregistrement' });
+  }
+});
+
+// Route pour sauvegarder le top 5 uniquement
+app.post('/api/pronostics/top5', requireAuth, (req, res) => {
+  const { top5, bonusTop5 } = req.body;
+
+  try {
+    const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
+
+    if (existing) {
+      db.prepare(`UPDATE pronostics
+        SET top5 = ?, bonus_top5 = ?, submitted_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?`)
+        .run(JSON.stringify(top5), bonusTop5, req.session.userId);
+    } else {
+      db.prepare('INSERT INTO pronostics (user_id, top5, bonus_top5) VALUES (?, ?, ?)')
+        .run(req.session.userId, JSON.stringify(top5), bonusTop5);
+    }
+
+    res.json({ success: true, message: 'Top 5 enregistré !' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de l\'enregistrement' });
+  }
+});
+
+// Route pour sauvegarder le classement final uniquement
+app.post('/api/pronostics/final', requireAuth, (req, res) => {
+  const { classementFinal } = req.body;
+
+  try {
+    const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
+
+    if (existing) {
+      db.prepare(`UPDATE pronostics
+        SET classement_final = ?, submitted_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?`)
+        .run(JSON.stringify(classementFinal), req.session.userId);
+    } else {
+      db.prepare('INSERT INTO pronostics (user_id, classement_final) VALUES (?, ?)')
+        .run(req.session.userId, JSON.stringify(classementFinal));
+    }
+
+    res.json({ success: true, message: 'Classement final enregistré !' });
   } catch (error) {
     res.status(500).json({ error: 'Erreur lors de l\'enregistrement' });
   }

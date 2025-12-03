@@ -994,3 +994,27 @@ body {
         text-align: center;
     }
 }
+
+/* === STATUS BADGES === */
+
+.status-badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.status-badge.pending {
+    background: #ffc107;
+    color: #856404;
+}
+
+.status-badge.validated {
+    background: #28a745;
+    color: white;
+}
+
+.status-badge:empty {
+    display: none;
+}

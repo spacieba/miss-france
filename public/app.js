@@ -118,11 +118,11 @@ async function loadPronosticsSection() {
     // Charger les pronostics existants
     const response = await fetch('/api/pronostics');
     const pronostics = await response.json();
-    
+
     // Remplir les sélections de candidates
     const top15Container = document.getElementById('top15-selection');
     top15Container.innerHTML = '';
-    
+
     candidates.forEach(candidate => {
         const label = document.createElement('label');
         label.className = 'candidate-checkbox';
@@ -132,11 +132,11 @@ async function loadPronosticsSection() {
         `;
         top15Container.appendChild(label);
     });
-    
+
     // Top 5
     const top5Container = document.getElementById('top5-selection');
     top5Container.innerHTML = '';
-    
+
     candidates.forEach(candidate => {
         const label = document.createElement('label');
         label.className = 'candidate-checkbox';
@@ -146,33 +146,64 @@ async function loadPronosticsSection() {
         `;
         top5Container.appendChild(label);
     });
-    
+
     // Remplir les selects
     fillCandidateSelects();
-    
-    // Charger les pronostics existants
+
+    // Charger les pronostics existants et afficher les badges de statut
     if (pronostics) {
         // Top 15
-        pronostics.top15.forEach(candidate => {
-            const checkbox = document.querySelector(`input[value="${candidate}"][data-type="top15"]`);
-            if (checkbox) checkbox.checked = true;
-        });
-        document.getElementById('bonus-top15').value = pronostics.bonus_top15;
-        
+        if (pronostics.top15) {
+            pronostics.top15.forEach(candidate => {
+                const checkbox = document.querySelector(`input[value="${candidate}"][data-type="top15"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+            if (pronostics.bonus_top15) {
+                document.getElementById('bonus-top15').value = pronostics.bonus_top15;
+            }
+
+            // Afficher le badge de statut
+            if (pronostics.top15.length === 15 && pronostics.bonus_top15) {
+                const statusBadge = document.getElementById('top15-status');
+                statusBadge.textContent = '✅ Validé';
+                statusBadge.className = 'status-badge validated';
+            }
+        }
+
         // Top 5
-        pronostics.top5.forEach(candidate => {
-            const checkbox = document.querySelector(`input[value="${candidate}"][data-type="top5"]`);
-            if (checkbox) checkbox.checked = true;
-        });
-        document.getElementById('bonus-top5').value = pronostics.bonus_top5;
-        
+        if (pronostics.top5) {
+            pronostics.top5.forEach(candidate => {
+                const checkbox = document.querySelector(`input[value="${candidate}"][data-type="top5"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+            if (pronostics.bonus_top5) {
+                document.getElementById('bonus-top5').value = pronostics.bonus_top5;
+            }
+
+            // Afficher le badge de statut
+            if (pronostics.top5.length === 5 && pronostics.bonus_top5) {
+                const statusBadge = document.getElementById('top5-status');
+                statusBadge.textContent = '✅ Validé';
+                statusBadge.className = 'status-badge validated';
+            }
+        }
+
         // Classement final
-        pronostics.classement_final.forEach((candidate, index) => {
-            const select = document.querySelector(`.select-rank[data-rank="${index + 1}"]`);
-            if (select) select.value = candidate;
-        });
+        if (pronostics.classement_final) {
+            pronostics.classement_final.forEach((candidate, index) => {
+                const select = document.querySelector(`.select-rank[data-rank="${index + 1}"]`);
+                if (select) select.value = candidate;
+            });
+
+            // Afficher le badge de statut
+            if (pronostics.classement_final.every(c => c)) {
+                const statusBadge = document.getElementById('final-status');
+                statusBadge.textContent = '✅ Validé';
+                statusBadge.className = 'status-badge validated';
+            }
+        }
     }
-    
+
     // Limiter la sélection à 15 pour top15 et 5 pour top5
     document.querySelectorAll('input[data-type="top15"]').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
@@ -183,7 +214,7 @@ async function loadPronosticsSection() {
             }
         });
     });
-    
+
     document.querySelectorAll('input[data-type="top5"]').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
             const checked = document.querySelectorAll('input[data-type="top5"]:checked');
@@ -218,60 +249,123 @@ function fillCandidateSelects() {
     });
 }
 
-async function savePronostics() {
+async function saveTop15() {
     const top15 = Array.from(document.querySelectorAll('input[data-type="top15"]:checked')).map(cb => cb.value);
     const bonusTop15 = document.getElementById('bonus-top15').value;
-    const top5 = Array.from(document.querySelectorAll('input[data-type="top5"]:checked')).map(cb => cb.value);
-    const bonusTop5 = document.getElementById('bonus-top5').value;
-    const classementFinal = [];
-    
-    for (let i = 1; i <= 5; i++) {
-        const select = document.querySelector(`.select-rank[data-rank="${i}"]`);
-        classementFinal.push(select.value);
-    }
-    
+
     // Validation
     if (top15.length !== 15) {
         alert('Tu dois sélectionner exactement 15 candidates pour le top 15 !');
         return;
     }
-    
+
     if (!bonusTop15) {
         alert('Tu dois choisir une candidate bonus pour le top 15 !');
         return;
     }
-    
+
+    try {
+        const response = await fetch('/api/pronostics/top15', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ top15, bonusTop15 })
+        });
+
+        const data = await response.json();
+
+        const messageDiv = document.getElementById('top15-message');
+        const statusBadge = document.getElementById('top15-status');
+
+        messageDiv.textContent = '✅ ' + data.message;
+        messageDiv.className = 'message success';
+        messageDiv.style.display = 'block';
+
+        statusBadge.textContent = '✅ Validé';
+        statusBadge.className = 'status-badge validated';
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    } catch (error) {
+        alert('Erreur lors de l\'enregistrement');
+    }
+}
+
+async function saveTop5() {
+    const top5 = Array.from(document.querySelectorAll('input[data-type="top5"]:checked')).map(cb => cb.value);
+    const bonusTop5 = document.getElementById('bonus-top5').value;
+
+    // Validation
     if (top5.length !== 5) {
         alert('Tu dois sélectionner exactement 5 candidates pour le top 5 !');
         return;
     }
-    
+
     if (!bonusTop5) {
         alert('Tu dois choisir une candidate bonus pour le top 5 !');
         return;
     }
-    
+
+    try {
+        const response = await fetch('/api/pronostics/top5', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ top5, bonusTop5 })
+        });
+
+        const data = await response.json();
+
+        const messageDiv = document.getElementById('top5-message');
+        const statusBadge = document.getElementById('top5-status');
+
+        messageDiv.textContent = '✅ ' + data.message;
+        messageDiv.className = 'message success';
+        messageDiv.style.display = 'block';
+
+        statusBadge.textContent = '✅ Validé';
+        statusBadge.className = 'status-badge validated';
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    } catch (error) {
+        alert('Erreur lors de l\'enregistrement');
+    }
+}
+
+async function saveFinalRanking() {
+    const classementFinal = [];
+
+    for (let i = 1; i <= 5; i++) {
+        const select = document.querySelector(`.select-rank[data-rank="${i}"]`);
+        classementFinal.push(select.value);
+    }
+
+    // Validation
     if (classementFinal.some(c => !c)) {
         alert('Tu dois remplir tout le classement final !');
         return;
     }
-    
+
     try {
-        const response = await fetch('/api/pronostics', {
+        const response = await fetch('/api/pronostics/final', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                top15, bonusTop15, top5, bonusTop5, classementFinal
-            })
+            body: JSON.stringify({ classementFinal })
         });
-        
+
         const data = await response.json();
-        
-        const messageDiv = document.getElementById('prono-message');
+
+        const messageDiv = document.getElementById('final-message');
+        const statusBadge = document.getElementById('final-status');
+
         messageDiv.textContent = '✅ ' + data.message;
         messageDiv.className = 'message success';
         messageDiv.style.display = 'block';
-        
+
+        statusBadge.textContent = '✅ Validé';
+        statusBadge.className = 'status-badge validated';
+
         setTimeout(() => {
             messageDiv.style.display = 'none';
         }, 3000);
