@@ -504,20 +504,25 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Récupérer les candidates (pour admin)
-app.get('/api/admin/candidates', (req, res) => {
+app.get('/api/admin/candidates', requireAuth, (req, res) => {
+  console.log('🔐 Admin candidates requested by:', req.session.pseudo, 'isAdmin:', req.session.isAdmin);
   res.json(candidates);
 });
 
 // Récupérer les types de prédictions (pour admin)
-app.get('/api/admin/prediction-types', (req, res) => {
+app.get('/api/admin/prediction-types', requireAuth, (req, res) => {
+  console.log('🔐 Admin prediction-types requested by:', req.session.pseudo);
   res.json(predictionTypes);
 });
 
 // Récupérer les statistiques
-app.get('/api/admin/stats', (req, res) => {
+app.get('/api/admin/stats', requireAuth, (req, res) => {
+  console.log('🔐 Admin stats requested by:', req.session.pseudo, 'isAdmin:', req.session.isAdmin);
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
   const totalPronostics = db.prepare('SELECT COUNT(*) as count FROM pronostics').get().count;
   const totalPredictions = db.prepare('SELECT COUNT(*) as count FROM predictions').get().count;
+
+  console.log('📊 Stats:', { totalUsers, totalPronostics, totalPredictions });
 
   res.json({
     totalUsers,

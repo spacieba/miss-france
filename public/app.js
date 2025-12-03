@@ -693,15 +693,25 @@ async function initializeAdmin() {
 }
 
 async function loadAdminStats() {
+    console.log('🔧 loadAdminStats appelée');
     try {
+        console.log('📡 Fetch /api/admin/stats...');
         const response = await fetch('/api/admin/stats');
+        console.log('📡 Response status:', response.status);
         const stats = await response.json();
+        console.log('📊 Stats reçues:', stats);
 
-        document.getElementById('admin-stat-users').textContent = stats.totalUsers || 0;
-        document.getElementById('admin-stat-pronostics').textContent = stats.totalPronostics || 0;
-        document.getElementById('admin-stat-predictions').textContent = stats.totalPredictions || 0;
+        const usersEl = document.getElementById('admin-stat-users');
+        const pronosticsEl = document.getElementById('admin-stat-pronostics');
+        const predictionsEl = document.getElementById('admin-stat-predictions');
+
+        console.log('Elements trouvés:', { usersEl, pronosticsEl, predictionsEl });
+
+        if (usersEl) usersEl.textContent = stats.totalUsers || 0;
+        if (pronosticsEl) pronosticsEl.textContent = stats.totalPronostics || 0;
+        if (predictionsEl) predictionsEl.textContent = stats.totalPredictions || 0;
     } catch (error) {
-        console.error('Erreur chargement stats admin:', error);
+        console.error('❌ Erreur chargement stats admin:', error);
     }
 }
 
