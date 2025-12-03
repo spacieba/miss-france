@@ -104,6 +104,7 @@ function showSection(sectionName) {
         loadLeaderboard();
     } else if (sectionName === 'admin' && isAdmin) {
         loadAdminStats();
+        loadAdminInterface();
     }
 }
 
@@ -701,9 +702,20 @@ async function loadAdminStats() {
 }
 
 async function loadAdminInterface() {
-    // Charger les grilles de candidates
+    // Vérifier que les éléments existent
     const top15Grid = document.getElementById('admin-top15-grid');
     const top5Grid = document.getElementById('admin-top5-grid');
+
+    if (!top15Grid || !top5Grid) {
+        console.error('Éléments admin non trouvés');
+        return;
+    }
+
+    // Vérifier que candidates est chargé
+    if (!candidates || candidates.length === 0) {
+        console.log('Chargement des candidates...');
+        await loadCandidates();
+    }
 
     top15Grid.innerHTML = '';
     top5Grid.innerHTML = '';
