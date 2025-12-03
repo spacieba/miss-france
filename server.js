@@ -17,6 +17,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     pseudo TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    is_admin INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -82,6 +83,15 @@ db.exec(`
   );
 `);
 
+// Créer l'utilisateur admin s'il n'existe pas
+const adminUser = db.prepare('SELECT * FROM users WHERE pseudo = ?').get('admin');
+if (!adminUser) {
+  const password = bcrypt.hashSync('missfranceadmin2025', 10);
+  const result = db.prepare('INSERT INTO users (pseudo, password, is_admin) VALUES (?, ?, 1)').run('admin', password);
+  db.prepare('INSERT INTO scores (user_id) VALUES (?)').run(result.lastInsertRowid);
+  console.log('✅ Utilisateur admin créé (pseudo: admin, mot de passe: missfranceadmin2025)');
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -145,24 +155,26 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', (req, res) => {
   const { pseudo } = req.body;
-  
+
   if (!pseudo) {
     return res.status(400).json({ error: 'Pseudo requis' });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
-  
+
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur non trouvé' });
   }
 
   req.session.userId = user.id;
   req.session.pseudo = user.pseudo;
-  
-  res.json({ 
+  req.session.isAdmin = user.is_admin === 1;
+
+  res.json({
     success: true,
     userId: user.id,
-    pseudo: user.pseudo
+    pseudo: user.pseudo,
+    isAdmin: user.is_admin === 1
   });
 });
 
@@ -172,10 +184,16 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/me', requireAuth, (req, res) => {
-  const user = db.prepare('SELECT id, pseudo FROM users WHERE id = ?').get(req.session.userId);
+  const user = db.prepare('SELECT id, pseudo, is_admin FROM users WHERE id = ?').get(req.session.userId);
   const score = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
-  
-  res.json({ user, score });
+
+  res.json({
+    user: {
+      ...user,
+      isAdmin: user.is_admin === 1
+    },
+    score
+  });
 });
 
 // Routes Quiz

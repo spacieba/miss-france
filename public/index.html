@@ -5,103 +5,384 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Miss France 2025 - Quiz & Pronostics</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .login-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .login-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .welcome-side {
+                display: none;
+            }
+        }
+
+        .welcome-side {
+            color: white;
+            padding: 40px;
+        }
+
+        .welcome-side h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .welcome-side p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+
+        .welcome-features {
+            list-style: none;
+            padding: 0;
+        }
+
+        .welcome-features li {
+            padding: 12px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .welcome-features li:before {
+            content: "✨";
+            font-size: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h2 {
+            color: #667eea;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .login-form {
+            margin-top: 30px;
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tab-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            border-left: 4px solid #c33;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            border-left: 4px solid #3c3;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .admin-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .admin-note strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
 </head>
 <body class="login-page">
-    <div class="login-container">
-        <div class="logo">
+    <div class="login-wrapper">
+        <!-- Welcome Side -->
+        <div class="welcome-side">
             <h1>👑 MISS FRANCE 2025</h1>
-            <p>Quiz & Pronostics entre amis</p>
-        </div>
-        
-        <div class="login-form">
-            <h2>Connexion</h2>
-            <div id="error-message" class="error-message"></div>
-            
-            <input type="text" id="pseudo" placeholder="Entre ton pseudo" maxlength="20">
-            
-            <button onclick="login()" class="btn-primary">Se connecter</button>
-            <button onclick="register()" class="btn-secondary">Créer un compte</button>
-        </div>
-        
-        <div class="info-box">
-            <h3>🎯 Comment ça marche ?</h3>
-            <ul>
-                <li>📝 Remplis tes pronostics avant l'émission</li>
-                <li>🧠 Réponds au quiz Miss France</li>
-                <li>🎭 Joue en direct pendant l'émission</li>
-                <li>🏆 Gagne des points et des cadeaux !</li>
+            <p>Participe au jeu le plus fun de la soirée !</p>
+            <ul class="welcome-features">
+                <li>Fais tes pronostics avant l'émission</li>
+                <li>Teste ta culture avec notre quiz</li>
+                <li>Joue en direct pendant l'émission</li>
+                <li>Remporte la victoire avec tes potes</li>
             </ul>
+        </div>
+
+        <!-- Login Side -->
+        <div class="login-container">
+            <div class="logo">
+                <h2>Bienvenue !</h2>
+                <p>Entre ton pseudo pour commencer</p>
+            </div>
+
+            <div class="login-form">
+                <div class="form-tabs">
+                    <button class="tab-btn active" onclick="switchTab('login')" id="tab-login">
+                        Se connecter
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('register')" id="tab-register">
+                        Nouveau compte
+                    </button>
+                </div>
+
+                <div id="error-message" class="error-message"></div>
+                <div id="success-message" class="success-message"></div>
+
+                <div class="input-group">
+                    <label for="pseudo">Pseudo</label>
+                    <input type="text" id="pseudo" placeholder="Ton pseudo" maxlength="20" autofocus>
+                </div>
+
+                <button onclick="handleSubmit()" class="btn-submit" id="submit-btn">
+                    Se connecter
+                </button>
+
+                <div class="admin-note">
+                    <strong>🔐 Accès Admin</strong>
+                    Pour accéder à l'interface admin, connecte-toi avec le pseudo <code><strong>admin</strong></code>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        let currentMode = 'login';
+
+        function switchTab(mode) {
+            currentMode = mode;
+            const loginTab = document.getElementById('tab-login');
+            const registerTab = document.getElementById('tab-register');
+            const submitBtn = document.getElementById('submit-btn');
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            if (mode === 'login') {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                submitBtn.textContent = 'Se connecter';
+            } else {
+                loginTab.classList.remove('active');
+                registerTab.classList.add('active');
+                submitBtn.textContent = 'Créer mon compte';
+            }
+        }
+
+        async function handleSubmit() {
+            if (currentMode === 'login') {
+                await login();
+            } else {
+                await register();
+            }
+        }
+
         async function login() {
             const pseudo = document.getElementById('pseudo').value.trim();
             const errorDiv = document.getElementById('error-message');
-            
+            const successDiv = document.getElementById('success-message');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
             if (!pseudo) {
                 errorDiv.textContent = '⚠️ Entre un pseudo !';
                 errorDiv.style.display = 'block';
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pseudo })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
-                    window.location.href = '/app.html';
+                    successDiv.textContent = '✅ Connexion réussie ! Redirection...';
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/app.html';
+                    }, 500);
                 } else {
                     errorDiv.textContent = '⚠️ ' + data.error;
                     errorDiv.style.display = 'block';
                 }
             } catch (error) {
-                errorDiv.textContent = '⚠️ Erreur de connexion';
+                errorDiv.textContent = '⚠️ Erreur de connexion au serveur';
                 errorDiv.style.display = 'block';
             }
         }
-        
+
         async function register() {
             const pseudo = document.getElementById('pseudo').value.trim();
             const errorDiv = document.getElementById('error-message');
-            
+            const successDiv = document.getElementById('success-message');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
             if (!pseudo) {
                 errorDiv.textContent = '⚠️ Entre un pseudo !';
                 errorDiv.style.display = 'block';
                 return;
             }
-            
+
+            if (pseudo.toLowerCase() === 'admin') {
+                errorDiv.textContent = '⚠️ Ce pseudo est réservé pour l\'administrateur';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
             try {
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pseudo })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok) {
-                    window.location.href = '/app.html';
+                    successDiv.textContent = '✅ Compte créé ! Redirection...';
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/app.html';
+                    }, 500);
                 } else {
                     errorDiv.textContent = '⚠️ ' + data.error;
                     errorDiv.style.display = 'block';
                 }
             } catch (error) {
-                errorDiv.textContent = '⚠️ Erreur de connexion';
+                errorDiv.textContent = '⚠️ Erreur de connexion au serveur';
                 errorDiv.style.display = 'block';
             }
         }
-        
+
         // Connexion avec Enter
-        document.getElementById('pseudo').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                login();
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('pseudo').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleSubmit();
+                }
+            });
         });
     </script>
 </body>

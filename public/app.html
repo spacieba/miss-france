@@ -43,6 +43,9 @@
             <button class="nav-btn" onclick="showSection('leaderboard')" data-section="leaderboard">
                 📊 Classement
             </button>
+            <button class="nav-btn" onclick="showSection('admin')" data-section="admin" id="admin-nav-btn" style="display: none; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+                ⚙️ Admin
+            </button>
         </nav>
 
         <!-- Main Content -->
@@ -266,6 +269,110 @@
                         <tbody id="leaderboard-body"></tbody>
                     </table>
                 </div>
+            </section>
+
+            <!-- Section Admin -->
+            <section id="admin" class="section" style="display: none;">
+                <div class="admin-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); padding: 25px; border-radius: 15px; color: white; margin-bottom: 30px;">
+                    <h2 style="margin: 0; color: white;">⚙️ Interface Admin</h2>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Saisie des résultats en temps réel</p>
+                </div>
+
+                <!-- Statistiques -->
+                <div class="admin-card">
+                    <h3>📊 Statistiques</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Utilisateurs</span>
+                            <span class="stat-value" id="admin-stat-users">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Pronostics</span>
+                            <span class="stat-value" id="admin-stat-pronostics">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Prédictions</span>
+                            <span class="stat-value" id="admin-stat-predictions">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top 15 -->
+                <div class="admin-card">
+                    <h3>👑 Top 15 - Résultats Réels</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Coche les 15 candidates sélectionnées</p>
+                    <div id="admin-top15-grid" class="admin-candidates-grid"></div>
+                    <div style="margin-top: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Candidate Bonus (celle qui ne passe PAS)</label>
+                        <select id="admin-bonus-top15" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                            <option value="">-- Sélectionne --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Top 5 -->
+                <div class="admin-card">
+                    <h3>🌟 Top 5 - Résultats Réels</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Coche les 5 finalistes</p>
+                    <div id="admin-top5-grid" class="admin-candidates-grid"></div>
+                    <div style="margin-top: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Candidate Bonus Top 5</label>
+                        <select id="admin-bonus-top5" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                            <option value="">-- Sélectionne --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Classement Final -->
+                <div class="admin-card">
+                    <h3>🏆 Classement Final (Top 5)</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Entre le classement final du top 5</p>
+                    <div class="rank-selectors">
+                        <div class="rank-item">
+                            <span class="rank-num">1️⃣</span>
+                            <select class="admin-final-rank" data-rank="1">
+                                <option value="">-- Miss France 2025 --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-num">2️⃣</span>
+                            <select class="admin-final-rank" data-rank="2">
+                                <option value="">-- 1ère Dauphine --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-num">3️⃣</span>
+                            <select class="admin-final-rank" data-rank="3">
+                                <option value="">-- 2ème Dauphine --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-num">4️⃣</span>
+                            <select class="admin-final-rank" data-rank="4">
+                                <option value="">-- 3ème Dauphine --</option>
+                            </select>
+                        </div>
+                        <div class="rank-item">
+                            <span class="rank-num">5️⃣</span>
+                            <select class="admin-final-rank" data-rank="5">
+                                <option value="">-- 4ème Dauphine --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prédictions Live -->
+                <div class="admin-card">
+                    <h3>🎯 Validation des Prédictions Live</h3>
+                    <div id="admin-predictions-container"></div>
+                </div>
+
+                <!-- Bouton de validation -->
+                <button onclick="adminValidateResults()" class="btn-admin-validate">
+                    ✅ VALIDER TOUS LES RÉSULTATS ET CALCULER LES SCORES
+                </button>
+
+                <div id="admin-status" class="admin-status-message"></div>
             </section>
         </main>
     </div>

@@ -5,6 +5,7 @@ let quizQuestions = [];
 let currentQuestionIndex = 0;
 let bingoGrid = [];
 let bingoChecked = [];
+let isAdmin = false;
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', async () => {
@@ -12,6 +13,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCandidates();
     loadScore();
     loadLeaderboard();
+
+    // Charger l'admin si nécessaire
+    if (isAdmin) {
+        initializeAdmin();
+    }
 });
 
 // Charger les données utilisateur
@@ -24,11 +30,20 @@ async function loadUserData() {
         }
         const data = await response.json();
         currentUser = data.user;
-        
+        isAdmin = data.user.isAdmin || false;
+
         document.getElementById('user-pseudo').textContent = currentUser.pseudo;
         document.getElementById('welcome-pseudo').textContent = currentUser.pseudo;
-        
+
         updateScoreDisplay(data.score);
+
+        // Afficher le bouton admin si nécessaire
+        if (isAdmin) {
+            const adminBtn = document.getElementById('admin-nav-btn');
+            if (adminBtn) {
+                adminBtn.style.display = 'block';
+            }
+        }
     } catch (error) {
         window.location.href = '/';
     }
@@ -64,16 +79,16 @@ function showSection(sectionName) {
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Désactiver tous les boutons de navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
+
     // Afficher la section demandée
     document.getElementById(sectionName).classList.add('active');
     document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
-    
+
     // Charger les données spécifiques à la section
     if (sectionName === 'pronostics') {
         loadPronosticsSection();
@@ -87,6 +102,8 @@ function showSection(sectionName) {
         loadDefisSection();
     } else if (sectionName === 'leaderboard') {
         loadLeaderboard();
+    } else if (sectionName === 'admin' && isAdmin) {
+        loadAdminStats();
     }
 }
 
@@ -565,5 +582,266 @@ async function loadLeaderboard() {
     if (currentUser) {
         const userRank = leaderboard.findIndex(p => p.user_id === currentUser.id) + 1;
         document.getElementById('user-rank').textContent = `#${userRank}`;
+    }
+}
+
+// === ADMIN FUNCTIONS ===
+
+async function initializeAdmin() {
+    console.log('🔐 Mode admin activé');
+    await loadAdminStats();
+    await loadAdminInterface();
+}
+
+async function loadAdminStats() {
+    try {
+        const response = await fetch('/api/admin/stats');
+        const stats = await response.json();
+
+        document.getElementById('admin-stat-users').textContent = stats.totalUsers || 0;
+        document.getElementById('admin-stat-pronostics').textContent = stats.totalPronostics || 0;
+        document.getElementById('admin-stat-predictions').textContent = stats.totalPredictions || 0;
+    } catch (error) {
+        console.error('Erreur chargement stats admin:', error);
+    }
+}
+
+async function loadAdminInterface() {
+    // Charger les grilles de candidates
+    const top15Grid = document.getElementById('admin-top15-grid');
+    const top5Grid = document.getElementById('admin-top5-grid');
+
+    top15Grid.innerHTML = '';
+    top5Grid.innerHTML = '';
+
+    candidates.forEach(candidate => {
+        // Top 15
+        const label15 = document.createElement('label');
+        label15.innerHTML = `
+            <input type="checkbox" value="${candidate}" data-admin-type="top15">
+            ${candidate}
+        `;
+        top15Grid.appendChild(label15);
+
+        // Top 5
+        const label5 = document.createElement('label');
+        label5.innerHTML = `
+            <input type="checkbox" value="${candidate}" data-admin-type="top5">
+            ${candidate}
+        `;
+        top5Grid.appendChild(label5);
+    });
+
+    // Limiter les sélections
+    document.querySelectorAll('input[data-admin-type="top15"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const checked = document.querySelectorAll('input[data-admin-type="top15"]:checked');
+            if (checked.length > 15) {
+                cb.checked = false;
+                alert('Maximum 15 candidates !');
+            }
+        });
+    });
+
+    document.querySelectorAll('input[data-admin-type="top5"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const checked = document.querySelectorAll('input[data-admin-type="top5"]:checked');
+            if (checked.length > 5) {
+                cb.checked = false;
+                alert('Maximum 5 candidates !');
+            }
+        });
+    });
+
+    // Remplir les selects
+    const bonusTop15 = document.getElementById('admin-bonus-top15');
+    const bonusTop5 = document.getElementById('admin-bonus-top5');
+
+    candidates.forEach(candidate => {
+        const opt15 = document.createElement('option');
+        opt15.value = candidate;
+        opt15.textContent = candidate;
+        bonusTop15.appendChild(opt15);
+
+        const opt5 = document.createElement('option');
+        opt5.value = candidate;
+        opt5.textContent = candidate;
+        bonusTop5.appendChild(opt5);
+    });
+
+    // Classement final
+    document.querySelectorAll('.admin-final-rank').forEach(select => {
+        candidates.forEach(candidate => {
+            const option = document.createElement('option');
+            option.value = candidate;
+            option.textContent = candidate;
+            select.appendChild(option);
+        });
+    });
+
+    // Charger les prédictions
+    await loadAdminPredictions();
+}
+
+async function loadAdminPredictions() {
+    try {
+        const response = await fetch('/api/admin/prediction-types');
+        const predictionTypes = await response.json();
+
+        const container = document.getElementById('admin-predictions-container');
+        container.innerHTML = '';
+
+        predictionTypes.forEach(pred => {
+            const div = document.createElement('div');
+            div.className = 'admin-prediction-item';
+
+            let inputHTML = '';
+            if (pred.type === 'number') {
+                inputHTML = `<input type="number" id="admin-pred-${pred.id}" placeholder="Nombre réel">`;
+            } else if (pred.options) {
+                inputHTML = `
+                    <select id="admin-pred-${pred.id}">
+                        <option value="">-- Sélectionne --</option>
+                        ${pred.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    </select>
+                `;
+            } else {
+                inputHTML = `<input type="text" id="admin-pred-${pred.id}" placeholder="Valeur réelle">`;
+            }
+
+            div.innerHTML = `
+                <h4>${pred.label}</h4>
+                <div class="admin-prediction-input-group">
+                    ${inputHTML}
+                    <button onclick="validatePrediction('${pred.id}')" class="btn-admin-small">Valider</button>
+                </div>
+                <div id="admin-pred-status-${pred.id}" style="margin-top: 10px; color: green; font-weight: bold;"></div>
+            `;
+
+            container.appendChild(div);
+        });
+    } catch (error) {
+        console.error('Erreur chargement prédictions admin:', error);
+    }
+}
+
+async function validatePrediction(predictionId) {
+    const input = document.getElementById(`admin-pred-${predictionId}`);
+    const value = input.value;
+
+    if (!value) {
+        alert('Entre une valeur !');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/admin/validate-prediction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                predictionType: predictionId,
+                correctValue: value
+            })
+        });
+
+        const data = await response.json();
+
+        const status = document.getElementById(`admin-pred-status-${predictionId}`);
+        status.textContent = `✅ Validé ! ${data.usersAwarded || 0} joueur(s) ont gagné des points`;
+
+        await loadAdminStats();
+        await loadLeaderboard();
+
+        setTimeout(() => {
+            status.textContent = '';
+        }, 5000);
+    } catch (error) {
+        alert('Erreur lors de la validation');
+    }
+}
+
+async function adminValidateResults() {
+    // Récupérer les données
+    const top15Real = Array.from(document.querySelectorAll('input[data-admin-type="top15"]:checked')).map(cb => cb.value);
+    const bonusTop15Real = document.getElementById('admin-bonus-top15').value;
+    const top5Real = Array.from(document.querySelectorAll('input[data-admin-type="top5"]:checked')).map(cb => cb.value);
+    const bonusTop5Real = document.getElementById('admin-bonus-top5').value;
+    const classementFinalReal = [];
+
+    for (let i = 1; i <= 5; i++) {
+        const select = document.querySelector(`.admin-final-rank[data-rank="${i}"]`);
+        classementFinalReal.push(select.value);
+    }
+
+    // Validation
+    if (top15Real.length !== 15) {
+        alert('Sélectionne exactement 15 candidates pour le top 15 !');
+        return;
+    }
+
+    if (!bonusTop15Real) {
+        alert('Choisis une candidate bonus pour le top 15 !');
+        return;
+    }
+
+    if (top5Real.length !== 5) {
+        alert('Sélectionne exactement 5 candidates pour le top 5 !');
+        return;
+    }
+
+    if (!bonusTop5Real) {
+        alert('Choisis une candidate bonus pour le top 5 !');
+        return;
+    }
+
+    if (classementFinalReal.some(c => !c)) {
+        alert('Remplis tout le classement final !');
+        return;
+    }
+
+    // Confirmation
+    const confirmation = confirm(
+        `⚠️ ATTENTION ⚠️\n\n` +
+        `Tu vas valider les résultats et recalculer TOUS les scores.\n\n` +
+        `Miss France 2025: ${classementFinalReal[0]}\n` +
+        `1ère Dauphine: ${classementFinalReal[1]}\n\n` +
+        `Cette action recalculera les scores de tous les joueurs. Continuer ?`
+    );
+
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch('/api/admin/validate-results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                top15Real,
+                bonusTop15Real,
+                top5Real,
+                bonusTop5Real,
+                classementFinalReal
+            })
+        });
+
+        const data = await response.json();
+
+        const statusDiv = document.getElementById('admin-status');
+        statusDiv.textContent = `✅ ${data.message} - ${data.usersUpdated || 0} joueur(s) mis à jour !`;
+        statusDiv.className = 'admin-status-message success';
+        statusDiv.style.display = 'block';
+
+        // Recharger les stats et le classement
+        await loadAdminStats();
+        await loadLeaderboard();
+        await loadScore();
+
+        // Scroll vers le haut
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (error) {
+        const statusDiv = document.getElementById('admin-status');
+        statusDiv.textContent = '❌ Erreur lors de la validation des résultats';
+        statusDiv.className = 'admin-status-message error';
+        statusDiv.style.display = 'block';
     }
 }
