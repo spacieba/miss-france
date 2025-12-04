@@ -152,6 +152,14 @@ try {
   // La colonne existe déjà, c'est OK
 }
 
+// Migration: Ajouter la colonne costume_photo_public pour savoir si la photo est partagée dans la galerie
+try {
+  db.exec('ALTER TABLE users ADD COLUMN costume_photo_public INTEGER DEFAULT 0');
+  console.log('✅ Colonne costume_photo_public ajoutée à la table users');
+} catch (e) {
+  // La colonne existe déjà, c'est OK
+}
+
 // Créer le dossier uploads si nécessaire
 const uploadsDir = path.join(__dirname, 'public', 'uploads', 'costumes');
 if (!fs.existsSync(uploadsDir)) {
@@ -1081,8 +1089,11 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
 
 // Récupérer la liste des autres joueurs pour voter
 app.get('/api/costume/players', requireAuth, (req, res) => {
+  // Retourne tous les joueurs, mais ne montre costume_photo que si public
   const players = db.prepare(`
-    SELECT id, pseudo, costume_photo FROM users
+    SELECT id, pseudo,
+           CASE WHEN costume_photo_public = 1 THEN costume_photo ELSE NULL END as costume_photo
+    FROM users
     WHERE id != ? AND is_admin = 0
     ORDER BY pseudo
   `).all(req.session.userId);
@@ -1092,8 +1103,11 @@ app.get('/api/costume/players', requireAuth, (req, res) => {
 
 // Récupérer ma photo de costume
 app.get('/api/costume/my-photo', requireAuth, (req, res) => {
-  const user = db.prepare('SELECT costume_photo FROM users WHERE id = ?').get(req.session.userId);
-  res.json({ photo: user?.costume_photo || null });
+  const user = db.prepare('SELECT costume_photo, costume_photo_public FROM users WHERE id = ?').get(req.session.userId);
+  res.json({
+    photo: user?.costume_photo || null,
+    isPublic: user?.costume_photo_public === 1
+  });
 });
 
 // Uploader une photo de costume
@@ -1125,11 +1139,11 @@ app.post('/api/costume/upload-photo', requireAuth, upload.single('photo'), async
       .jpeg({ quality: 80 })
       .toFile(filepath);
 
-    // Sauvegarder le chemin en base
+    // Sauvegarder le chemin en base (photo non publique par défaut)
     const photoUrl = `/uploads/costumes/${filename}`;
-    db.prepare('UPDATE users SET costume_photo = ? WHERE id = ?').run(photoUrl, userId);
+    db.prepare('UPDATE users SET costume_photo = ?, costume_photo_public = 0 WHERE id = ?').run(photoUrl, userId);
 
-    res.json({ success: true, photo: photoUrl, message: 'Photo uploadée avec succès !' });
+    res.json({ success: true, photo: photoUrl, isPublic: false, message: 'Photo uploadée ! Clique sur "Ajouter à la galerie" pour la partager.' });
   } catch (error) {
     console.error('Erreur upload photo:', error);
     res.status(500).json({ error: 'Erreur lors de l\'upload de la photo' });
@@ -1147,13 +1161,37 @@ app.delete('/api/costume/delete-photo', requireAuth, (req, res) => {
       if (fs.existsSync(photoPath)) {
         fs.unlinkSync(photoPath);
       }
-      db.prepare('UPDATE users SET costume_photo = NULL WHERE id = ?').run(userId);
+      db.prepare('UPDATE users SET costume_photo = NULL, costume_photo_public = 0 WHERE id = ?').run(userId);
     }
 
     res.json({ success: true, message: 'Photo supprimée' });
   } catch (error) {
     console.error('Erreur suppression photo:', error);
     res.status(500).json({ error: 'Erreur lors de la suppression' });
+  }
+});
+
+// Partager/retirer ma photo de la galerie
+app.post('/api/costume/toggle-public', requireAuth, (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const user = db.prepare('SELECT costume_photo, costume_photo_public FROM users WHERE id = ?').get(userId);
+
+    if (!user?.costume_photo) {
+      return res.status(400).json({ error: 'Tu dois d\'abord uploader une photo' });
+    }
+
+    const newPublicStatus = user.costume_photo_public === 1 ? 0 : 1;
+    db.prepare('UPDATE users SET costume_photo_public = ? WHERE id = ?').run(newPublicStatus, userId);
+
+    const message = newPublicStatus === 1
+      ? 'Ta photo est maintenant visible dans la galerie !'
+      : 'Ta photo a été retirée de la galerie';
+
+    res.json({ success: true, isPublic: newPublicStatus === 1, message });
+  } catch (error) {
+    console.error('Erreur toggle public:', error);
+    res.status(500).json({ error: 'Erreur lors de la modification' });
   }
 });
 

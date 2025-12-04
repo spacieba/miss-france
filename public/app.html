@@ -354,7 +354,7 @@
 
                     <div id="costume-upload-form">
                         <input type="file" id="costume-photo-input" accept="image/*" capture="environment" style="display: none;">
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
                             <button onclick="document.getElementById('costume-photo-input').click()" class="btn-primary" style="flex: 1; min-width: 150px; background: white; color: #8e44ad;">
                                 📷 Choisir une photo
                             </button>
@@ -362,7 +362,12 @@
                                 🗑️ Supprimer
                             </button>
                         </div>
-                        <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.8;">
+                        <!-- Bouton ajouter/retirer de la galerie -->
+                        <button onclick="toggleCostumePublic()" id="toggle-public-btn" class="btn-primary" style="width: 100%; display: none; background: linear-gradient(135deg, #27ae60, #2ecc71); margin-bottom: 10px;">
+                            🎭 Ajouter à la galerie
+                        </button>
+                        <div id="public-status" style="display: none; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px;"></div>
+                        <p style="font-size: 0.85em; opacity: 0.8;">
                             💡 La photo sera automatiquement redimensionnée. Formats acceptés : JPG, PNG, WebP
                         </p>
                     </div>

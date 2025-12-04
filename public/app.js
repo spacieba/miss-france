@@ -788,13 +788,30 @@ async function loadMyCostumePhoto() {
 
         const previewContainer = document.getElementById('my-costume-photo-preview');
         const deleteBtn = document.getElementById('delete-photo-btn');
+        const togglePublicBtn = document.getElementById('toggle-public-btn');
+        const publicStatus = document.getElementById('public-status');
 
         if (data.photo) {
             previewContainer.innerHTML = `
                 <img src="${data.photo}" alt="Mon costume" style="max-width: 100%; max-height: 300px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
-                <p style="margin-top: 10px; opacity: 0.9;">Ta photo est visible par tous les joueurs !</p>
             `;
             deleteBtn.style.display = 'block';
+            togglePublicBtn.style.display = 'block';
+
+            // Mettre à jour le bouton et le statut selon si la photo est publique
+            if (data.isPublic) {
+                togglePublicBtn.innerHTML = '🔒 Retirer de la galerie';
+                togglePublicBtn.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+                publicStatus.innerHTML = '✅ Ta photo est visible dans la galerie !';
+                publicStatus.style.background = 'rgba(39, 174, 96, 0.3)';
+                publicStatus.style.display = 'block';
+            } else {
+                togglePublicBtn.innerHTML = '🎭 Ajouter à la galerie';
+                togglePublicBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
+                publicStatus.innerHTML = '⏳ Ta photo n\'est pas encore visible par les autres';
+                publicStatus.style.background = 'rgba(243, 156, 18, 0.3)';
+                publicStatus.style.display = 'block';
+            }
         } else {
             previewContainer.innerHTML = `
                 <div style="padding: 40px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 2px dashed rgba(255,255,255,0.3);">
@@ -803,9 +820,40 @@ async function loadMyCostumePhoto() {
                 </div>
             `;
             deleteBtn.style.display = 'none';
+            togglePublicBtn.style.display = 'none';
+            publicStatus.style.display = 'none';
         }
     } catch (error) {
         console.error('Erreur chargement photo:', error);
+    }
+}
+
+async function toggleCostumePublic() {
+    try {
+        const response = await fetch('/api/costume/toggle-public', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        const messageDiv = document.getElementById('costume-upload-message');
+
+        if (response.ok) {
+            messageDiv.innerHTML = `<span style="color: #2ecc71;">✅ ${data.message}</span>`;
+            messageDiv.style.display = 'block';
+            await loadMyCostumePhoto();
+            await loadCostumeGallery();
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${data.error}</span>`;
+            messageDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Erreur toggle public:', error);
+        alert('Erreur lors de la modification');
     }
 }
 
