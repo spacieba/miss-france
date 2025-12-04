@@ -86,10 +86,10 @@ db.exec(`
 // Créer l'utilisateur admin s'il n'existe pas
 const adminUser = db.prepare('SELECT * FROM users WHERE pseudo = ?').get('admin');
 if (!adminUser) {
-  const password = bcrypt.hashSync('missfranceadmin2025', 10);
+  const password = bcrypt.hashSync('fernando80', 10);
   const result = db.prepare('INSERT INTO users (pseudo, password, is_admin) VALUES (?, ?, 1)').run('admin', password);
   db.prepare('INSERT INTO scores (user_id) VALUES (?)').run(result.lastInsertRowid);
-  console.log('✅ Utilisateur admin créé (pseudo: admin, mot de passe: missfranceadmin2025)');
+  console.log('✅ Utilisateur admin créé (pseudo: admin)');
 }
 
 // Middleware
@@ -591,7 +591,7 @@ app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
 
   // Mot de passe admin (à changer en production)
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'missfranceadmin2025';
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'fernando80';
 
   if (password === ADMIN_PASSWORD) {
     req.session.isAdmin = true;
