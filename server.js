@@ -717,22 +717,23 @@ app.get('/api/official-results', requireAuth, (req, res) => {
 
 // Étape 1: Valider le Top 15
 app.post('/api/admin/validate-top15', requireAuth, requireAdmin, (req, res) => {
-  const { top15, bonusTop15 } = req.body;
+  const { top15 } = req.body;
 
   if (!top15 || !Array.isArray(top15) || top15.length !== 15) {
     return res.status(400).json({ error: 'Le top 15 doit contenir exactement 15 candidates' });
   }
 
-  // Sauvegarder les résultats officiels
+  // Sauvegarder les résultats officiels (pas de bonus_top15 à saisir par l'admin)
   db.prepare(`
     UPDATE official_results
-    SET top15 = ?, bonus_top15 = ?, current_step = 1, updated_at = CURRENT_TIMESTAMP
+    SET top15 = ?, current_step = 1, updated_at = CURRENT_TIMESTAMP
     WHERE id = 1
-  `).run(JSON.stringify(top15), bonusTop15 || null);
+  `).run(JSON.stringify(top15));
 
   // Calculer les scores pour tous les utilisateurs
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
   let usersUpdated = 0;
+  let bonusWinners = 0;
 
   allPronostics.forEach(prono => {
     let pronosticsScore = 0;
@@ -750,8 +751,10 @@ app.post('/api/admin/validate-top15', requireAuth, requireAdmin, (req, res) => {
     }
 
     // Bonus top15 (candidate qui ne passe pas) - 10 pts
-    if (prono.bonus_top15 && bonusTop15 && prono.bonus_top15 === bonusTop15) {
+    // Le joueur gagne si sa candidate bonus n'est PAS dans le top 15 validé
+    if (prono.bonus_top15 && !top15.includes(prono.bonus_top15)) {
       pronosticsScore += 10;
+      bonusWinners++;
     }
 
     // Mettre à jour le score
@@ -766,15 +769,16 @@ app.post('/api/admin/validate-top15', requireAuth, requireAdmin, (req, res) => {
 
   res.json({
     success: true,
-    message: 'Top 15 validé ! Scores mis à jour.',
+    message: `Top 15 validé ! ${bonusWinners} joueur(s) ont gagné le bonus "pas dans le top 15".`,
     usersUpdated,
+    bonusWinners,
     currentStep: 1
   });
 });
 
 // Étape 2: Valider le Top 5
 app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
-  const { top5, bonusTop5 } = req.body;
+  const { top5 } = req.body;
 
   if (!top5 || !Array.isArray(top5) || top5.length !== 5) {
     return res.status(400).json({ error: 'Le top 5 doit contenir exactement 5 candidates' });
@@ -786,18 +790,19 @@ app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Le top 15 doit être validé avant le top 5' });
   }
 
-  // Sauvegarder les résultats officiels
+  // Sauvegarder les résultats officiels (pas de bonus à saisir par l'admin)
   db.prepare(`
     UPDATE official_results
-    SET top5 = ?, bonus_top5 = ?, current_step = 2, updated_at = CURRENT_TIMESTAMP
+    SET top5 = ?, current_step = 2, updated_at = CURRENT_TIMESTAMP
     WHERE id = 1
-  `).run(JSON.stringify(top5), bonusTop5 || null);
+  `).run(JSON.stringify(top5));
 
   // Recalculer les scores pour tous les utilisateurs (top15 + top5)
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
   const top15Official = JSON.parse(currentResults.top15);
-  const bonusTop15Official = db.prepare('SELECT bonus_top15 FROM official_results WHERE id = 1').get().bonus_top15;
   let usersUpdated = 0;
+  let bonusTop15Winners = 0;
+  let bonusTop5Winners = 0;
 
   allPronostics.forEach(prono => {
     let pronosticsScore = 0;
@@ -814,9 +819,10 @@ app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
       }
     }
 
-    // Bonus top15
-    if (prono.bonus_top15 && bonusTop15Official && prono.bonus_top15 === bonusTop15Official) {
+    // Bonus top15 - le joueur gagne si sa candidate n'est PAS dans le top 15
+    if (prono.bonus_top15 && !top15Official.includes(prono.bonus_top15)) {
       pronosticsScore += 10;
+      bonusTop15Winners++;
     }
 
     // Points pour le top 5 (8 pts par bonne réponse)
@@ -831,9 +837,10 @@ app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
       }
     }
 
-    // Bonus top5
-    if (prono.bonus_top5 && bonusTop5 && prono.bonus_top5 === bonusTop5) {
+    // Bonus top5 - le joueur gagne si sa candidate n'est PAS dans le top 5
+    if (prono.bonus_top5 && !top5.includes(prono.bonus_top5)) {
       pronosticsScore += 20;
+      bonusTop5Winners++;
     }
 
     // Mettre à jour le score
@@ -848,8 +855,9 @@ app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
 
   res.json({
     success: true,
-    message: 'Top 5 validé ! Scores mis à jour.',
+    message: `Top 5 validé ! ${bonusTop5Winners} joueur(s) ont gagné le bonus "pas dans le top 5".`,
     usersUpdated,
+    bonusTop5Winners,
     currentStep: 2
   });
 });
@@ -881,9 +889,8 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
   const top15Official = currentResults.top15 ? JSON.parse(currentResults.top15) : [];
   const top5Official = currentResults.top5 ? JSON.parse(currentResults.top5) : [];
-  const bonusTop15Official = currentResults.bonus_top15;
-  const bonusTop5Official = currentResults.bonus_top5;
   let usersUpdated = 0;
+  let pronoOrWinners = 0;
 
   allPronostics.forEach(prono => {
     let pronosticsScore = 0;
@@ -900,8 +907,8 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
       }
     }
 
-    // Bonus top15
-    if (prono.bonus_top15 && bonusTop15Official && prono.bonus_top15 === bonusTop15Official) {
+    // Bonus top15 - le joueur gagne si sa candidate n'est PAS dans le top 15
+    if (prono.bonus_top15 && !top15Official.includes(prono.bonus_top15)) {
       pronosticsScore += 10;
     }
 
@@ -917,8 +924,8 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
       }
     }
 
-    // Bonus top5
-    if (prono.bonus_top5 && bonusTop5Official && prono.bonus_top5 === bonusTop5Official) {
+    // Bonus top5 - le joueur gagne si sa candidate n'est PAS dans le top 5
+    if (prono.bonus_top5 && !top5Official.includes(prono.bonus_top5)) {
       pronosticsScore += 20;
     }
 
@@ -937,6 +944,7 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
     // PRONO D'OR - Miss France 2026 - 80 pts
     if (prono.prono_or && prono.prono_or === missFramce2026) {
       pronosticsScore += 80;
+      pronoOrWinners++;
     }
 
     // Mettre à jour le score
@@ -951,8 +959,9 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
 
   res.json({
     success: true,
-    message: `Classement final validé ! ${missFramce2026} est Miss France 2026 ! Scores mis à jour.`,
+    message: `Classement final validé ! ${missFramce2026} est Miss France 2026 ! ${pronoOrWinners} joueur(s) ont gagné le Prono d'Or !`,
     usersUpdated,
+    pronoOrWinners,
     currentStep: 3,
     missFramce2026
   });

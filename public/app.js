@@ -837,16 +837,6 @@ async function loadAdminInterface() {
         });
     });
 
-    // Remplir le select bonus top15
-    const bonusTop15 = document.getElementById('admin-bonus-top15');
-    bonusTop15.innerHTML = '<option value="">-- Sélectionne --</option>';
-    candidates.forEach(candidate => {
-        const opt15 = document.createElement('option');
-        opt15.value = candidate;
-        opt15.textContent = candidate;
-        bonusTop15.appendChild(opt15);
-    });
-
     // Mettre à jour l'affichage de l'étape actuelle
     updateAdminStepDisplay();
 
@@ -862,9 +852,6 @@ async function loadAdminInterface() {
             const checkbox = document.querySelector(`input[data-admin-type="top15"][value="${candidate}"]`);
             if (checkbox) checkbox.checked = true;
         });
-        if (officialResults.bonus_top15) {
-            document.getElementById('admin-bonus-top15').value = officialResults.bonus_top15;
-        }
     }
 
     // Si le top 5 a déjà été validé, pré-cocher les cases
@@ -873,9 +860,6 @@ async function loadAdminInterface() {
             const checkbox = document.querySelector(`input[data-admin-type="top5"][value="${candidate}"]`);
             if (checkbox) checkbox.checked = true;
         });
-        if (officialResults.bonus_top5) {
-            document.getElementById('admin-bonus-top5').value = officialResults.bonus_top5;
-        }
     }
 
     // Si le classement final a déjà été validé, pré-remplir les selects
@@ -1089,18 +1073,6 @@ function updateAdminTop5Grid() {
             }
         });
     });
-
-    // Mettre à jour le select bonus top5
-    const bonusTop5 = document.getElementById('admin-bonus-top5');
-    if (bonusTop5) {
-        bonusTop5.innerHTML = '<option value="">-- Sélectionne --</option>';
-        candidatesToShow.forEach(candidate => {
-            const opt = document.createElement('option');
-            opt.value = candidate;
-            opt.textContent = candidate;
-            bonusTop5.appendChild(opt);
-        });
-    }
 }
 
 // Mettre à jour les selects du classement final (afficher seulement les candidates du Top 5 validé)
@@ -1127,7 +1099,6 @@ function updateAdminFinalSelects() {
 // ÉTAPE 1: Valider le Top 15
 async function adminValidateTop15() {
     const top15 = Array.from(document.querySelectorAll('input[data-admin-type="top15"]:checked')).map(cb => cb.value);
-    const bonusTop15 = document.getElementById('admin-bonus-top15').value;
 
     if (top15.length !== 15) {
         alert('Sélectionne exactement 15 candidates !');
@@ -1138,7 +1109,7 @@ async function adminValidateTop15() {
         `⚠️ VALIDATION TOP 15 ⚠️\n\n` +
         `Tu vas valider ces 15 candidates:\n` +
         `${top15.join(', ')}\n\n` +
-        `Bonus (ne passe pas): ${bonusTop15 || 'Non sélectionné'}\n\n` +
+        `💡 Les joueurs ayant choisi une candidate qui n'est PAS dans cette liste gagnent automatiquement 10 pts bonus.\n\n` +
         `Les scores de tous les joueurs seront mis à jour. Continuer ?`
     );
 
@@ -1148,7 +1119,7 @@ async function adminValidateTop15() {
         const response = await fetch('/api/admin/validate-top15', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ top15, bonusTop15 })
+            body: JSON.stringify({ top15 })
         });
 
         const data = await response.json();
@@ -1186,7 +1157,6 @@ async function adminValidateTop5() {
     }
 
     const top5 = Array.from(document.querySelectorAll('input[data-admin-type="top5"]:checked')).map(cb => cb.value);
-    const bonusTop5 = document.getElementById('admin-bonus-top5').value;
 
     if (top5.length !== 5) {
         alert('Sélectionne exactement 5 candidates !');
@@ -1197,7 +1167,7 @@ async function adminValidateTop5() {
         `⚠️ VALIDATION TOP 5 ⚠️\n\n` +
         `Tu vas valider ces 5 finalistes:\n` +
         `${top5.join(', ')}\n\n` +
-        `Bonus (pas dans le top 5): ${bonusTop5 || 'Non sélectionné'}\n\n` +
+        `💡 Les joueurs ayant choisi une candidate qui n'est PAS dans cette liste gagnent automatiquement 20 pts bonus.\n\n` +
         `Les scores de tous les joueurs seront mis à jour. Continuer ?`
     );
 
@@ -1207,7 +1177,7 @@ async function adminValidateTop5() {
         const response = await fetch('/api/admin/validate-top5', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ top5, bonusTop5 })
+            body: JSON.stringify({ top5 })
         });
 
         const data = await response.json();
