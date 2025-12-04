@@ -352,7 +352,7 @@ const cultureGQuestions = {
   },
   histoire_geo: {
     name: "Histoire / Géographie",
-    totalPoints: 14,
+    totalPoints: 10,
     questions: [
       { id: "hg1", question: "En quelle année a eu lieu la chute du mur de Berlin ?", type: "single", answers: ["1979", "1981", "1989", "1991"], correct: 2, points: 1 },
       { id: "hg2", question: "Qui était le premier empereur de Rome ?", type: "single", answers: ["Jules César", "Auguste", "Astérix", "Trajan"], correct: 1, points: 1 },
@@ -363,9 +363,7 @@ const cultureGQuestions = {
       { id: "hg7", question: "Lesquels de ces dieux appartiennent à la mythologie égyptienne ?", type: "multiple", answers: ["Râ", "Anubis", "Apollon", "Osiris"], correct: [0, 1, 3], points: 1 },
       { id: "hg8", question: "Laquelle de ces inventions est la plus ancienne ?", type: "single", answers: ["Photographie", "Téléphone", "Radio", "Télévision"], correct: 0, points: 1 },
       { id: "hg9", question: "La Préhistoire prend fin avec :", type: "single", answers: ["La disparition des dinosaures", "L'invention de l'écriture", "La chute de l'empire romain", "L'invention des smartphones"], correct: 1, points: 1 },
-      { id: "hg10", question: "Quel est le plus grand désert du monde par sa superficie ?", type: "single", answers: ["Sahara", "Gobi", "Antarctique", "Kalahari"], correct: 2, points: 1 },
-      { id: "hg11", question: "Placez ces 4 pays sur la carte : Brésil (A), Égypte (B), Inde (C), Australie (D). Dans quel ordre de gauche à droite ?", type: "text", correct: ["A B C D", "ABCD", "Brésil Égypte Inde Australie"], points: 2, info: "0.5 point par bonne réponse" },
-      { id: "hg12", question: "Reliez ces volcans à la bonne île : Montagne Pelée → ?, Eyjafjallajökull → ?, Piton de la Fournaise → ?, La Soufrière → ?", type: "text", correct: ["Martinique Islande Réunion Guadeloupe"], points: 2, info: "0.5 point par bonne réponse" }
+      { id: "hg10", question: "Quel est le plus grand désert du monde par sa superficie ?", type: "single", answers: ["Sahara", "Gobi", "Antarctique", "Kalahari"], correct: 2, points: 1 }
     ]
   },
   arts: {
@@ -452,18 +450,11 @@ const cultureGQuestions = {
   },
   logique: {
     name: "Logique",
-    totalPoints: 10,
+    totalPoints: 3,
     questions: [
       { id: "log1", question: "Quel mot peut-on associer à ces trois définitions : Un novice, une combinaison de travail, une couleur.", type: "single", answers: ["Rouge", "Bleu", "Blanc", "Jaune"], correct: 1, points: 1 },
-      { id: "log2", question: "En respectant la logique de cette suite : 5, 14, 41, 122, ?, quel nombre remplace le point d'interrogation ?", type: "text", correct: ["365"], points: 1, info: "Chaque nombre = précédent × 3 - 1" },
-      { id: "log3", question: "Quelle proposition ne complète aucune de ces trois syllabes (PAN, TIR, PIE) pour former des mots ?", type: "single", answers: ["MAR", "SOR", "COR", "TOU"], correct: 3, points: 1 },
-      { id: "log4", question: "Selon la logique : 7+8=11, 9+4=10, 12+6=15, quel nombre doit s'inscrire pour 23+25=?", type: "single", answers: ["34", "46", "61", "75"], correct: 2, points: 1 },
-      { id: "log5", question: "Dans un carré magique, quel chiffre remplace le point d'interrogation ?", type: "text", correct: ["4"], points: 1 },
       { id: "log6", question: "3 poissons sont dans un seau. L'un meurt. Combien en reste-t-il ?", type: "text", correct: ["3"], points: 1, info: "Il est mort mais toujours dans le seau !" },
-      { id: "log7", question: "Si avant-hier on était mardi, quel jour serons-nous après-demain ?", type: "text", correct: ["samedi", "Samedi"], points: 1 },
-      { id: "log8", question: "Trouvez l'intrus parmi ces formes géométriques (carré, triangle, rectangle, cercle) ?", type: "text", correct: ["cercle", "le cercle", "D"], points: 1, info: "Le cercle n'a pas de côtés droits" },
-      { id: "log9", question: "Un espion voit son contact après 12h. Restaurant 8h→20h, Parc 22h→10h, Café 16h→4h. Musée 5h→?", type: "text", correct: ["17h", "17", "17H"], points: 1 },
-      { id: "log10", question: "Quelle proposition complète cette suite logique : BFJN, CGKO, DHLP, ?", type: "single", answers: ["NCIQ", "MNOS", "ESRT", "XULS"], correct: 0, points: 1 }
+      { id: "log7", question: "Si avant-hier on était mardi, quel jour serons-nous après-demain ?", type: "text", correct: ["samedi", "Samedi"], points: 1 }
     ]
   }
 };
