@@ -288,7 +288,20 @@ const quizQuestions = [
 ];
 
 app.get('/api/quiz/questions', requireAuth, (req, res) => {
-  res.json(quizQuestions);
+  // Récupérer les questions déjà répondues par l'utilisateur
+  const answeredQuestions = db.prepare('SELECT question_id FROM quiz_answers WHERE user_id = ?')
+    .all(req.session.userId)
+    .map(a => a.question_id);
+
+  // Ne retourner que les questions non répondues
+  const unansweredQuestions = quizQuestions.filter(q => !answeredQuestions.includes(q.id));
+
+  res.json({
+    questions: unansweredQuestions,
+    totalQuestions: quizQuestions.length,
+    answeredCount: answeredQuestions.length,
+    isCompleted: unansweredQuestions.length === 0
+  });
 });
 
 app.post('/api/quiz/answer', requireAuth, (req, res) => {

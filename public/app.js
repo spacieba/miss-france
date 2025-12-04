@@ -449,23 +449,61 @@ async function saveFinalRanking() {
 
 // === QUIZ ===
 
+let quizData = null; // Stocker les données du quiz
+
 async function loadQuizSection() {
     const response = await fetch('/api/quiz/score');
     const score = await response.json();
-    
+
     document.getElementById('quiz-answered').textContent = score.totalAnswers;
     document.getElementById('quiz-correct').textContent = score.correctAnswers;
     document.getElementById('quiz-points').textContent = score.totalPoints;
+
+    // Vérifier si le quiz est déjà terminé
+    const quizResponse = await fetch('/api/quiz/questions');
+    quizData = await quizResponse.json();
+
+    const startBtn = document.querySelector('#quiz-intro .btn-primary');
+    const introText = document.querySelector('#quiz-intro p');
+
+    if (quizData.isCompleted) {
+        // Quiz terminé - désactiver le bouton
+        if (startBtn) {
+            startBtn.textContent = '✅ Quiz terminé';
+            startBtn.disabled = true;
+            startBtn.style.opacity = '0.6';
+            startBtn.style.cursor = 'not-allowed';
+        }
+        if (introText) {
+            introText.innerHTML = `🎉 <strong>Tu as déjà complété le quiz !</strong><br>Tu as répondu aux ${quizData.totalQuestions} questions.`;
+        }
+    } else if (quizData.answeredCount > 0) {
+        // Quiz en cours
+        if (startBtn) {
+            startBtn.textContent = `▶️ Continuer le quiz (${quizData.answeredCount}/${quizData.totalQuestions})`;
+        }
+        if (introText) {
+            introText.innerHTML = `Tu as déjà répondu à ${quizData.answeredCount} question(s) sur ${quizData.totalQuestions}.<br>Continue pour terminer le quiz !`;
+        }
+    }
 }
 
 async function startQuiz() {
+    // Recharger les questions non répondues
     const response = await fetch('/api/quiz/questions');
-    quizQuestions = await response.json();
+    quizData = await response.json();
+
+    if (quizData.isCompleted) {
+        alert('Tu as déjà complété le quiz !');
+        return;
+    }
+
+    quizQuestions = quizData.questions;
     currentQuestionIndex = 0;
-    
+
     document.getElementById('quiz-intro').style.display = 'none';
     document.getElementById('quiz-game').style.display = 'block';
-    
+
     showQuestion();
 }
 
@@ -474,17 +512,18 @@ function showQuestion() {
         endQuiz();
         return;
     }
-    
+
     const question = quizQuestions[currentQuestionIndex];
-    
-    document.getElementById('question-number').textContent = `Question ${currentQuestionIndex + 1}/${quizQuestions.length}`;
+    const totalAnswered = quizData.answeredCount + currentQuestionIndex + 1;
+
+    document.getElementById('question-number').textContent = `Question ${totalAnswered}/${quizData.totalQuestions}`;
     document.getElementById('question-difficulty').textContent = question.difficulty.toUpperCase();
     document.getElementById('question-difficulty').className = `difficulty-badge difficulty-${question.difficulty}`;
     document.getElementById('question-text').textContent = question.question;
-    
+
     const answersContainer = document.getElementById('answers-container');
     answersContainer.innerHTML = '';
-    
+
     question.answers.forEach((answer, index) => {
         const button = document.createElement('button');
         button.className = 'answer-btn';
@@ -492,7 +531,7 @@ function showQuestion() {
         button.onclick = () => answerQuestion(index);
         answersContainer.appendChild(button);
     });
-    
+
     document.getElementById('quiz-feedback').style.display = 'none';
 }
 
