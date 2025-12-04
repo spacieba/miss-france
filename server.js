@@ -97,7 +97,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(session({
-  secret: 'miss-france-secret-2025',
+  secret: process.env.SESSION_SECRET || 'miss-france-secret-2025-change-me-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24h
@@ -122,16 +122,25 @@ const requireAdmin = (req, res, next) => {
 
 // Routes authentification
 app.post('/api/register', async (req, res) => {
-  const { pseudo } = req.body;
-  
+  const { pseudo, password } = req.body;
+
   if (!pseudo || pseudo.trim().length === 0) {
     return res.status(400).json({ error: 'Pseudo requis' });
   }
 
+  if (!password || password.length < 4) {
+    return res.status(400).json({ error: 'Mot de passe requis (min 4 caractères)' });
+  }
+
+  // Empêcher la création d'un compte "admin"
+  if (pseudo.toLowerCase() === 'admin') {
+    return res.status(400).json({ error: 'Ce pseudo est réservé' });
+  }
+
   try {
-    const password = await bcrypt.hash('missfrancerules', 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const stmt = db.prepare('INSERT INTO users (pseudo, password) VALUES (?, ?)');
-    const result = stmt.run(pseudo, password);
+    const result = stmt.run(pseudo, hashedPassword);
     
     // Créer le score initial
     db.prepare('INSERT INTO scores (user_id) VALUES (?)').run(result.lastInsertRowid);
@@ -153,17 +162,27 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.post('/api/login', (req, res) => {
-  const { pseudo } = req.body;
+app.post('/api/login', async (req, res) => {
+  const { pseudo, password } = req.body;
 
   if (!pseudo) {
     return res.status(400).json({ error: 'Pseudo requis' });
+  }
+
+  if (!password) {
+    return res.status(400).json({ error: 'Mot de passe requis' });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
 
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur non trouvé' });
+  }
+
+  // Vérifier le mot de passe
+  const validPassword = await bcrypt.compare(password, user.password);
+  if (!validPassword) {
+    return res.status(401).json({ error: 'Mot de passe incorrect' });
   }
 
   req.session.userId = user.id;
@@ -237,9 +256,17 @@ app.get('/api/quiz/questions', requireAuth, (req, res) => {
 app.post('/api/quiz/answer', requireAuth, (req, res) => {
   const { questionId, answer } = req.body;
   const question = quizQuestions.find(q => q.id === questionId);
-  
+
   if (!question) {
     return res.status(404).json({ error: 'Question non trouvée' });
+  }
+
+  // Vérifier si l'utilisateur a déjà répondu à cette question
+  const existingAnswer = db.prepare('SELECT id FROM quiz_answers WHERE user_id = ? AND question_id = ?')
+    .get(req.session.userId, questionId);
+
+  if (existingAnswer) {
+    return res.status(400).json({ error: 'Tu as déjà répondu à cette question' });
   }
 
   const isCorrect = answer === question.correct;
@@ -250,11 +277,12 @@ app.post('/api/quiz/answer', requireAuth, (req, res) => {
     .run(req.session.userId, questionId, answer, isCorrect ? 1 : 0, points);
 
   // Mettre à jour le score
-  const currentScore = db.prepare('SELECT quiz_score FROM scores WHERE user_id = ?').get(req.session.userId);
+  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
   const newQuizScore = (currentScore.quiz_score || 0) + points;
-  
-  db.prepare('UPDATE scores SET quiz_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
-    .run(newQuizScore, req.session.userId);
+  const newTotalScore = newQuizScore + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+  db.prepare('UPDATE scores SET quiz_score = ?, total_score = ? WHERE user_id = ?')
+    .run(newQuizScore, newTotalScore, req.session.userId);
 
   res.json({ 
     correct: isCorrect, 
@@ -361,13 +389,14 @@ app.post('/api/pronostics/final', requireAuth, (req, res) => {
 
 app.get('/api/pronostics', requireAuth, (req, res) => {
   const pronostics = db.prepare('SELECT * FROM pronostics WHERE user_id = ?').get(req.session.userId);
-  
+
   if (pronostics) {
-    pronostics.top15 = JSON.parse(pronostics.top15);
-    pronostics.top5 = JSON.parse(pronostics.top5);
-    pronostics.classement_final = JSON.parse(pronostics.classement_final);
+    // Gestion sécurisée des valeurs NULL
+    pronostics.top15 = pronostics.top15 ? JSON.parse(pronostics.top15) : [];
+    pronostics.top5 = pronostics.top5 ? JSON.parse(pronostics.top5) : [];
+    pronostics.classement_final = pronostics.classement_final ? JSON.parse(pronostics.classement_final) : [];
   }
-  
+
   res.json(pronostics || null);
 });
 
@@ -385,10 +414,21 @@ app.get('/api/predictions/types', requireAuth, (req, res) => {
 
 app.post('/api/predictions', requireAuth, (req, res) => {
   const { predictionType, value } = req.body;
-  
-  db.prepare('INSERT INTO predictions (user_id, prediction_type, prediction_value) VALUES (?, ?, ?)')
-    .run(req.session.userId, predictionType, value);
-  
+
+  // Vérifier si une prédiction existe déjà pour ce type
+  const existing = db.prepare('SELECT id FROM predictions WHERE user_id = ? AND prediction_type = ?')
+    .get(req.session.userId, predictionType);
+
+  if (existing) {
+    // Mettre à jour la prédiction existante
+    db.prepare('UPDATE predictions SET prediction_value = ? WHERE id = ?')
+      .run(value, existing.id);
+  } else {
+    // Créer une nouvelle prédiction
+    db.prepare('INSERT INTO predictions (user_id, prediction_type, prediction_value) VALUES (?, ?, ?)')
+      .run(req.session.userId, predictionType, value);
+  }
+
   res.json({ success: true });
 });
 
@@ -403,32 +443,89 @@ const bingoItems = [
   "Baiser sur la joue", "Photo de groupe finale"
 ];
 
+// Fonction de mélange Fisher-Yates (non biaisé)
+function shuffleArray(array, seed) {
+  const result = [...array];
+  let currentIndex = result.length;
+
+  // Générateur pseudo-aléatoire basé sur la seed
+  const seededRandom = (seed) => {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  };
+
+  let seedValue = seed;
+  while (currentIndex > 0) {
+    const randomIndex = Math.floor(seededRandom(seedValue++) * currentIndex);
+    currentIndex--;
+    [result[currentIndex], result[randomIndex]] = [result[randomIndex], result[currentIndex]];
+  }
+
+  return result;
+}
+
 app.get('/api/bingo/items', requireAuth, (req, res) => {
-  // Mélanger et prendre 25 items
-  const shuffled = [...bingoItems].sort(() => 0.5 - Math.random());
-  res.json(shuffled.slice(0, 25));
+  // Vérifier si l'utilisateur a déjà une grille
+  const existing = db.prepare('SELECT grid FROM bingo WHERE user_id = ?').get(req.session.userId);
+
+  if (existing && existing.grid) {
+    // Retourner la grille existante
+    const savedGrid = JSON.parse(existing.grid);
+    // Si la grille contient des items (pas juste des booléens), les retourner
+    if (savedGrid.items) {
+      res.json(savedGrid.items);
+      return;
+    }
+  }
+
+  // Générer une nouvelle grille basée sur l'ID utilisateur (déterministe)
+  const shuffled = shuffleArray(bingoItems, req.session.userId);
+  const items = shuffled.slice(0, 25);
+
+  // Sauvegarder la grille pour cet utilisateur
+  if (existing) {
+    db.prepare('UPDATE bingo SET grid = ? WHERE user_id = ?')
+      .run(JSON.stringify({ items, checked: new Array(25).fill(false) }), req.session.userId);
+  } else {
+    db.prepare('INSERT INTO bingo (user_id, grid, completed_lines, points) VALUES (?, ?, 0, 0)')
+      .run(req.session.userId, JSON.stringify({ items, checked: new Array(25).fill(false) }));
+  }
+
+  res.json(items);
 });
 
 app.post('/api/bingo/check', requireAuth, (req, res) => {
   const { grid, completedLines } = req.body;
-  
+
   const points = completedLines * 20;
-  
-  // Enregistrer ou mettre à jour
-  const existing = db.prepare('SELECT id FROM bingo WHERE user_id = ?').get(req.session.userId);
-  
+
+  // Récupérer la grille existante pour conserver les items
+  const existing = db.prepare('SELECT grid FROM bingo WHERE user_id = ?').get(req.session.userId);
+
+  let gridData = { items: [], checked: grid };
+  if (existing && existing.grid) {
+    const savedGrid = JSON.parse(existing.grid);
+    if (savedGrid.items) {
+      gridData.items = savedGrid.items;
+    }
+  }
+  gridData.checked = grid;
+
+  // Mettre à jour
   if (existing) {
     db.prepare('UPDATE bingo SET grid = ?, completed_lines = ?, points = ? WHERE user_id = ?')
-      .run(JSON.stringify(grid), completedLines, points, req.session.userId);
+      .run(JSON.stringify(gridData), completedLines, points, req.session.userId);
   } else {
     db.prepare('INSERT INTO bingo (user_id, grid, completed_lines, points) VALUES (?, ?, ?, ?)')
-      .run(req.session.userId, JSON.stringify(grid), completedLines, points);
+      .run(req.session.userId, JSON.stringify(gridData), completedLines, points);
   }
   
   // Mettre à jour le score total
-  const currentScore = db.prepare('SELECT bingo_score FROM scores WHERE user_id = ?').get(req.session.userId);
-  db.prepare('UPDATE scores SET bingo_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
-    .run(points, req.session.userId);
+  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
+  const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + points + (currentScore.defis_score || 0);
+
+  db.prepare('UPDATE scores SET bingo_score = ?, total_score = ? WHERE user_id = ?')
+    .run(points, newTotalScore, req.session.userId);
   
   res.json({ success: true, points: points });
 });
@@ -463,11 +560,12 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
     .run(req.session.userId, defiId, defi.points);
   
   // Mettre à jour le score
-  const currentScore = db.prepare('SELECT defis_score FROM scores WHERE user_id = ?').get(req.session.userId);
+  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
   const newDefisScore = (currentScore.defis_score || 0) + defi.points;
-  
-  db.prepare('UPDATE scores SET defis_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
-    .run(newDefisScore, req.session.userId);
+  const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + newDefisScore;
+
+  db.prepare('UPDATE scores SET defis_score = ?, total_score = ? WHERE user_id = ?')
+    .run(newDefisScore, newTotalScore, req.session.userId);
   
   res.json({ success: true, points: defi.points });
 });
@@ -504,19 +602,19 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Récupérer les candidates (pour admin)
-app.get('/api/admin/candidates', requireAuth, (req, res) => {
+app.get('/api/admin/candidates', requireAuth, requireAdmin, (req, res) => {
   console.log('🔐 Admin candidates requested by:', req.session.pseudo, 'isAdmin:', req.session.isAdmin);
   res.json(candidates);
 });
 
 // Récupérer les types de prédictions (pour admin)
-app.get('/api/admin/prediction-types', requireAuth, (req, res) => {
+app.get('/api/admin/prediction-types', requireAuth, requireAdmin, (req, res) => {
   console.log('🔐 Admin prediction-types requested by:', req.session.pseudo);
   res.json(predictionTypes);
 });
 
 // Récupérer les statistiques
-app.get('/api/admin/stats', requireAuth, (req, res) => {
+app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
   console.log('🔐 Admin stats requested by:', req.session.pseudo, 'isAdmin:', req.session.isAdmin);
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
   const totalPronostics = db.prepare('SELECT COUNT(*) as count FROM pronostics').get().count;
@@ -532,7 +630,7 @@ app.get('/api/admin/stats', requireAuth, (req, res) => {
 });
 
 // Valider une prédiction individuelle
-app.post('/api/admin/validate-prediction', (req, res) => {
+app.post('/api/admin/validate-prediction', requireAuth, requireAdmin, (req, res) => {
   const { predictionType, correctValue } = req.body;
 
   // Récupérer toutes les prédictions de ce type
@@ -541,10 +639,10 @@ app.post('/api/admin/validate-prediction', (req, res) => {
   let usersAwarded = 0;
 
   userPredictions.forEach(pred => {
-    // Vérifier si la prédiction est correcte
+    // Vérifier si la prédiction est correcte (avec trim pour ignorer les espaces)
     let isCorrect = false;
 
-    if (pred.prediction_value.toString().toLowerCase() === correctValue.toString().toLowerCase()) {
+    if (pred.prediction_value.toString().toLowerCase().trim() === correctValue.toString().toLowerCase().trim()) {
       isCorrect = true;
     }
 
@@ -557,11 +655,12 @@ app.post('/api/admin/validate-prediction', (req, res) => {
       db.prepare('UPDATE predictions SET points = ? WHERE id = ?').run(points, pred.id);
 
       // Mettre à jour le score de l'utilisateur
-      const currentScore = db.prepare('SELECT predictions_score FROM scores WHERE user_id = ?').get(pred.user_id);
+      const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(pred.user_id);
       const newPredictionsScore = (currentScore.predictions_score || 0) + points;
+      const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + newPredictionsScore + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
 
-      db.prepare('UPDATE scores SET predictions_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
-        .run(newPredictionsScore, pred.user_id);
+      db.prepare('UPDATE scores SET predictions_score = ?, total_score = ? WHERE user_id = ?')
+        .run(newPredictionsScore, newTotalScore, pred.user_id);
 
       usersAwarded++;
     }
@@ -571,7 +670,7 @@ app.post('/api/admin/validate-prediction', (req, res) => {
 });
 
 // Route admin pour valider les résultats réels
-app.post('/api/admin/validate-results', (req, res) => {
+app.post('/api/admin/validate-results', requireAuth, requireAdmin, (req, res) => {
   const { top15Real, bonusTop15Real, top5Real, bonusTop5Real, classementFinalReal } = req.body;
 
   // Récupérer tous les pronostics
@@ -582,43 +681,58 @@ app.post('/api/admin/validate-results', (req, res) => {
   allPronostics.forEach(prono => {
     let score = 0;
 
-    // Calculer les points pour top15
-    const top15User = JSON.parse(prono.top15);
-    top15User.forEach(candidate => {
-      if (top15Real.includes(candidate)) {
-        score += 5;
+    // Calculer les points pour top15 (avec gestion NULL)
+    if (prono.top15) {
+      const top15User = JSON.parse(prono.top15);
+      if (Array.isArray(top15User)) {
+        top15User.forEach(candidate => {
+          if (top15Real && top15Real.includes(candidate)) {
+            score += 5;
+          }
+        });
       }
-    });
+    }
 
     // Bonus top15
-    if (prono.bonus_top15 === bonusTop15Real) {
+    if (prono.bonus_top15 && prono.bonus_top15 === bonusTop15Real) {
       score += 80;
     }
 
-    // Top5
-    const top5User = JSON.parse(prono.top5);
-    top5User.forEach(candidate => {
-      if (top5Real.includes(candidate)) {
-        score += 8;
+    // Top5 (avec gestion NULL)
+    if (prono.top5) {
+      const top5User = JSON.parse(prono.top5);
+      if (Array.isArray(top5User)) {
+        top5User.forEach(candidate => {
+          if (top5Real && top5Real.includes(candidate)) {
+            score += 8;
+          }
+        });
       }
-    });
+    }
 
     // Bonus top5
-    if (prono.bonus_top5 === bonusTop5Real) {
+    if (prono.bonus_top5 && prono.bonus_top5 === bonusTop5Real) {
       score += 20;
     }
 
-    // Classement final
-    const classementUser = JSON.parse(prono.classement_final);
-    classementUser.forEach((candidate, index) => {
-      if (classementFinalReal[index] === candidate) {
-        score += 8;
+    // Classement final (avec gestion NULL)
+    if (prono.classement_final) {
+      const classementUser = JSON.parse(prono.classement_final);
+      if (Array.isArray(classementUser)) {
+        classementUser.forEach((candidate, index) => {
+          if (classementFinalReal && classementFinalReal[index] === candidate) {
+            score += 8;
+          }
+        });
       }
-    });
+    }
 
     // Mettre à jour le score
-    db.prepare('UPDATE scores SET pronostics_score = ?, total_score = quiz_score + pronostics_score + predictions_score + bingo_score + defis_score WHERE user_id = ?')
-      .run(score, prono.user_id);
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
+    const newTotalScore = (currentScore.quiz_score || 0) + score + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+    db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
+      .run(score, newTotalScore, prono.user_id);
 
     usersUpdated++;
   });

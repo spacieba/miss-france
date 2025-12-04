@@ -247,6 +247,11 @@
                     <input type="text" id="pseudo" placeholder="Ton pseudo" maxlength="20" autofocus>
                 </div>
 
+                <div class="input-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" placeholder="Ton mot de passe" minlength="4">
+                </div>
+
                 <button onclick="handleSubmit()" class="btn-submit" id="submit-btn">
                     Se connecter
                 </button>
@@ -294,6 +299,7 @@
 
         async function login() {
             const pseudo = document.getElementById('pseudo').value.trim();
+            const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('error-message');
             const successDiv = document.getElementById('success-message');
 
@@ -306,11 +312,17 @@
                 return;
             }
 
+            if (!password) {
+                errorDiv.textContent = '⚠️ Entre un mot de passe !';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo })
+                    body: JSON.stringify({ pseudo, password })
                 });
 
                 const data = await response.json();
@@ -333,6 +345,7 @@
 
         async function register() {
             const pseudo = document.getElementById('pseudo').value.trim();
+            const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('error-message');
             const successDiv = document.getElementById('success-message');
 
@@ -341,6 +354,12 @@
 
             if (!pseudo) {
                 errorDiv.textContent = '⚠️ Entre un pseudo !';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!password || password.length < 4) {
+                errorDiv.textContent = '⚠️ Le mot de passe doit faire au moins 4 caractères !';
                 errorDiv.style.display = 'block';
                 return;
             }
@@ -355,7 +374,7 @@
                 const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo })
+                    body: JSON.stringify({ pseudo, password })
                 });
 
                 const data = await response.json();
@@ -379,6 +398,11 @@
         // Connexion avec Enter
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('pseudo').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('password').focus();
+                }
+            });
+            document.getElementById('password').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     handleSubmit();
                 }
