@@ -11,8 +11,20 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Détection environnement Railway (volume monté sur /data)
+const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID;
+const dataDir = isRailway ? '/data' : path.join(__dirname, 'data');
+const uploadsBaseDir = isRailway ? '/data/uploads' : path.join(__dirname, 'public', 'uploads');
+
+// Créer les dossiers si nécessaire
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 // Base de données SQLite
-const db = new Database('data/miss-france.db');
+const dbPath = path.join(dataDir, 'miss-france.db');
+console.log(`📂 Base de données: ${dbPath}`);
+const db = new Database(dbPath);
 
 // Initialisation des tables
 db.exec(`
@@ -161,10 +173,10 @@ try {
 }
 
 // Créer le dossier uploads si nécessaire
-const uploadsDir = path.join(__dirname, 'public', 'uploads', 'costumes');
+const uploadsDir = path.join(uploadsBaseDir, 'costumes');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('✅ Dossier uploads/costumes créé');
+  console.log(`✅ Dossier uploads créé: ${uploadsDir}`);
 }
 
 // Configuration Multer pour l'upload de photos
@@ -226,6 +238,12 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24h
 }));
 app.use(express.static('public'));
+
+// Sur Railway, servir les uploads depuis le volume /data/uploads
+if (isRailway) {
+  app.use('/uploads', express.static(uploadsBaseDir));
+  console.log(`📂 Uploads servis depuis: ${uploadsBaseDir}`);
+}
 
 // Middleware d'authentification
 const requireAuth = (req, res, next) => {
@@ -1006,7 +1024,9 @@ app.post('/api/costume/upload-photo', requireAuth, upload.single('photo'), async
     // Supprimer l'ancienne photo si elle existe
     const oldPhoto = db.prepare('SELECT costume_photo FROM users WHERE id = ?').get(userId);
     if (oldPhoto?.costume_photo) {
-      const oldPath = path.join(__dirname, 'public', oldPhoto.costume_photo);
+      // Construire le chemin physique selon l'environnement
+      const relativePath = oldPhoto.costume_photo.replace('/uploads/', '');
+      const oldPath = path.join(uploadsBaseDir, relativePath);
       if (fs.existsSync(oldPath)) {
         fs.unlinkSync(oldPath);
       }
@@ -1039,7 +1059,9 @@ app.delete('/api/costume/delete-photo', requireAuth, (req, res) => {
     const user = db.prepare('SELECT costume_photo FROM users WHERE id = ?').get(userId);
 
     if (user?.costume_photo) {
-      const photoPath = path.join(__dirname, 'public', user.costume_photo);
+      // Construire le chemin physique selon l'environnement
+      const relativePath = user.costume_photo.replace('/uploads/', '');
+      const photoPath = path.join(uploadsBaseDir, relativePath);
       if (fs.existsSync(photoPath)) {
         fs.unlinkSync(photoPath);
       }
