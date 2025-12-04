@@ -188,7 +188,7 @@
 
                 <div class="admin-note">
                     <strong>🔐 Accès Admin</strong>
-                    Pour accéder à l'interface admin, connecte-toi avec le pseudo <code><strong>admin</strong></code>
+                    Pour accéder à l'interface admin, connecte-toi avec <code><strong>Dam admin</strong></code> ou <code><strong>lucie admin</strong></code>
                 </div>
             </div>
         </div>
@@ -294,7 +294,8 @@
                 return;
             }
 
-            if (pseudo.toLowerCase() === 'admin') {
+            const reservedPseudos = ['admin', 'dam admin', 'lucie admin'];
+            if (reservedPseudos.includes(pseudo.toLowerCase())) {
                 errorDiv.textContent = '⚠️ Ce pseudo est réservé pour l\'administrateur';
                 errorDiv.style.display = 'block';
                 return;

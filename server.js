@@ -121,13 +121,28 @@ if (!existingResults) {
   console.log('✅ Table official_results initialisée');
 }
 
-// Créer l'utilisateur admin s'il n'existe pas
-const adminUser = db.prepare('SELECT * FROM users WHERE pseudo = ?').get('admin');
-if (!adminUser) {
-  const password = bcrypt.hashSync('fernando80', 10);
-  const result = db.prepare('INSERT INTO users (pseudo, password, is_admin) VALUES (?, ?, 1)').run('admin', password);
-  db.prepare('INSERT INTO scores (user_id) VALUES (?)').run(result.lastInsertRowid);
-  console.log('✅ Utilisateur admin créé (pseudo: admin)');
+// Créer les utilisateurs admin s'ils n'existent pas
+const adminUsers = [
+  { pseudo: 'Dam admin', password: 'brad' },
+  { pseudo: 'lucie admin', password: 'janet' }
+];
+
+adminUsers.forEach(admin => {
+  const existingAdmin = db.prepare('SELECT * FROM users WHERE pseudo = ?').get(admin.pseudo);
+  if (!existingAdmin) {
+    const hashedPassword = bcrypt.hashSync(admin.password, 10);
+    const result = db.prepare('INSERT INTO users (pseudo, password, is_admin) VALUES (?, ?, 1)').run(admin.pseudo, hashedPassword);
+    db.prepare('INSERT INTO scores (user_id) VALUES (?)').run(result.lastInsertRowid);
+    console.log(`✅ Utilisateur admin créé (pseudo: ${admin.pseudo})`);
+  }
+});
+
+// Supprimer l'ancien admin "admin" s'il existe
+const oldAdmin = db.prepare('SELECT * FROM users WHERE pseudo = ?').get('admin');
+if (oldAdmin) {
+  db.prepare('DELETE FROM scores WHERE user_id = ?').run(oldAdmin.id);
+  db.prepare('DELETE FROM users WHERE id = ?').run(oldAdmin.id);
+  console.log('✅ Ancien admin "admin" supprimé');
 }
 
 // Middleware
@@ -170,8 +185,9 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ error: 'Mot de passe requis (min 4 caractères)' });
   }
 
-  // Empêcher la création d'un compte "admin"
-  if (pseudo.toLowerCase() === 'admin') {
+  // Empêcher la création d'un compte admin
+  const reservedPseudos = ['admin', 'dam admin', 'lucie admin'];
+  if (reservedPseudos.includes(pseudo.toLowerCase())) {
     return res.status(400).json({ error: 'Ce pseudo est réservé' });
   }
 
