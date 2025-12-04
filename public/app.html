@@ -126,14 +126,20 @@
                     <p class="hint">Choisis 15 candidates qui seront dans le top 15 (5 pts chacune)</p>
                     <div id="top15-selection" class="candidates-grid"></div>
 
-                    <h4 style="margin-top: 20px;">⭐ Bonus Miss France (80 pts)</h4>
-                    <p class="hint">Quelle candidate ne sera PAS dans le top 15 ?</p>
+                    <h4 style="margin-top: 20px;">⭐ Candidate Bonus (10 pts)</h4>
+                    <p class="hint">Celle-là c'est sûr qu'elle passe pas le premier tour !</p>
                     <select id="bonus-top15" class="select-candidate">
                         <option value="">-- Choisis une candidate --</option>
                     </select>
 
+                    <h4 style="margin-top: 25px; color: var(--gold);">👑 PRONO D'OR - Miss France 2026 (80 pts)</h4>
+                    <p class="hint">Qui sera élue Miss France ? Si tu as raison, tu gagnes 80 points bonus !</p>
+                    <select id="prono-or-miss" class="select-candidate" style="border-color: var(--gold);">
+                        <option value="">-- Choisis ta future Miss France --</option>
+                    </select>
+
                     <button onclick="saveTop15()" class="btn-primary btn-large" style="margin-top: 20px;">
-                        ✅ Valider mon Top 15
+                        ✅ Valider mon Top 15 + Prono d'Or
                     </button>
                     <div id="top15-message" class="message"></div>
                 </div>
@@ -302,7 +308,21 @@
             <section id="admin" class="section">
                 <div class="admin-header" style="background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%); padding: 25px; border-radius: 15px; color: white; margin-bottom: 30px;">
                     <h2 style="margin: 0; color: var(--gold); font-family: 'Playfair Display', serif;">Interface Admin</h2>
-                    <p style="margin: 10px 0 0 0; opacity: 0.9; color: var(--rose-poudre);">Saisie des résultats en temps réel</p>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9; color: var(--rose-poudre);">Validation des résultats en temps réel - Étape par étape</p>
+                </div>
+
+                <!-- Status de l'étape actuelle -->
+                <div class="admin-card" style="background: linear-gradient(135deg, var(--noir-medium), var(--noir-soft)); border: 2px solid var(--gold);">
+                    <h3 style="color: var(--gold);">📍 Étape Actuelle</h3>
+                    <div id="admin-current-step" style="font-size: 1.5em; font-weight: bold; margin: 15px 0; color: var(--blanc-perle);">
+                        Chargement...
+                    </div>
+                    <div class="steps-progress" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span id="step-indicator-0" class="step-badge">⏳ Attente</span>
+                        <span id="step-indicator-1" class="step-badge">1️⃣ Top 15</span>
+                        <span id="step-indicator-2" class="step-badge">2️⃣ Top 5</span>
+                        <span id="step-indicator-3" class="step-badge">3️⃣ Final</span>
+                    </div>
                 </div>
 
                 <!-- Statistiques -->
@@ -324,68 +344,89 @@
                     </div>
                 </div>
 
-                <!-- Top 15 -->
-                <div class="admin-card">
-                    <h3>👑 Top 15 - Résultats Réels</h3>
-                    <p style="color: #666; margin-bottom: 15px;">Coche les 15 candidates sélectionnées</p>
+                <!-- ÉTAPE 1: Top 15 -->
+                <div class="admin-card" id="admin-step1-card" style="border: 3px solid #667eea;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">🥇 ÉTAPE 1 - Top 15</h3>
+                        <span id="step1-status" class="step-status"></span>
+                    </div>
+                    <p style="color: #888; margin-bottom: 15px;">Coche les 15 candidates sélectionnées puis valide</p>
                     <div id="admin-top15-grid" class="admin-candidates-grid"></div>
                     <div style="margin-top: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Candidate Bonus (celle qui ne passe PAS)</label>
-                        <select id="admin-bonus-top15" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--gold);">⭐ Candidate Bonus (celle qui ne passe PAS) - 10 pts</label>
+                        <select id="admin-bonus-top15" class="admin-select">
                             <option value="">-- Sélectionne --</option>
                         </select>
                     </div>
+                    <button onclick="adminValidateTop15()" class="btn-admin-step" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        ✅ VALIDER LE TOP 15 (met à jour les scores)
+                    </button>
+                    <div id="step1-message" class="admin-step-message"></div>
                 </div>
 
-                <!-- Top 5 -->
-                <div class="admin-card">
-                    <h3>🌟 Top 5 - Résultats Réels</h3>
-                    <p style="color: #666; margin-bottom: 15px;">Coche les 5 finalistes</p>
+                <!-- ÉTAPE 2: Top 5 -->
+                <div class="admin-card" id="admin-step2-card" style="border: 3px solid #f39c12;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">🥈 ÉTAPE 2 - Top 5</h3>
+                        <span id="step2-status" class="step-status"></span>
+                    </div>
+                    <p style="color: #888; margin-bottom: 15px;">Coche les 5 finalistes (seules les candidates du Top 15 validé apparaîtront)</p>
                     <div id="admin-top5-grid" class="admin-candidates-grid"></div>
                     <div style="margin-top: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Candidate Bonus Top 5</label>
-                        <select id="admin-bonus-top5" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--gold);">⭐ Candidate Bonus Top 5 (pas dans le top 5) - 20 pts</label>
+                        <select id="admin-bonus-top5" class="admin-select">
                             <option value="">-- Sélectionne --</option>
                         </select>
                     </div>
+                    <button onclick="adminValidateTop5()" class="btn-admin-step" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                        ✅ VALIDER LE TOP 5 (met à jour les scores)
+                    </button>
+                    <div id="step2-message" class="admin-step-message"></div>
                 </div>
 
-                <!-- Classement Final -->
-                <div class="admin-card">
-                    <h3>🏆 Classement Final (Top 5)</h3>
-                    <p style="color: #666; margin-bottom: 15px;">Entre le classement final du top 5</p>
-                    <div class="rank-selectors">
+                <!-- ÉTAPE 3: Classement Final -->
+                <div class="admin-card" id="admin-step3-card" style="border: 3px solid #e74c3c;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">🏆 ÉTAPE 3 - Classement Final</h3>
+                        <span id="step3-status" class="step-status"></span>
+                    </div>
+                    <p style="color: #888; margin-bottom: 15px;">Entre le classement final (seules les candidates du Top 5 validé apparaîtront)</p>
+                    <div class="rank-selectors" id="admin-final-selectors">
                         <div class="rank-item">
                             <span class="rank-num">1️⃣</span>
-                            <select class="admin-final-rank" data-rank="1">
+                            <select class="admin-final-rank admin-select" data-rank="1">
                                 <option value="">-- Miss France 2026 --</option>
                             </select>
                         </div>
                         <div class="rank-item">
                             <span class="rank-num">2️⃣</span>
-                            <select class="admin-final-rank" data-rank="2">
+                            <select class="admin-final-rank admin-select" data-rank="2">
                                 <option value="">-- 1ère Dauphine --</option>
                             </select>
                         </div>
                         <div class="rank-item">
                             <span class="rank-num">3️⃣</span>
-                            <select class="admin-final-rank" data-rank="3">
+                            <select class="admin-final-rank admin-select" data-rank="3">
                                 <option value="">-- 2ème Dauphine --</option>
                             </select>
                         </div>
                         <div class="rank-item">
                             <span class="rank-num">4️⃣</span>
-                            <select class="admin-final-rank" data-rank="4">
+                            <select class="admin-final-rank admin-select" data-rank="4">
                                 <option value="">-- 3ème Dauphine --</option>
                             </select>
                         </div>
                         <div class="rank-item">
                             <span class="rank-num">5️⃣</span>
-                            <select class="admin-final-rank" data-rank="5">
+                            <select class="admin-final-rank admin-select" data-rank="5">
                                 <option value="">-- 4ème Dauphine --</option>
                             </select>
                         </div>
                     </div>
+                    <button onclick="adminValidateFinal()" class="btn-admin-step" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        ✅ VALIDER LE CLASSEMENT FINAL + PRONO D'OR (scores finaux)
+                    </button>
+                    <div id="step3-message" class="admin-step-message"></div>
                 </div>
 
                 <!-- Prédictions Live -->
@@ -393,11 +434,6 @@
                     <h3>🎯 Validation des Prédictions Live</h3>
                     <div id="admin-predictions-container"></div>
                 </div>
-
-                <!-- Bouton de validation -->
-                <button onclick="adminValidateResults()" class="btn-admin-validate">
-                    ✅ VALIDER TOUS LES RÉSULTATS ET CALCULER LES SCORES
-                </button>
 
                 <div id="admin-status" class="admin-status-message"></div>
             </section>

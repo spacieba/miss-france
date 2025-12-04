@@ -1595,6 +1595,105 @@ body::after {
     display: none;
 }
 
+/* === ADMIN STEP INTERFACE === */
+
+.step-badge {
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+    background: #333;
+    color: #888;
+    transition: all 0.3s ease;
+}
+
+.step-status {
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 15px;
+    background: rgba(0,0,0,0.3);
+}
+
+.btn-admin-step {
+    display: block;
+    width: 100%;
+    padding: 18px 30px;
+    margin-top: 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.btn-admin-step:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+}
+
+.btn-admin-step:active {
+    transform: translateY(0);
+}
+
+.admin-step-message {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.admin-select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--gold-dark);
+    border-radius: 10px;
+    font-size: 1rem;
+    background: var(--noir-soft);
+    color: var(--blanc-perle);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.admin-select:hover {
+    border-color: var(--gold);
+}
+
+.admin-select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+.rank-selectors {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rank-selectors .rank-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.rank-selectors .rank-num {
+    font-size: 1.5rem;
+    min-width: 40px;
+}
+
+.rank-selectors .admin-select {
+    flex: 1;
+}
+
 /* === RESPONSIVE === */
 
 @media (max-width: 768px) {

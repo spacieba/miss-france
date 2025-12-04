@@ -38,6 +38,7 @@ db.exec(`
     user_id INTEGER,
     top15 TEXT,
     bonus_top15 TEXT,
+    prono_or TEXT,
     top5 TEXT,
     bonus_top5 TEXT,
     classement_final TEXT,
@@ -81,7 +82,34 @@ db.exec(`
     points INTEGER DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS official_results (
+    id INTEGER PRIMARY KEY,
+    top15 TEXT,
+    bonus_top15 TEXT,
+    top5 TEXT,
+    bonus_top5 TEXT,
+    classement_final TEXT,
+    miss_france TEXT,
+    current_step INTEGER DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// Migration: Ajouter la colonne prono_or si elle n'existe pas
+try {
+  db.exec('ALTER TABLE pronostics ADD COLUMN prono_or TEXT');
+  console.log('✅ Colonne prono_or ajoutée à la table pronostics');
+} catch (e) {
+  // La colonne existe déjà, c'est OK
+}
+
+// Initialiser la ligne des résultats officiels si elle n'existe pas
+const existingResults = db.prepare('SELECT id FROM official_results WHERE id = 1').get();
+if (!existingResults) {
+  db.prepare('INSERT INTO official_results (id, current_step) VALUES (1, 0)').run();
+  console.log('✅ Table official_results initialisée');
+}
 
 // Créer l'utilisateur admin s'il n'existe pas
 const adminUser = db.prepare('SELECT * FROM users WHERE pseudo = ?').get('admin');
@@ -320,22 +348,22 @@ app.get('/api/candidates', requireAuth, (req, res) => {
 
 // Route pour sauvegarder le top 15 uniquement
 app.post('/api/pronostics/top15', requireAuth, (req, res) => {
-  const { top15, bonusTop15 } = req.body;
+  const { top15, bonusTop15, pronoOr } = req.body;
 
   try {
     const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
 
     if (existing) {
       db.prepare(`UPDATE pronostics
-        SET top15 = ?, bonus_top15 = ?, submitted_at = CURRENT_TIMESTAMP
+        SET top15 = ?, bonus_top15 = ?, prono_or = ?, submitted_at = CURRENT_TIMESTAMP
         WHERE user_id = ?`)
-        .run(JSON.stringify(top15), bonusTop15, req.session.userId);
+        .run(JSON.stringify(top15), bonusTop15, pronoOr || null, req.session.userId);
     } else {
-      db.prepare('INSERT INTO pronostics (user_id, top15, bonus_top15) VALUES (?, ?, ?)')
-        .run(req.session.userId, JSON.stringify(top15), bonusTop15);
+      db.prepare('INSERT INTO pronostics (user_id, top15, bonus_top15, prono_or) VALUES (?, ?, ?, ?)')
+        .run(req.session.userId, JSON.stringify(top15), bonusTop15, pronoOr || null);
     }
 
-    res.json({ success: true, message: 'Top 15 enregistré !' });
+    res.json({ success: true, message: 'Top 15 et Prono d\'Or enregistrés !' });
   } catch (error) {
     res.status(500).json({ error: 'Erreur lors de l\'enregistrement' });
   }
@@ -395,6 +423,7 @@ app.get('/api/pronostics', requireAuth, (req, res) => {
     pronostics.top15 = pronostics.top15 ? JSON.parse(pronostics.top15) : [];
     pronostics.top5 = pronostics.top5 ? JSON.parse(pronostics.top5) : [];
     pronostics.classement_final = pronostics.classement_final ? JSON.parse(pronostics.classement_final) : [];
+    pronostics.prono_or = pronostics.prono_or || null;
   }
 
   res.json(pronostics || null);
@@ -404,7 +433,7 @@ app.get('/api/pronostics', requireAuth, (req, res) => {
 const predictionTypes = [
   { id: 'first_eliminated', label: 'Qui sera éliminée en premier du top 15 ?', points: 5 },
   { id: 'first_tears', label: 'Quelle région va pleurer en premier ?', points: 3 },
-  { id: 'jp_magnifique', label: 'Combien de fois JP dira "magnifique" ?', points: 5, type: 'number' },
+  { id: 'miss_trebuche', label: 'Quelle Miss va trébucher en défilant ?', points: 10 },
   { id: 'dress_color', label: 'Couleur de la robe de la gagnante ?', points: 5, options: ['Rouge', 'Bleu', 'Blanc', 'Noir', 'Doré', 'Argenté'] }
 ];
 
@@ -669,12 +698,275 @@ app.post('/api/admin/validate-prediction', requireAuth, requireAdmin, (req, res)
   res.json({ success: true, usersAwarded });
 });
 
-// Route admin pour valider les résultats réels
+// Route pour obtenir les résultats officiels validés (accessible à tous les utilisateurs)
+app.get('/api/official-results', requireAuth, (req, res) => {
+  const results = db.prepare('SELECT * FROM official_results WHERE id = 1').get();
+
+  if (results) {
+    results.top15 = results.top15 ? JSON.parse(results.top15) : [];
+    results.top5 = results.top5 ? JSON.parse(results.top5) : [];
+    results.classement_final = results.classement_final ? JSON.parse(results.classement_final) : [];
+  }
+
+  res.json(results || { current_step: 0 });
+});
+
+// ============================================
+// ROUTES ADMIN - VALIDATION PAR ÉTAPE
+// ============================================
+
+// Étape 1: Valider le Top 15
+app.post('/api/admin/validate-top15', requireAuth, requireAdmin, (req, res) => {
+  const { top15, bonusTop15 } = req.body;
+
+  if (!top15 || !Array.isArray(top15) || top15.length !== 15) {
+    return res.status(400).json({ error: 'Le top 15 doit contenir exactement 15 candidates' });
+  }
+
+  // Sauvegarder les résultats officiels
+  db.prepare(`
+    UPDATE official_results
+    SET top15 = ?, bonus_top15 = ?, current_step = 1, updated_at = CURRENT_TIMESTAMP
+    WHERE id = 1
+  `).run(JSON.stringify(top15), bonusTop15 || null);
+
+  // Calculer les scores pour tous les utilisateurs
+  const allPronostics = db.prepare('SELECT * FROM pronostics').all();
+  let usersUpdated = 0;
+
+  allPronostics.forEach(prono => {
+    let pronosticsScore = 0;
+
+    // Points pour le top 15 (5 pts par bonne réponse)
+    if (prono.top15) {
+      const top15User = JSON.parse(prono.top15);
+      if (Array.isArray(top15User)) {
+        top15User.forEach(candidate => {
+          if (top15.includes(candidate)) {
+            pronosticsScore += 5;
+          }
+        });
+      }
+    }
+
+    // Bonus top15 (candidate qui ne passe pas) - 10 pts
+    if (prono.bonus_top15 && bonusTop15 && prono.bonus_top15 === bonusTop15) {
+      pronosticsScore += 10;
+    }
+
+    // Mettre à jour le score
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
+    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+    db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
+      .run(pronosticsScore, newTotalScore, prono.user_id);
+
+    usersUpdated++;
+  });
+
+  res.json({
+    success: true,
+    message: 'Top 15 validé ! Scores mis à jour.',
+    usersUpdated,
+    currentStep: 1
+  });
+});
+
+// Étape 2: Valider le Top 5
+app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
+  const { top5, bonusTop5 } = req.body;
+
+  if (!top5 || !Array.isArray(top5) || top5.length !== 5) {
+    return res.status(400).json({ error: 'Le top 5 doit contenir exactement 5 candidates' });
+  }
+
+  // Vérifier que l'étape 1 a été validée
+  const currentResults = db.prepare('SELECT current_step, top15 FROM official_results WHERE id = 1').get();
+  if (currentResults.current_step < 1) {
+    return res.status(400).json({ error: 'Le top 15 doit être validé avant le top 5' });
+  }
+
+  // Sauvegarder les résultats officiels
+  db.prepare(`
+    UPDATE official_results
+    SET top5 = ?, bonus_top5 = ?, current_step = 2, updated_at = CURRENT_TIMESTAMP
+    WHERE id = 1
+  `).run(JSON.stringify(top5), bonusTop5 || null);
+
+  // Recalculer les scores pour tous les utilisateurs (top15 + top5)
+  const allPronostics = db.prepare('SELECT * FROM pronostics').all();
+  const top15Official = JSON.parse(currentResults.top15);
+  const bonusTop15Official = db.prepare('SELECT bonus_top15 FROM official_results WHERE id = 1').get().bonus_top15;
+  let usersUpdated = 0;
+
+  allPronostics.forEach(prono => {
+    let pronosticsScore = 0;
+
+    // Points pour le top 15
+    if (prono.top15) {
+      const top15User = JSON.parse(prono.top15);
+      if (Array.isArray(top15User)) {
+        top15User.forEach(candidate => {
+          if (top15Official.includes(candidate)) {
+            pronosticsScore += 5;
+          }
+        });
+      }
+    }
+
+    // Bonus top15
+    if (prono.bonus_top15 && bonusTop15Official && prono.bonus_top15 === bonusTop15Official) {
+      pronosticsScore += 10;
+    }
+
+    // Points pour le top 5 (8 pts par bonne réponse)
+    if (prono.top5) {
+      const top5User = JSON.parse(prono.top5);
+      if (Array.isArray(top5User)) {
+        top5User.forEach(candidate => {
+          if (top5.includes(candidate)) {
+            pronosticsScore += 8;
+          }
+        });
+      }
+    }
+
+    // Bonus top5
+    if (prono.bonus_top5 && bonusTop5 && prono.bonus_top5 === bonusTop5) {
+      pronosticsScore += 20;
+    }
+
+    // Mettre à jour le score
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
+    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+    db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
+      .run(pronosticsScore, newTotalScore, prono.user_id);
+
+    usersUpdated++;
+  });
+
+  res.json({
+    success: true,
+    message: 'Top 5 validé ! Scores mis à jour.',
+    usersUpdated,
+    currentStep: 2
+  });
+});
+
+// Étape 3: Valider le classement final
+app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
+  const { classementFinal } = req.body;
+
+  if (!classementFinal || !Array.isArray(classementFinal) || classementFinal.length !== 5) {
+    return res.status(400).json({ error: 'Le classement final doit contenir exactement 5 candidates (1ère à 5ème)' });
+  }
+
+  // Vérifier que l'étape 2 a été validée
+  const currentResults = db.prepare('SELECT * FROM official_results WHERE id = 1').get();
+  if (currentResults.current_step < 2) {
+    return res.status(400).json({ error: 'Le top 5 doit être validé avant le classement final' });
+  }
+
+  const missFramce2026 = classementFinal[0];
+
+  // Sauvegarder les résultats officiels
+  db.prepare(`
+    UPDATE official_results
+    SET classement_final = ?, miss_france = ?, current_step = 3, updated_at = CURRENT_TIMESTAMP
+    WHERE id = 1
+  `).run(JSON.stringify(classementFinal), missFramce2026);
+
+  // Recalculer les scores pour tous les utilisateurs (top15 + top5 + final + prono d'or)
+  const allPronostics = db.prepare('SELECT * FROM pronostics').all();
+  const top15Official = currentResults.top15 ? JSON.parse(currentResults.top15) : [];
+  const top5Official = currentResults.top5 ? JSON.parse(currentResults.top5) : [];
+  const bonusTop15Official = currentResults.bonus_top15;
+  const bonusTop5Official = currentResults.bonus_top5;
+  let usersUpdated = 0;
+
+  allPronostics.forEach(prono => {
+    let pronosticsScore = 0;
+
+    // Points pour le top 15
+    if (prono.top15) {
+      const top15User = JSON.parse(prono.top15);
+      if (Array.isArray(top15User)) {
+        top15User.forEach(candidate => {
+          if (top15Official.includes(candidate)) {
+            pronosticsScore += 5;
+          }
+        });
+      }
+    }
+
+    // Bonus top15
+    if (prono.bonus_top15 && bonusTop15Official && prono.bonus_top15 === bonusTop15Official) {
+      pronosticsScore += 10;
+    }
+
+    // Points pour le top 5
+    if (prono.top5) {
+      const top5User = JSON.parse(prono.top5);
+      if (Array.isArray(top5User)) {
+        top5User.forEach(candidate => {
+          if (top5Official.includes(candidate)) {
+            pronosticsScore += 8;
+          }
+        });
+      }
+    }
+
+    // Bonus top5
+    if (prono.bonus_top5 && bonusTop5Official && prono.bonus_top5 === bonusTop5Official) {
+      pronosticsScore += 20;
+    }
+
+    // Points pour le classement final (8 pts par position exacte)
+    if (prono.classement_final) {
+      const classementUser = JSON.parse(prono.classement_final);
+      if (Array.isArray(classementUser)) {
+        classementUser.forEach((candidate, index) => {
+          if (classementFinal[index] === candidate) {
+            pronosticsScore += 8;
+          }
+        });
+      }
+    }
+
+    // PRONO D'OR - Miss France 2026 - 80 pts
+    if (prono.prono_or && prono.prono_or === missFramce2026) {
+      pronosticsScore += 80;
+    }
+
+    // Mettre à jour le score
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
+    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+    db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
+      .run(pronosticsScore, newTotalScore, prono.user_id);
+
+    usersUpdated++;
+  });
+
+  res.json({
+    success: true,
+    message: `Classement final validé ! ${missFramce2026} est Miss France 2026 ! Scores mis à jour.`,
+    usersUpdated,
+    currentStep: 3,
+    missFramce2026
+  });
+});
+
+// Route admin pour valider les résultats réels (LEGACY - conservée pour compatibilité)
 app.post('/api/admin/validate-results', requireAuth, requireAdmin, (req, res) => {
   const { top15Real, bonusTop15Real, top5Real, bonusTop5Real, classementFinalReal } = req.body;
 
   // Récupérer tous les pronostics
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
+
+  // La Miss France est la première du classement final
+  const missFramce2026 = classementFinalReal && classementFinalReal[0] ? classementFinalReal[0] : null;
 
   let usersUpdated = 0;
 
@@ -693,8 +985,13 @@ app.post('/api/admin/validate-results', requireAuth, requireAdmin, (req, res) =>
       }
     }
 
-    // Bonus top15
+    // Bonus top15 (candidate qui ne passe pas) - 10 pts
     if (prono.bonus_top15 && prono.bonus_top15 === bonusTop15Real) {
+      score += 10;
+    }
+
+    // PRONO D'OR - Miss France 2026 - 80 pts
+    if (prono.prono_or && missFramce2026 && prono.prono_or === missFramce2026) {
       score += 80;
     }
 
