@@ -983,15 +983,6 @@ async function loadAdminInterface() {
         });
     });
 
-    // Mettre à jour l'affichage de l'étape actuelle
-    updateAdminStepDisplay();
-
-    // Mettre à jour la grille Top 5 (filtrée selon Top 15 validé)
-    updateAdminTop5Grid();
-
-    // Mettre à jour les selects du classement final (filtrés selon Top 5 validé)
-    updateAdminFinalSelects();
-
     // Si le top 15 a déjà été validé, pré-cocher les cases
     if (officialResults.top15 && officialResults.top15.length > 0) {
         officialResults.top15.forEach(candidate => {
@@ -1000,21 +991,14 @@ async function loadAdminInterface() {
         });
     }
 
-    // Si le top 5 a déjà été validé, pré-cocher les cases
-    if (officialResults.top5 && officialResults.top5.length > 0) {
-        officialResults.top5.forEach(candidate => {
-            const checkbox = document.querySelector(`input[data-admin-type="top5"][value="${candidate}"]`);
-            if (checkbox) checkbox.checked = true;
-        });
-    }
+    // Mettre à jour la grille Top 5 (filtrée selon Top 15 validé, avec pré-cochage)
+    updateAdminTop5Grid();
 
-    // Si le classement final a déjà été validé, pré-remplir les selects
-    if (officialResults.classement_final && officialResults.classement_final.length > 0) {
-        officialResults.classement_final.forEach((candidate, index) => {
-            const select = document.querySelector(`.admin-final-rank[data-rank="${index + 1}"]`);
-            if (select) select.value = candidate;
-        });
-    }
+    // Mettre à jour les selects du classement final (filtrés selon Top 5 validé, avec pré-remplissage)
+    updateAdminFinalSelects();
+
+    // Mettre à jour l'affichage de l'étape actuelle ET désactiver les éléments déjà validés
+    updateAdminStepDisplay();
 
     // Charger les prédictions
     await loadAdminPredictions();
@@ -1227,9 +1211,10 @@ function updateAdminStepDisplay() {
     const step2Status = document.getElementById('step2-status');
     const step3Status = document.getElementById('step3-status');
 
+    // ÉTAPE 1 - Top 15
     if (step1Status) {
         if (officialResults.current_step >= 1) {
-            step1Status.textContent = '✅ Validé';
+            step1Status.textContent = '✅ Déjà validé par un admin';
             step1Status.style.color = '#27ae60';
         } else {
             step1Status.textContent = '⏳ En attente';
@@ -1237,9 +1222,26 @@ function updateAdminStepDisplay() {
         }
     }
 
+    // Désactiver les checkboxes et bouton Top 15 si déjà validé
+    const top15Button = document.querySelector('button[onclick="adminValidateTop15()"]');
+    const top15Checkboxes = document.querySelectorAll('input[data-admin-type="top15"]');
+    if (officialResults.current_step >= 1) {
+        if (top15Button) {
+            top15Button.disabled = true;
+            top15Button.textContent = '✅ TOP 15 DÉJÀ VALIDÉ';
+            top15Button.style.background = '#27ae60';
+            top15Button.style.cursor = 'not-allowed';
+            top15Button.style.opacity = '0.7';
+        }
+        top15Checkboxes.forEach(cb => {
+            cb.disabled = true;
+        });
+    }
+
+    // ÉTAPE 2 - Top 5
     if (step2Status) {
         if (officialResults.current_step >= 2) {
-            step2Status.textContent = '✅ Validé';
+            step2Status.textContent = '✅ Déjà validé par un admin';
             step2Status.style.color = '#27ae60';
         } else if (officialResults.current_step >= 1) {
             step2Status.textContent = '⏳ En attente';
@@ -1250,9 +1252,26 @@ function updateAdminStepDisplay() {
         }
     }
 
+    // Désactiver les checkboxes et bouton Top 5 si déjà validé
+    const top5Button = document.querySelector('button[onclick="adminValidateTop5()"]');
+    const top5Checkboxes = document.querySelectorAll('input[data-admin-type="top5"]');
+    if (officialResults.current_step >= 2) {
+        if (top5Button) {
+            top5Button.disabled = true;
+            top5Button.textContent = '✅ TOP 5 DÉJÀ VALIDÉ';
+            top5Button.style.background = '#27ae60';
+            top5Button.style.cursor = 'not-allowed';
+            top5Button.style.opacity = '0.7';
+        }
+        top5Checkboxes.forEach(cb => {
+            cb.disabled = true;
+        });
+    }
+
+    // ÉTAPE 3 - Classement Final
     if (step3Status) {
         if (officialResults.current_step >= 3) {
-            step3Status.textContent = '✅ Validé - Miss France élue !';
+            step3Status.textContent = '✅ Déjà validé - Miss France élue !';
             step3Status.style.color = '#27ae60';
         } else if (officialResults.current_step >= 2) {
             step3Status.textContent = '⏳ En attente';
@@ -1261,6 +1280,22 @@ function updateAdminStepDisplay() {
             step3Status.textContent = '🔒 Bloqué (valider Top 5 d\'abord)';
             step3Status.style.color = '#888';
         }
+    }
+
+    // Désactiver les selects et bouton Final si déjà validé
+    const finalButton = document.querySelector('button[onclick="adminValidateFinal()"]');
+    const finalSelects = document.querySelectorAll('.admin-final-rank');
+    if (officialResults.current_step >= 3) {
+        if (finalButton) {
+            finalButton.disabled = true;
+            finalButton.textContent = '✅ CLASSEMENT FINAL DÉJÀ VALIDÉ';
+            finalButton.style.background = '#27ae60';
+            finalButton.style.cursor = 'not-allowed';
+            finalButton.style.opacity = '0.7';
+        }
+        finalSelects.forEach(select => {
+            select.disabled = true;
+        });
     }
 }
 
@@ -1276,27 +1311,32 @@ function updateAdminTop5Grid() {
         ? officialResults.top15
         : candidates;
 
+    const isDisabled = officialResults.current_step >= 2;
+
     candidatesToShow.forEach((candidate, index) => {
         const label = document.createElement('label');
         const inputId = `admin-top5-${index}`;
         label.setAttribute('for', inputId);
+        const isChecked = officialResults.top5 && officialResults.top5.includes(candidate);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidate}" data-admin-type="top5">
+            <input type="checkbox" id="${inputId}" value="${candidate}" data-admin-type="top5" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
             ${candidate}
         `;
         top5Grid.appendChild(label);
     });
 
-    // Réappliquer les listeners
-    document.querySelectorAll('input[data-admin-type="top5"]').forEach(cb => {
-        cb.addEventListener('change', () => {
-            const checked = document.querySelectorAll('input[data-admin-type="top5"]:checked');
-            if (checked.length > 5) {
-                cb.checked = false;
-                alert('Maximum 5 candidates !');
-            }
+    // Réappliquer les listeners seulement si non désactivé
+    if (!isDisabled) {
+        document.querySelectorAll('input[data-admin-type="top5"]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const checked = document.querySelectorAll('input[data-admin-type="top5"]:checked');
+                if (checked.length > 5) {
+                    cb.checked = false;
+                    alert('Maximum 5 candidates !');
+                }
+            });
         });
-    });
+    }
 }
 
 // Mettre à jour les selects du classement final (afficher seulement les candidates du Top 5 validé)
@@ -1308,6 +1348,8 @@ function updateAdminFinalSelects() {
         ? officialResults.top5
         : candidates;
 
+    const isDisabled = officialResults.current_step >= 3;
+
     selects.forEach((select, idx) => {
         const defaultLabels = ['-- Miss France 2026 --', '-- 1ère Dauphine --', '-- 2ème Dauphine --', '-- 3ème Dauphine --', '-- 4ème Dauphine --'];
         select.innerHTML = `<option value="">${defaultLabels[idx]}</option>`;
@@ -1317,6 +1359,12 @@ function updateAdminFinalSelects() {
             option.textContent = candidate;
             select.appendChild(option);
         });
+
+        // Pré-remplir et désactiver si déjà validé
+        if (isDisabled && officialResults.classement_final && officialResults.classement_final[idx]) {
+            select.value = officialResults.classement_final[idx];
+            select.disabled = true;
+        }
     });
 }
 
