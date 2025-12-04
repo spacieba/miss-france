@@ -275,10 +275,43 @@
 
             <!-- Section Défis -->
             <section id="defis" class="section">
-                <h2>Défis Bonus</h2>
-                <p class="subtitle">Relève des défis pour gagner des points !</p>
-                
-                <div id="defi-card" class="defi-card"></div>
+                <h2>Défis & Votes</h2>
+                <p class="subtitle">Relève des défis et vote pour le meilleur costume !</p>
+
+                <!-- Vote Meilleur Costume -->
+                <div class="costume-vote-section" style="background: linear-gradient(135deg, var(--noir-card), var(--noir-soft)); border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="color: var(--gold); margin-bottom: 15px;">👗 Élection du Plus Beau Costume</h3>
+                    <p style="margin-bottom: 20px; color: var(--gris-elegant);">Vote pour le joueur qui a le plus beau costume de la soirée !</p>
+
+                    <div id="costume-vote-status" style="margin-bottom: 15px;"></div>
+
+                    <div id="costume-vote-form">
+                        <select id="costume-vote-select" class="select-candidate" style="width: 100%; margin-bottom: 15px;">
+                            <option value="">-- Choisis un joueur --</option>
+                        </select>
+                        <button onclick="submitCostumeVote()" class="btn-primary" style="width: 100%;">
+                            🗳️ Voter
+                        </button>
+                    </div>
+
+                    <div id="costume-vote-message" class="message" style="margin-top: 15px;"></div>
+
+                    <!-- Classement des votes -->
+                    <div style="margin-top: 25px; border-top: 1px solid var(--gold-dark); padding-top: 20px;">
+                        <h4 style="color: var(--gold); margin-bottom: 15px;">🏆 Classement actuel</h4>
+                        <p style="font-size: 0.85rem; color: var(--gris-elegant); margin-bottom: 10px;">
+                            Points: 🥇 30 pts | 🥈 20 pts | 🥉 10 pts
+                        </p>
+                        <div id="costume-results-list"></div>
+                        <p id="costume-total-votes" style="margin-top: 10px; font-size: 0.9rem; color: var(--gris-elegant);"></p>
+                    </div>
+                </div>
+
+                <!-- Défi classique -->
+                <div class="defi-section" style="background: var(--noir-card); border-radius: 15px; padding: 25px;">
+                    <h3 style="color: var(--gold); margin-bottom: 15px;">🌟 Défi Bonus</h3>
+                    <div id="defi-card" class="defi-card"></div>
+                </div>
             </section>
 
             <!-- Section Classement -->
@@ -427,6 +460,17 @@
                 <div class="admin-card">
                     <h3>🎯 Validation des Prédictions Live</h3>
                     <div id="admin-predictions-container"></div>
+                </div>
+
+                <!-- Vote Costume Admin -->
+                <div class="admin-card" style="border: 2px solid var(--gold);">
+                    <h3>👗 Attribution des Points Costume</h3>
+                    <p style="color: #888; margin-bottom: 15px;">Attribue les points aux gagnants du vote costume (🥇 30 pts, 🥈 20 pts, 🥉 10 pts)</p>
+                    <div id="admin-costume-preview"></div>
+                    <button onclick="adminAwardCostumePoints()" class="btn-admin-step" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--noir-profond);">
+                        🏆 ATTRIBUER LES POINTS COSTUME
+                    </button>
+                    <div id="costume-award-message" class="admin-step-message"></div>
                 </div>
 
                 <div id="admin-status" class="admin-status-message"></div>

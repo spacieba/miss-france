@@ -675,45 +675,152 @@ async function checkBingoLines() {
 // === DEFIS ===
 
 async function loadDefisSection() {
+    // Charger le défi classique
     const response = await fetch('/api/defis');
     const defi = await response.json();
-    
+
     const container = document.getElementById('defi-card');
-    
+
     if (!defi) {
         container.innerHTML = `
             <div class="no-defi">
                 <p>🎉 Tu as complété tous les défis disponibles !</p>
             </div>
         `;
-        return;
+    } else {
+        container.innerHTML = `
+            <div class="defi-content">
+                <h3>${defi.title}</h3>
+                <p>${defi.description}</p>
+                <div class="defi-points">🌟 ${defi.points} points</div>
+                <button onclick="completeDefi(${defi.id})" class="btn-primary btn-large">✅ J'ai fait le défi !</button>
+            </div>
+        `;
     }
-    
-    container.innerHTML = `
-        <div class="defi-content">
-            <h3>${defi.title}</h3>
-            <p>${defi.description}</p>
-            <div class="defi-points">🌟 ${defi.points} points</div>
-            <button onclick="completeDefi(${defi.id})" class="btn-primary btn-large">✅ J'ai fait le défi !</button>
-        </div>
-    `;
+
+    // Charger le vote costume
+    await loadCostumeVoting();
 }
 
 async function completeDefi(defiId) {
     const confirmed = confirm('Es-tu sûr d\'avoir fait le défi ?');
     if (!confirmed) return;
-    
+
     const response = await fetch('/api/defis/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ defiId })
     });
-    
+
     const data = await response.json();
-    
-    alert(`🎉 Défi validé ! +${data.points} points`);
-    loadDefisSection();
-    loadScore();
+
+    if (response.ok) {
+        alert(`🎉 Défi validé ! +${data.points} points`);
+        loadDefisSection();
+        loadScore();
+    } else {
+        alert(data.error || 'Erreur');
+    }
+}
+
+// === VOTE MEILLEUR COSTUME ===
+
+async function loadCostumeVoting() {
+    // Charger la liste des joueurs
+    const playersResponse = await fetch('/api/costume/players');
+    const players = await playersResponse.json();
+
+    const select = document.getElementById('costume-vote-select');
+    select.innerHTML = '<option value="">-- Choisis un joueur --</option>';
+
+    players.forEach(player => {
+        const option = document.createElement('option');
+        option.value = player.id;
+        option.textContent = player.pseudo;
+        select.appendChild(option);
+    });
+
+    // Vérifier si l'utilisateur a déjà voté
+    const myVoteResponse = await fetch('/api/costume/my-vote');
+    const myVote = await myVoteResponse.json();
+
+    const statusDiv = document.getElementById('costume-vote-status');
+
+    if (myVote) {
+        statusDiv.innerHTML = `
+            <div style="background: rgba(39, 174, 96, 0.2); padding: 12px; border-radius: 8px; border: 1px solid #27ae60;">
+                ✅ Tu as voté pour <strong>${myVote.voted_for_pseudo}</strong>
+                <br><small style="color: var(--gris-elegant);">Tu peux changer ton vote si tu veux</small>
+            </div>
+        `;
+        select.value = myVote.voted_for;
+    } else {
+        statusDiv.innerHTML = '';
+    }
+
+    // Charger les résultats
+    await loadCostumeResults();
+}
+
+async function submitCostumeVote() {
+    const select = document.getElementById('costume-vote-select');
+    const votedForId = parseInt(select.value);
+
+    if (!votedForId) {
+        alert('Sélectionne un joueur !');
+        return;
+    }
+
+    const response = await fetch('/api/costume/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ votedForId })
+    });
+
+    const data = await response.json();
+    const messageDiv = document.getElementById('costume-vote-message');
+
+    if (response.ok) {
+        messageDiv.innerHTML = `<div style="color: #27ae60;">✅ ${data.message}</div>`;
+        messageDiv.style.display = 'block';
+
+        // Recharger
+        await loadCostumeVoting();
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    } else {
+        messageDiv.innerHTML = `<div style="color: #e74c3c;">❌ ${data.error}</div>`;
+        messageDiv.style.display = 'block';
+    }
+}
+
+async function loadCostumeResults() {
+    const response = await fetch('/api/costume/results');
+    const { results, totalVotes } = await response.json();
+
+    const container = document.getElementById('costume-results-list');
+    const totalDiv = document.getElementById('costume-total-votes');
+
+    if (totalVotes === 0) {
+        container.innerHTML = '<p style="color: var(--gris-elegant); font-style: italic;">Aucun vote pour le moment</p>';
+        totalDiv.textContent = '';
+        return;
+    }
+
+    const medals = ['🥇', '🥈', '🥉'];
+
+    container.innerHTML = results
+        .filter(r => r.votes > 0)
+        .map((player, index) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: ${index < 3 ? 'rgba(212, 175, 55, 0.1)' : 'transparent'}; border-radius: 8px; margin-bottom: 5px;">
+                <span>${medals[index] || '  '} <strong>${player.pseudo}</strong></span>
+                <span style="color: var(--gold);">${player.votes} vote${player.votes > 1 ? 's' : ''}</span>
+            </div>
+        `).join('');
+
+    totalDiv.textContent = `Total: ${totalVotes} vote${totalVotes > 1 ? 's' : ''}`;
 }
 
 // === CLASSEMENT ===
@@ -873,7 +980,85 @@ async function loadAdminInterface() {
     // Charger les prédictions
     await loadAdminPredictions();
 
+    // Charger le preview des votes costume
+    await loadAdminCostumePreview();
+
     console.log('✅ loadAdminInterface terminée avec succès');
+}
+
+// Charger le preview des votes costume pour l'admin
+async function loadAdminCostumePreview() {
+    try {
+        const response = await fetch('/api/costume/results');
+        const { results, totalVotes } = await response.json();
+
+        const container = document.getElementById('admin-costume-preview');
+        if (!container) return;
+
+        if (totalVotes === 0) {
+            container.innerHTML = '<p style="color: var(--gris-elegant); font-style: italic; margin-bottom: 15px;">Aucun vote pour le moment</p>';
+            return;
+        }
+
+        const medals = ['🥇', '🥈', '🥉'];
+        const points = [30, 20, 10];
+
+        container.innerHTML = `
+            <div style="margin-bottom: 15px;">
+                <p style="margin-bottom: 10px;">Classement actuel (${totalVotes} votes):</p>
+                ${results.filter(r => r.votes > 0).slice(0, 5).map((player, index) => `
+                    <div style="display: flex; justify-content: space-between; padding: 8px; background: ${index < 3 ? 'rgba(212, 175, 55, 0.15)' : 'transparent'}; border-radius: 5px; margin-bottom: 5px;">
+                        <span>${medals[index] || '  '} ${player.pseudo}</span>
+                        <span>${player.votes} vote${player.votes > 1 ? 's' : ''} ${index < 3 ? `→ <strong>${points[index]} pts</strong>` : ''}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch (error) {
+        console.error('Erreur chargement preview costume:', error);
+    }
+}
+
+// Admin: Attribuer les points costume
+async function adminAwardCostumePoints() {
+    const confirmation = confirm(
+        `🏆 ATTRIBUTION DES POINTS COSTUME 🏆\n\n` +
+        `Tu vas attribuer les points aux gagnants du vote:\n` +
+        `🥇 1er: 30 points\n` +
+        `🥈 2ème: 20 points\n` +
+        `🥉 3ème: 10 points\n\n` +
+        `Continuer ?`
+    );
+
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch('/api/admin/costume-awards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        const messageDiv = document.getElementById('costume-award-message');
+
+        if (response.ok) {
+            const awardedList = data.awarded.map(a => `${a.pseudo}: ${a.votes} votes → +${a.points} pts`).join('\n');
+            messageDiv.innerHTML = `✅ Points attribués !<br>${data.awarded.map(a => `<strong>${a.pseudo}</strong>: +${a.points} pts`).join('<br>')}`;
+            messageDiv.style.color = '#27ae60';
+
+            // Recharger
+            await loadAdminStats();
+            await loadLeaderboard();
+            await loadScore();
+            await loadAdminCostumePreview();
+        } else {
+            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.style.color = '#e74c3c';
+        }
+    } catch (error) {
+        console.error('Erreur attribution points costume:', error);
+        alert('Erreur lors de l\'attribution des points');
+    }
 }
 
 async function loadAdminPredictions() {

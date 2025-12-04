@@ -83,6 +83,16 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
+  CREATE TABLE IF NOT EXISTS costume_votes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    voter_id INTEGER NOT NULL,
+    voted_for INTEGER NOT NULL,
+    voted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (voter_id) REFERENCES users(id),
+    FOREIGN KEY (voted_for) REFERENCES users(id),
+    UNIQUE(voter_id)
+  );
+
   CREATE TABLE IF NOT EXISTS official_results (
     id INTEGER PRIMARY KEY,
     top15 TEXT,
@@ -561,33 +571,35 @@ app.post('/api/bingo/check', requireAuth, (req, res) => {
 
 // Routes Défis
 const defis = [
-  { id: 1, title: "Imite le défilé", description: "Imite le défilé d'une Miss", points: 10 },
-  { id: 2, title: "Objet doré", description: "Trouve un objet doré dans la pièce", points: 15 },
-  { id: 3, title: "Discours de Miss", description: "Invente un discours de Miss en 30 secondes", points: 10 },
-  { id: 4, title: "Couronne improvisée", description: "Fabrique une couronne avec ce que tu trouves", points: 15 },
-  { id: 5, title: "Pose Miss France", description: "Fais ta meilleure pose Miss France", points: 10 }
+  { id: 1, title: "Couronne improvisée", description: "Fabrique une couronne avec ce que tu trouves", points: 15 }
 ];
 
 app.get('/api/defis', requireAuth, (req, res) => {
   const completed = db.prepare('SELECT defi_id FROM defis WHERE user_id = ?').all(req.session.userId);
   const completedIds = completed.map(d => d.defi_id);
-  
+
   const available = defis.filter(d => !completedIds.includes(d.id));
-  
+
   res.json(available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null);
 });
 
 app.post('/api/defis/complete', requireAuth, (req, res) => {
   const { defiId } = req.body;
   const defi = defis.find(d => d.id === defiId);
-  
+
   if (!defi) {
     return res.status(404).json({ error: 'Défi non trouvé' });
   }
-  
+
+  // Vérifier si déjà complété
+  const existing = db.prepare('SELECT id FROM defis WHERE user_id = ? AND defi_id = ?').get(req.session.userId, defiId);
+  if (existing) {
+    return res.status(400).json({ error: 'Défi déjà complété' });
+  }
+
   db.prepare('INSERT INTO defis (user_id, defi_id, completed, points) VALUES (?, ?, 1, ?)')
     .run(req.session.userId, defiId, defi.points);
-  
+
   // Mettre à jour le score
   const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
   const newDefisScore = (currentScore.defis_score || 0) + defi.points;
@@ -595,8 +607,125 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
 
   db.prepare('UPDATE scores SET defis_score = ?, total_score = ? WHERE user_id = ?')
     .run(newDefisScore, newTotalScore, req.session.userId);
-  
+
   res.json({ success: true, points: defi.points });
+});
+
+// ============================================
+// VOTE MEILLEUR COSTUME
+// ============================================
+
+// Récupérer la liste des autres joueurs pour voter
+app.get('/api/costume/players', requireAuth, (req, res) => {
+  const players = db.prepare(`
+    SELECT id, pseudo FROM users
+    WHERE id != ? AND is_admin = 0
+    ORDER BY pseudo
+  `).all(req.session.userId);
+
+  res.json(players);
+});
+
+// Vérifier si l'utilisateur a déjà voté
+app.get('/api/costume/my-vote', requireAuth, (req, res) => {
+  const vote = db.prepare(`
+    SELECT cv.*, u.pseudo as voted_for_pseudo
+    FROM costume_votes cv
+    JOIN users u ON cv.voted_for = u.id
+    WHERE cv.voter_id = ?
+  `).get(req.session.userId);
+
+  res.json(vote || null);
+});
+
+// Voter pour un joueur
+app.post('/api/costume/vote', requireAuth, (req, res) => {
+  const { votedForId } = req.body;
+
+  if (!votedForId) {
+    return res.status(400).json({ error: 'Sélectionne un joueur' });
+  }
+
+  // Vérifier que le joueur existe et n'est pas soi-même
+  const targetPlayer = db.prepare('SELECT id, pseudo FROM users WHERE id = ?').get(votedForId);
+  if (!targetPlayer) {
+    return res.status(404).json({ error: 'Joueur non trouvé' });
+  }
+
+  if (votedForId === req.session.userId) {
+    return res.status(400).json({ error: 'Tu ne peux pas voter pour toi-même !' });
+  }
+
+  // Vérifier si déjà voté
+  const existingVote = db.prepare('SELECT id FROM costume_votes WHERE voter_id = ?').get(req.session.userId);
+
+  if (existingVote) {
+    // Mettre à jour le vote existant
+    db.prepare('UPDATE costume_votes SET voted_for = ?, voted_at = CURRENT_TIMESTAMP WHERE voter_id = ?')
+      .run(votedForId, req.session.userId);
+  } else {
+    // Créer un nouveau vote
+    db.prepare('INSERT INTO costume_votes (voter_id, voted_for) VALUES (?, ?)')
+      .run(req.session.userId, votedForId);
+  }
+
+  res.json({ success: true, message: `Vote enregistré pour ${targetPlayer.pseudo} !` });
+});
+
+// Récupérer les résultats des votes (classement)
+app.get('/api/costume/results', requireAuth, (req, res) => {
+  const results = db.prepare(`
+    SELECT u.id, u.pseudo, COUNT(cv.id) as votes
+    FROM users u
+    LEFT JOIN costume_votes cv ON u.id = cv.voted_for
+    WHERE u.is_admin = 0
+    GROUP BY u.id
+    ORDER BY votes DESC, u.pseudo ASC
+  `).all();
+
+  const totalVotes = db.prepare('SELECT COUNT(*) as count FROM costume_votes').get().count;
+
+  res.json({ results, totalVotes });
+});
+
+// Route admin pour attribuer les points du concours costume
+app.post('/api/admin/costume-awards', requireAuth, requireAdmin, (req, res) => {
+  // Récupérer le classement
+  const results = db.prepare(`
+    SELECT u.id, u.pseudo, COUNT(cv.id) as votes
+    FROM users u
+    LEFT JOIN costume_votes cv ON u.id = cv.voted_for
+    WHERE u.is_admin = 0
+    GROUP BY u.id
+    HAVING votes > 0
+    ORDER BY votes DESC
+  `).all();
+
+  if (results.length === 0) {
+    return res.status(400).json({ error: 'Aucun vote enregistré' });
+  }
+
+  // Attribuer les points: 1er = 30pts, 2ème = 20pts, 3ème = 10pts
+  const pointsTable = [30, 20, 10];
+  let awarded = [];
+
+  results.forEach((player, index) => {
+    if (index < 3 && player.votes > 0) {
+      const points = pointsTable[index];
+
+      // Mettre à jour le score
+      const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(player.id);
+      const newDefisScore = (currentScore.defis_score || 0) + points;
+      const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + newDefisScore;
+
+      db.prepare('UPDATE scores SET defis_score = ?, total_score = ? WHERE user_id = ?')
+        .run(newDefisScore, newTotalScore, player.id);
+
+      awarded.push({ pseudo: player.pseudo, votes: player.votes, points });
+    }
+  });
+
+  res.json({ success: true, message: 'Points attribués !', awarded });
 });
 
 // Routes Classement
