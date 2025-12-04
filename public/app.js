@@ -716,23 +716,31 @@ async function loadAdminStats() {
 }
 
 async function loadAdminInterface() {
+    console.log('🔧 loadAdminInterface appelée');
+
     // Vérifier que les éléments existent
     const top15Grid = document.getElementById('admin-top15-grid');
     const top5Grid = document.getElementById('admin-top5-grid');
 
+    console.log('📦 Éléments grilles:', { top15Grid, top5Grid });
+
     if (!top15Grid || !top5Grid) {
-        console.error('Éléments admin non trouvés');
+        console.error('❌ Éléments admin non trouvés');
         return;
     }
 
     // Vérifier que candidates est chargé
+    console.log('📋 Candidates actuels:', candidates);
     if (!candidates || candidates.length === 0) {
-        console.log('Chargement des candidates...');
+        console.log('⏳ Chargement des candidates...');
         await loadCandidates();
+        console.log('✅ Candidates chargés:', candidates.length);
     }
 
     top15Grid.innerHTML = '';
     top5Grid.innerHTML = '';
+
+    console.log('📝 Création des checkboxes pour', candidates.length, 'candidates');
 
     candidates.forEach((candidate, index) => {
         // Top 15
@@ -755,6 +763,8 @@ async function loadAdminInterface() {
         `;
         top5Grid.appendChild(label5);
     });
+
+    console.log('✅ Grilles remplies - Top15:', top15Grid.children.length, 'Top5:', top5Grid.children.length);
 
     // Limiter les sélections
     document.querySelectorAll('input[data-admin-type="top15"]').forEach(cb => {
@@ -805,14 +815,19 @@ async function loadAdminInterface() {
 
     // Charger les prédictions
     await loadAdminPredictions();
+
+    console.log('✅ loadAdminInterface terminée avec succès');
 }
 
 async function loadAdminPredictions() {
+    console.log('🔧 loadAdminPredictions appelée');
     try {
         const response = await fetch('/api/admin/prediction-types');
         const predictionTypes = await response.json();
+        console.log('🎯 Prediction types reçus:', predictionTypes.length);
 
         const container = document.getElementById('admin-predictions-container');
+        console.log('📦 Container prédictions:', container);
         container.innerHTML = '';
 
         predictionTypes.forEach(pred => {
@@ -844,8 +859,9 @@ async function loadAdminPredictions() {
 
             container.appendChild(div);
         });
+        console.log('✅ loadAdminPredictions terminée - prédictions ajoutées:', container.children.length);
     } catch (error) {
-        console.error('Erreur chargement prédictions admin:', error);
+        console.error('❌ Erreur chargement prédictions admin:', error);
     }
 }
 

@@ -14,7 +14,8 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nAllow progressive validation of predictions during event\n\nMajor changes to enable real-time participation:\n\nFrontend:\n- Split pronostics section into 3 independent parts\n- Each section has its own validation button:\n  * Top 15 + Bonus (validate anytime)\n  * Top 5 + Bonus (validate anytime)\n  * Final ranking 1-5 (validate anytime)\n- Status badges show validation state per section\n- Clear instructions that players can validate progressively\n- Beautiful section borders to separate each part\n- Success messages per section\n\nBackend:\n- New route: POST /api/pronostics/top15 (save top 15 only)\n- New route: POST /api/pronostics/top5 (save top 5 only)\n- New route: POST /api/pronostics/final (save final ranking only)\n- Each route handles partial data independently\n- Auto-create or update existing pronostics entry\n\nUser Experience:\n- Players don''t need to fill everything at once\n- Can validate Top 15 when announced on TV\n- Can validate Top 5 when announced on TV  \n- Can validate final ranking at the end\n- Visual feedback with validated badges\n- No more frustration with mandatory complete forms\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit -m \"Fix admin interface loading - ensure it loads when clicking admin button\")",
       "Bash(git commit -m \"Fix accessibility: add proper label for attributes to form inputs\")",
-      "Bash(git commit -m \"Add debug logs for admin interface troubleshooting\")"
+      "Bash(git commit -m \"Add debug logs for admin interface troubleshooting\")",
+      "Bash(git commit -m \"Add comprehensive debug logs for admin interface\")"
     ],
     "deny": [],
     "ask": []
