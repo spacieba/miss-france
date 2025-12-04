@@ -37,9 +37,6 @@
             <button class="nav-btn" onclick="showSection('predictions')" data-section="predictions">
                 Prédictions
             </button>
-            <button class="nav-btn" onclick="showSection('bingo')" data-section="bingo">
-                Bingo
-            </button>
             <button class="nav-btn" onclick="showSection('defis')" data-section="defis">
                 Défis
             </button>
@@ -100,13 +97,6 @@
                         <h3>Prédictions Live</h3>
                         <p>Parie pendant l'émission</p>
                         <span class="card-points" id="predictions-score">0 pts</span>
-                    </div>
-
-                    <div class="feature-card" onclick="showSection('bingo')">
-                        <div class="card-icon">🎯</div>
-                        <h3>Bingo</h3>
-                        <p>Coche les cases en regardant</p>
-                        <span class="card-points" id="bingo-score">0 pts</span>
                     </div>
 
                     <div class="feature-card" onclick="showSection('defis')">
@@ -319,25 +309,6 @@
                 <div id="predictions-list" class="predictions-list"></div>
             </section>
 
-            <!-- Section Bingo -->
-            <section id="bingo" class="section">
-                <h2>Bingo Miss France</h2>
-                <p class="subtitle">Coche les cases quand ça arrive ! 20 pts par ligne complète</p>
-                
-                <div id="bingo-grid" class="bingo-grid"></div>
-                
-                <div class="bingo-stats">
-                    <div class="stat">
-                        <span class="stat-number" id="bingo-lines">0</span>
-                        <span class="stat-label">Lignes complètes</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-number" id="bingo-points-display">0</span>
-                        <span class="stat-label">Points</span>
-                    </div>
-                </div>
-            </section>
-
             <!-- Section Défis -->
             <section id="defis" class="section">
                 <h2>Défis & Votes</h2>
@@ -434,7 +405,6 @@
                                 <th>Culture G</th>
                                 <th>Pronostics</th>
                                 <th>Prédictions</th>
-                                <th>Bingo</th>
                                 <th>Défis</th>
                                 <th>Total</th>
                             </tr>
@@ -511,18 +481,6 @@
                         </div>
                     </div>
 
-                    <!-- Bingo -->
-                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #2ecc71;">
-                        <h3 style="color: #2ecc71; margin: 0 0 15px 0;">🎯 Bingo</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Coche les cases quand ça arrive à l'écran !</p>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0;">• Chaque ligne complétée : <strong style="color: var(--gold);">20 pts</strong></li>
-                        </ul>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(46, 204, 113, 0.2); border-radius: 8px;">
-                            <strong style="color: #2ecc71;">Maximum possible : ~60 pts</strong> (3 lignes)
-                        </div>
-                    </div>
-
                     <!-- Défis -->
                     <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #f39c12;">
                         <h3 style="color: #f39c12; margin: 0 0 15px 0;">🌟 Défis</h3>
@@ -542,7 +500,7 @@
                     <!-- Total -->
                     <div class="points-card" style="background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%); padding: 30px; border-radius: 15px; text-align: center;">
                         <h3 style="color: black; margin: 0 0 10px 0; font-size: 1.5em;">🎉 TOTAL MAXIMUM</h3>
-                        <p style="color: rgba(0,0,0,0.7); font-size: 3em; font-weight: bold; margin: 0;">~570 pts</p>
+                        <p style="color: rgba(0,0,0,0.7); font-size: 3em; font-weight: bold; margin: 0;">~510 pts</p>
                         <p style="color: rgba(0,0,0,0.6); margin-top: 10px;">Bonne chance à tous !</p>
                     </div>
 

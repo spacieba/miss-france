@@ -3,8 +3,6 @@ let currentUser = null;
 let candidates = [];
 let quizQuestions = [];
 let currentQuestionIndex = 0;
-let bingoGrid = [];
-let bingoChecked = [];
 let isAdmin = false;
 
 // Initialisation
@@ -56,7 +54,6 @@ function updateScoreDisplay(score) {
     document.getElementById('quiz-score').textContent = `${score.quiz_score} pts`;
     document.getElementById('pronostics-score').textContent = `${score.pronostics_score} pts`;
     document.getElementById('predictions-score').textContent = `${score.predictions_score} pts`;
-    document.getElementById('bingo-score').textContent = `${score.bingo_score} pts`;
     document.getElementById('defis-score').textContent = `${score.defis_score} pts`;
 
     // Culture G score
@@ -104,8 +101,6 @@ function showSection(sectionName) {
         loadCultureGSection();
     } else if (sectionName === 'predictions') {
         loadPredictionsSection();
-    } else if (sectionName === 'bingo') {
-        loadBingoSection();
     } else if (sectionName === 'defis') {
         loadDefisSection();
     } else if (sectionName === 'leaderboard') {
@@ -648,75 +643,9 @@ async function savePrediction(predictionType) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ predictionType, value })
     });
-    
+
     alert('✅ Prédiction enregistrée !');
     input.disabled = true;
-}
-
-// === BINGO ===
-
-async function loadBingoSection() {
-    const response = await fetch('/api/bingo/items');
-    bingoGrid = await response.json();
-    bingoChecked = new Array(25).fill(false);
-    
-    const container = document.getElementById('bingo-grid');
-    container.innerHTML = '';
-    
-    bingoGrid.forEach((item, index) => {
-        const cell = document.createElement('div');
-        cell.className = 'bingo-cell';
-        cell.textContent = item;
-        cell.onclick = () => toggleBingoCell(index);
-        cell.dataset.index = index;
-        container.appendChild(cell);
-    });
-}
-
-function toggleBingoCell(index) {
-    bingoChecked[index] = !bingoChecked[index];
-    const cell = document.querySelector(`.bingo-cell[data-index="${index}"]`);
-    cell.classList.toggle('checked');
-    
-    checkBingoLines();
-}
-
-async function checkBingoLines() {
-    let completedLines = 0;
-    
-    // Vérifier les lignes horizontales
-    for (let i = 0; i < 5; i++) {
-        if (bingoChecked.slice(i * 5, i * 5 + 5).every(c => c)) {
-            completedLines++;
-        }
-    }
-    
-    // Vérifier les colonnes
-    for (let i = 0; i < 5; i++) {
-        if ([0, 1, 2, 3, 4].every(j => bingoChecked[i + j * 5])) {
-            completedLines++;
-        }
-    }
-    
-    // Vérifier les diagonales
-    if ([0, 6, 12, 18, 24].every(i => bingoChecked[i])) {
-        completedLines++;
-    }
-    if ([4, 8, 12, 16, 20].every(i => bingoChecked[i])) {
-        completedLines++;
-    }
-    
-    document.getElementById('bingo-lines').textContent = completedLines;
-    document.getElementById('bingo-points-display').textContent = completedLines * 20;
-    
-    // Sauvegarder
-    await fetch('/api/bingo/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grid: bingoChecked, completedLines })
-    });
-    
-    loadScore();
 }
 
 // === DEFIS ===
@@ -1133,7 +1062,6 @@ async function loadLeaderboard() {
             <td>${player.culture_g_score || 0}</td>
             <td>${player.pronostics_score}</td>
             <td>${player.predictions_score}</td>
-            <td>${player.bingo_score}</td>
             <td>${player.defis_score}</td>
             <td class="total-score">${player.total_score}</td>
         `;
