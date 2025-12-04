@@ -34,9 +34,6 @@
             <button class="nav-btn" onclick="showSection('culture-g')" data-section="culture-g">
                 Culture G
             </button>
-            <button class="nav-btn" onclick="showSection('predictions')" data-section="predictions">
-                Prédictions
-            </button>
             <button class="nav-btn" onclick="showSection('defis')" data-section="defis">
                 Défis
             </button>
@@ -90,13 +87,6 @@
                         <h3>Culture G Officiel</h3>
                         <p>Le vrai test des Miss !</p>
                         <span class="card-points" id="culture-g-score">0 pts</span>
-                    </div>
-
-                    <div class="feature-card" onclick="showSection('predictions')">
-                        <div class="card-icon">🎭</div>
-                        <h3>Prédictions Live</h3>
-                        <p>Parie pendant l'émission</p>
-                        <span class="card-points" id="predictions-score">0 pts</span>
                     </div>
 
                     <div class="feature-card" onclick="showSection('defis')">
@@ -301,14 +291,6 @@
                 </div>
             </section>
 
-            <!-- Section Prédictions Live -->
-            <section id="predictions" class="section">
-                <h2>Prédictions Live</h2>
-                <p class="subtitle">Fais tes prédictions pendant l'émission !</p>
-
-                <div id="predictions-list" class="predictions-list"></div>
-            </section>
-
             <!-- Section Défis -->
             <section id="defis" class="section">
                 <h2>Défis & Votes</h2>
@@ -404,7 +386,6 @@
                                 <th>Quiz</th>
                                 <th>Culture G</th>
                                 <th>Pronostics</th>
-                                <th>Prédictions</th>
                                 <th>Défis</th>
                                 <th>Total</th>
                             </tr>
@@ -466,21 +447,6 @@
                         </div>
                     </div>
 
-                    <!-- Prédictions Live -->
-                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #e74c3c;">
-                        <h3 style="color: #e74c3c; margin: 0 0 15px 0;">🎭 Prédictions Live</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Paris en direct pendant l'émission !</p>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Première question du public : <strong style="color: var(--gold);">10 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Miss qui trébuche : <strong style="color: var(--gold);">15 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Couleur robe Miss France : <strong style="color: var(--gold);">10 pts</strong></li>
-                            <li style="padding: 8px 0;">• Premier mot de Miss France : <strong style="color: var(--gold);">20 pts</strong></li>
-                        </ul>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(231, 76, 60, 0.2); border-radius: 8px;">
-                            <strong style="color: #e74c3c;">Maximum possible : 55 pts</strong>
-                        </div>
-                    </div>
-
                     <!-- Défis -->
                     <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #f39c12;">
                         <h3 style="color: #f39c12; margin: 0 0 15px 0;">🌟 Défis</h3>
@@ -500,7 +466,7 @@
                     <!-- Total -->
                     <div class="points-card" style="background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%); padding: 30px; border-radius: 15px; text-align: center;">
                         <h3 style="color: black; margin: 0 0 10px 0; font-size: 1.5em;">🎉 TOTAL MAXIMUM</h3>
-                        <p style="color: rgba(0,0,0,0.7); font-size: 3em; font-weight: bold; margin: 0;">~510 pts</p>
+                        <p style="color: rgba(0,0,0,0.7); font-size: 3em; font-weight: bold; margin: 0;">~455 pts</p>
                         <p style="color: rgba(0,0,0,0.6); margin-top: 10px;">Bonne chance à tous !</p>
                     </div>
 
@@ -539,10 +505,6 @@
                         <div class="stat-item">
                             <span class="stat-label">Pronostics</span>
                             <span class="stat-value" id="admin-stat-pronostics">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Prédictions</span>
-                            <span class="stat-value" id="admin-stat-predictions">-</span>
                         </div>
                     </div>
                 </div>
@@ -624,12 +586,6 @@
                         ✅ VALIDER LE CLASSEMENT FINAL + PRONO D'OR (scores finaux)
                     </button>
                     <div id="step3-message" class="admin-step-message"></div>
-                </div>
-
-                <!-- Prédictions Live -->
-                <div class="admin-card">
-                    <h3>🎯 Validation des Prédictions Live</h3>
-                    <div id="admin-predictions-container"></div>
                 </div>
 
                 <!-- Vote Costume Admin -->

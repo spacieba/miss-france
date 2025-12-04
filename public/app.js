@@ -53,7 +53,6 @@ function updateScoreDisplay(score) {
     document.getElementById('total-score').textContent = score.total_score;
     document.getElementById('quiz-score').textContent = `${score.quiz_score} pts`;
     document.getElementById('pronostics-score').textContent = `${score.pronostics_score} pts`;
-    document.getElementById('predictions-score').textContent = `${score.predictions_score} pts`;
     document.getElementById('defis-score').textContent = `${score.defis_score} pts`;
 
     // Culture G score
@@ -99,8 +98,6 @@ function showSection(sectionName) {
         loadQuizSection();
     } else if (sectionName === 'culture-g') {
         loadCultureGSection();
-    } else if (sectionName === 'predictions') {
-        loadPredictionsSection();
     } else if (sectionName === 'defis') {
         loadDefisSection();
     } else if (sectionName === 'leaderboard') {
@@ -591,63 +588,6 @@ function endQuiz() {
     alert('🎉 Quiz terminé ! Consulte ton score dans le classement !');
 }
 
-// === PREDICTIONS LIVE ===
-
-async function loadPredictionsSection() {
-    const response = await fetch('/api/predictions/types');
-    const predictionTypes = await response.json();
-    
-    const container = document.getElementById('predictions-list');
-    container.innerHTML = '';
-    
-    predictionTypes.forEach(pred => {
-        const card = document.createElement('div');
-        card.className = 'prediction-card';
-        
-        let inputHTML = '';
-        if (pred.type === 'number') {
-            inputHTML = `<input type="number" id="pred-${pred.id}" class="prediction-input" placeholder="Nombre">`;
-        } else if (pred.options) {
-            inputHTML = `
-                <select id="pred-${pred.id}" class="prediction-select">
-                    <option value="">-- Choisis --</option>
-                    ${pred.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                </select>
-            `;
-        } else {
-            inputHTML = `<input type="text" id="pred-${pred.id}" class="prediction-input" placeholder="Ta prédiction">`;
-        }
-        
-        card.innerHTML = `
-            <h4>${pred.label}</h4>
-            <p class="prediction-points">${pred.points} points</p>
-            ${inputHTML}
-            <button onclick="savePrediction('${pred.id}')" class="btn-primary">Valider</button>
-        `;
-        
-        container.appendChild(card);
-    });
-}
-
-async function savePrediction(predictionType) {
-    const input = document.getElementById(`pred-${predictionType}`);
-    const value = input.value;
-    
-    if (!value) {
-        alert('Entre une prédiction !');
-        return;
-    }
-    
-    await fetch('/api/predictions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ predictionType, value })
-    });
-
-    alert('✅ Prédiction enregistrée !');
-    input.disabled = true;
-}
-
 // === DEFIS ===
 
 async function loadDefisSection() {
@@ -1061,7 +1001,6 @@ async function loadLeaderboard() {
             <td>${player.quiz_score}</td>
             <td>${player.culture_g_score || 0}</td>
             <td>${player.pronostics_score}</td>
-            <td>${player.predictions_score}</td>
             <td>${player.defis_score}</td>
             <td class="total-score">${player.total_score}</td>
         `;
@@ -1095,13 +1034,11 @@ async function loadAdminStats() {
 
         const usersEl = document.getElementById('admin-stat-users');
         const pronosticsEl = document.getElementById('admin-stat-pronostics');
-        const predictionsEl = document.getElementById('admin-stat-predictions');
 
-        console.log('Elements trouvés:', { usersEl, pronosticsEl, predictionsEl });
+        console.log('Elements trouvés:', { usersEl, pronosticsEl });
 
         if (usersEl) usersEl.textContent = stats.totalUsers || 0;
         if (pronosticsEl) pronosticsEl.textContent = stats.totalPronostics || 0;
-        if (predictionsEl) predictionsEl.textContent = stats.totalPredictions || 0;
     } catch (error) {
         console.error('❌ Erreur chargement stats admin:', error);
     }
@@ -1177,9 +1114,6 @@ async function loadAdminInterface() {
 
     // Mettre à jour l'affichage de l'étape actuelle ET désactiver les éléments déjà validés
     updateAdminStepDisplay();
-
-    // Charger les prédictions
-    await loadAdminPredictions();
 
     // Charger le preview des votes costume
     await loadAdminCostumePreview();
@@ -1265,86 +1199,6 @@ async function adminAwardCostumePoints() {
     }
 }
 
-async function loadAdminPredictions() {
-    console.log('🔧 loadAdminPredictions appelée');
-    try {
-        const response = await fetch('/api/admin/prediction-types');
-        const predictionTypes = await response.json();
-        console.log('🎯 Prediction types reçus:', predictionTypes.length);
-
-        const container = document.getElementById('admin-predictions-container');
-        console.log('📦 Container prédictions:', container);
-        container.innerHTML = '';
-
-        predictionTypes.forEach(pred => {
-            const div = document.createElement('div');
-            div.className = 'admin-prediction-item';
-
-            let inputHTML = '';
-            if (pred.type === 'number') {
-                inputHTML = `<input type="number" id="admin-pred-${pred.id}" placeholder="Nombre réel">`;
-            } else if (pred.options) {
-                inputHTML = `
-                    <select id="admin-pred-${pred.id}">
-                        <option value="">-- Sélectionne --</option>
-                        ${pred.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                    </select>
-                `;
-            } else {
-                inputHTML = `<input type="text" id="admin-pred-${pred.id}" placeholder="Valeur réelle">`;
-            }
-
-            div.innerHTML = `
-                <h4>${pred.label}</h4>
-                <div class="admin-prediction-input-group">
-                    ${inputHTML}
-                    <button onclick="validatePrediction('${pred.id}')" class="btn-admin-small">Valider</button>
-                </div>
-                <div id="admin-pred-status-${pred.id}" style="margin-top: 10px; color: green; font-weight: bold;"></div>
-            `;
-
-            container.appendChild(div);
-        });
-        console.log('✅ loadAdminPredictions terminée - prédictions ajoutées:', container.children.length);
-    } catch (error) {
-        console.error('❌ Erreur chargement prédictions admin:', error);
-    }
-}
-
-async function validatePrediction(predictionId) {
-    const input = document.getElementById(`admin-pred-${predictionId}`);
-    const value = input.value;
-
-    if (!value) {
-        alert('Entre une valeur !');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/admin/validate-prediction', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                predictionType: predictionId,
-                correctValue: value
-            })
-        });
-
-        const data = await response.json();
-
-        const status = document.getElementById(`admin-pred-status-${predictionId}`);
-        status.textContent = `✅ Validé ! ${data.usersAwarded || 0} joueur(s) ont gagné des points`;
-
-        await loadAdminStats();
-        await loadLeaderboard();
-
-        setTimeout(() => {
-            status.textContent = '';
-        }, 5000);
-    } catch (error) {
-        alert('Erreur lors de la validation');
-    }
-}
 
 // Variable pour stocker les résultats officiels
 let officialResults = { current_step: 0, top15: [], top5: [], classement_final: [] };

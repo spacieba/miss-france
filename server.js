@@ -556,13 +556,13 @@ app.post('/api/quiz/answer', requireAuth, (req, res) => {
   // Mettre à jour le score
   const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
   const newQuizScore = (currentScore.quiz_score || 0) + points;
-  const newTotalScore = newQuizScore + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+  const newTotalScore = newQuizScore + (currentScore.pronostics_score || 0) + (currentScore.defis_score || 0) + (currentScore.culture_g_score || 0);
 
   db.prepare('UPDATE scores SET quiz_score = ?, total_score = ? WHERE user_id = ?')
     .run(newQuizScore, newTotalScore, req.session.userId);
 
-  res.json({ 
-    correct: isCorrect, 
+  res.json({
+    correct: isCorrect,
     points: points,
     correctAnswer: question.answers[question.correct]
   });
@@ -911,38 +911,6 @@ app.get('/api/pronostics', requireAuth, (req, res) => {
   res.json(pronostics || null);
 });
 
-// Routes Prédictions live
-const predictionTypes = [
-  { id: 'first_eliminated', label: 'Qui sera éliminée en premier du top 15 ?', points: 5 },
-  { id: 'first_tears', label: 'Quelle région va pleurer en premier ?', points: 3 },
-  { id: 'miss_trebuche', label: 'Quelle Miss va trébucher en défilant ?', points: 10 },
-  { id: 'dress_color', label: 'Couleur de la robe de la gagnante ?', points: 5, options: ['Rouge', 'Bleu', 'Blanc', 'Noir', 'Doré', 'Argenté'] }
-];
-
-app.get('/api/predictions/types', requireAuth, (req, res) => {
-  res.json(predictionTypes);
-});
-
-app.post('/api/predictions', requireAuth, (req, res) => {
-  const { predictionType, value } = req.body;
-
-  // Vérifier si une prédiction existe déjà pour ce type
-  const existing = db.prepare('SELECT id FROM predictions WHERE user_id = ? AND prediction_type = ?')
-    .get(req.session.userId, predictionType);
-
-  if (existing) {
-    // Mettre à jour la prédiction existante
-    db.prepare('UPDATE predictions SET prediction_value = ? WHERE id = ?')
-      .run(value, existing.id);
-  } else {
-    // Créer une nouvelle prédiction
-    db.prepare('INSERT INTO predictions (user_id, prediction_type, prediction_value) VALUES (?, ?, ?)')
-      .run(req.session.userId, predictionType, value);
-  }
-
-  res.json({ success: true });
-});
-
 // Routes Défis
 const defis = [
   { id: 1, title: "Couronne improvisée", description: "Fabrique une couronne avec ce que tu trouves", points: 15 }
@@ -977,7 +945,7 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
   // Mettre à jour le score
   const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
   const newDefisScore = (currentScore.defis_score || 0) + defi.points;
-  const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + newDefisScore;
+  const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + newDefisScore + (currentScore.culture_g_score || 0);
 
   db.prepare('UPDATE scores SET defis_score = ?, total_score = ? WHERE user_id = ?')
     .run(newDefisScore, newTotalScore, req.session.userId);
@@ -1187,7 +1155,7 @@ app.post('/api/admin/costume-awards', requireAuth, requireAdmin, (req, res) => {
       // Mettre à jour le score
       const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(player.id);
       const newDefisScore = (currentScore.defis_score || 0) + points;
-      const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + newDefisScore;
+      const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + newDefisScore + (currentScore.culture_g_score || 0);
 
       db.prepare('UPDATE scores SET defis_score = ?, total_score = ? WHERE user_id = ?')
         .run(newDefisScore, newTotalScore, player.id);
@@ -1236,66 +1204,18 @@ app.get('/api/admin/candidates', requireAuth, requireAdmin, (req, res) => {
   res.json(candidates);
 });
 
-// Récupérer les types de prédictions (pour admin)
-app.get('/api/admin/prediction-types', requireAuth, requireAdmin, (req, res) => {
-  console.log('🔐 Admin prediction-types requested by:', req.session.pseudo);
-  res.json(predictionTypes);
-});
-
 // Récupérer les statistiques
 app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
   console.log('🔐 Admin stats requested by:', req.session.pseudo, 'isAdmin:', req.session.isAdmin);
   const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
   const totalPronostics = db.prepare('SELECT COUNT(*) as count FROM pronostics').get().count;
-  const totalPredictions = db.prepare('SELECT COUNT(*) as count FROM predictions').get().count;
 
-  console.log('📊 Stats:', { totalUsers, totalPronostics, totalPredictions });
+  console.log('📊 Stats:', { totalUsers, totalPronostics });
 
   res.json({
     totalUsers,
-    totalPronostics,
-    totalPredictions
+    totalPronostics
   });
-});
-
-// Valider une prédiction individuelle
-app.post('/api/admin/validate-prediction', requireAuth, requireAdmin, (req, res) => {
-  const { predictionType, correctValue } = req.body;
-
-  // Récupérer toutes les prédictions de ce type
-  const userPredictions = db.prepare('SELECT * FROM predictions WHERE prediction_type = ?').all(predictionType);
-
-  let usersAwarded = 0;
-
-  userPredictions.forEach(pred => {
-    // Vérifier si la prédiction est correcte (avec trim pour ignorer les espaces)
-    let isCorrect = false;
-
-    if (pred.prediction_value.toString().toLowerCase().trim() === correctValue.toString().toLowerCase().trim()) {
-      isCorrect = true;
-    }
-
-    if (isCorrect) {
-      // Trouver les points pour ce type de prédiction
-      const predType = predictionTypes.find(p => p.id === predictionType);
-      const points = predType ? predType.points : 5;
-
-      // Mettre à jour les points de la prédiction
-      db.prepare('UPDATE predictions SET points = ? WHERE id = ?').run(points, pred.id);
-
-      // Mettre à jour le score de l'utilisateur
-      const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(pred.user_id);
-      const newPredictionsScore = (currentScore.predictions_score || 0) + points;
-      const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) + newPredictionsScore + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
-
-      db.prepare('UPDATE scores SET predictions_score = ?, total_score = ? WHERE user_id = ?')
-        .run(newPredictionsScore, newTotalScore, pred.user_id);
-
-      usersAwarded++;
-    }
-  });
-
-  res.json({ success: true, usersAwarded });
 });
 
 // Route pour obtenir les résultats officiels validés (accessible à tous les utilisateurs)
@@ -1359,7 +1279,7 @@ app.post('/api/admin/validate-top15', requireAuth, requireAdmin, (req, res) => {
 
     // Mettre à jour le score
     const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
-    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.defis_score || 0) + (currentScore.culture_g_score || 0);
 
     db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
       .run(pronosticsScore, newTotalScore, prono.user_id);
@@ -1445,7 +1365,7 @@ app.post('/api/admin/validate-top5', requireAuth, requireAdmin, (req, res) => {
 
     // Mettre à jour le score
     const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
-    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.defis_score || 0) + (currentScore.culture_g_score || 0);
 
     db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
       .run(pronosticsScore, newTotalScore, prono.user_id);
@@ -1549,7 +1469,7 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
 
     // Mettre à jour le score
     const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
-    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+    const newTotalScore = (currentScore.quiz_score || 0) + pronosticsScore + (currentScore.defis_score || 0) + (currentScore.culture_g_score || 0);
 
     db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
       .run(pronosticsScore, newTotalScore, prono.user_id);
@@ -1622,7 +1542,6 @@ app.post('/api/admin/validate-culture-g', requireAuth, requireAdmin, (req, res) 
     const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(user.id);
     const newCultureGScore = points;
     const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) +
-                          (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) +
                           (currentScore.defis_score || 0) + newCultureGScore;
 
     db.prepare('UPDATE scores SET culture_g_score = ?, total_score = ? WHERE user_id = ?')
@@ -1711,7 +1630,7 @@ app.post('/api/admin/validate-results', requireAuth, requireAdmin, (req, res) =>
 
     // Mettre à jour le score
     const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
-    const newTotalScore = (currentScore.quiz_score || 0) + score + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+    const newTotalScore = (currentScore.quiz_score || 0) + score + (currentScore.defis_score || 0) + (currentScore.culture_g_score || 0);
 
     db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
       .run(score, newTotalScore, prono.user_id);
