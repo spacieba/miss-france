@@ -58,6 +58,12 @@ function updateScoreDisplay(score) {
     document.getElementById('predictions-score').textContent = `${score.predictions_score} pts`;
     document.getElementById('bingo-score').textContent = `${score.bingo_score} pts`;
     document.getElementById('defis-score').textContent = `${score.defis_score} pts`;
+
+    // Culture G score
+    const cultureGScoreEl = document.getElementById('culture-g-score');
+    if (cultureGScoreEl) {
+        cultureGScoreEl.textContent = `${score.culture_g_score || 0} pts`;
+    }
 }
 
 // Charger le score
@@ -94,6 +100,8 @@ function showSection(sectionName) {
         loadPronosticsSection();
     } else if (sectionName === 'quiz') {
         loadQuizSection();
+    } else if (sectionName === 'culture-g') {
+        loadCultureGSection();
     } else if (sectionName === 'predictions') {
         loadPredictionsSection();
     } else if (sectionName === 'bingo') {
@@ -1547,4 +1555,304 @@ async function adminValidateFinal() {
 async function adminValidateResults() {
     // Cette fonction est conservée pour compatibilité mais n'est plus utilisée
     alert('Utilise maintenant les boutons de validation par étape !');
+}
+
+// ============================================
+// QUESTIONNAIRE CULTURE GÉNÉRALE OFFICIEL
+// ============================================
+
+let cultureGData = null;
+let currentCultureGCategory = null;
+let cultureGAnswers = {};
+
+const categoryEmojis = {
+    actualite: '📰',
+    histoire_geo: '🌍',
+    arts: '🎨',
+    sciences: '🔬',
+    probleme: '🧮',
+    miss: '👑',
+    francais: '📝',
+    anglais: '🇬🇧',
+    logique: '🧩'
+};
+
+async function loadCultureGSection() {
+    try {
+        // Charger les questions et la progression
+        const [questionsRes, progressRes] = await Promise.all([
+            fetch('/api/culture-g/questions'),
+            fetch('/api/culture-g/progress')
+        ]);
+
+        cultureGData = await questionsRes.json();
+        const progress = await progressRes.json();
+
+        // Mettre à jour les stats
+        document.getElementById('culture-g-answered').textContent = progress.totalAnswers;
+        document.getElementById('culture-g-total').textContent = progress.totalQuestions;
+        document.getElementById('culture-g-points-display').textContent = progress.totalPoints;
+        document.getElementById('culture-g-max').textContent = progress.maxPoints;
+
+        // Afficher les catégories
+        renderCultureGCategories(progress.categoryProgress);
+
+    } catch (error) {
+        console.error('Erreur chargement Culture G:', error);
+    }
+}
+
+function renderCultureGCategories(categoryProgress) {
+    const container = document.getElementById('culture-g-categories');
+    container.innerHTML = '';
+
+    Object.entries(cultureGData.categories).forEach(([key, category]) => {
+        const progress = categoryProgress[key] || { answered: 0, total: category.questions.length, points: 0, maxPoints: category.totalPoints };
+        const isCompleted = progress.answered >= progress.total;
+        const emoji = categoryEmojis[key] || '📚';
+
+        const card = document.createElement('div');
+        card.className = 'culture-g-category-card';
+        card.style.cssText = `
+            background: ${isCompleted ? 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)' : 'var(--noir-soft)'};
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            cursor: ${isCompleted ? 'default' : 'pointer'};
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid ${isCompleted ? '#27ae60' : 'transparent'};
+        `;
+
+        if (!isCompleted) {
+            card.onmouseenter = () => { card.style.transform = 'translateY(-3px)'; card.style.boxShadow = '0 5px 20px rgba(212, 175, 55, 0.3)'; };
+            card.onmouseleave = () => { card.style.transform = 'translateY(0)'; card.style.boxShadow = 'none'; };
+            card.onclick = () => openCultureGCategory(key);
+        }
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0 0 5px 0; color: ${isCompleted ? 'white' : 'var(--gold)'};">
+                        ${emoji} ${category.name}
+                    </h3>
+                    <p style="margin: 0; color: ${isCompleted ? 'rgba(255,255,255,0.8)' : 'var(--gris-elegant)'}; font-size: 0.9em;">
+                        ${category.questions.length} questions • ${category.totalPoints} points max
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 1.5em; color: ${isCompleted ? 'white' : 'var(--gold)'};">
+                        ${isCompleted ? '✅' : `${progress.answered}/${progress.total}`}
+                    </span>
+                    ${isCompleted ? `<br><span style="color: rgba(255,255,255,0.9); font-size: 0.9em;">${progress.points}/${progress.maxPoints} pts</span>` : ''}
+                </div>
+            </div>
+            ${!isCompleted && progress.answered > 0 ? `
+                <div style="margin-top: 10px; background: rgba(0,0,0,0.2); border-radius: 10px; height: 8px; overflow: hidden;">
+                    <div style="background: var(--gold); height: 100%; width: ${(progress.answered / progress.total) * 100}%;"></div>
+                </div>
+            ` : ''}
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+function openCultureGCategory(categoryKey) {
+    currentCultureGCategory = categoryKey;
+    cultureGAnswers = {};
+
+    const category = cultureGData.categories[categoryKey];
+
+    document.getElementById('culture-g-categories').style.display = 'none';
+    document.querySelector('.culture-g-intro').style.display = 'none';
+    document.getElementById('culture-g-quiz-area').style.display = 'block';
+    document.getElementById('culture-g-category-name').textContent = `${categoryEmojis[categoryKey] || '📚'} ${category.name}`;
+    document.getElementById('culture-g-results').style.display = 'none';
+    document.getElementById('culture-g-submit-btn').style.display = 'block';
+
+    const container = document.getElementById('culture-g-questions-container');
+    container.innerHTML = '';
+
+    category.questions.forEach((question, index) => {
+        if (question.answered) return; // Skip answered questions
+
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'culture-g-question';
+        questionDiv.style.cssText = `
+            background: var(--noir-soft);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--gold);
+        `;
+
+        let answersHTML = '';
+
+        if (question.type === 'single') {
+            answersHTML = question.answers.map((answer, i) => `
+                <label style="display: flex; align-items: center; padding: 12px; background: var(--noir-medium); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s;">
+                    <input type="radio" name="q-${question.id}" value="${i}" style="margin-right: 10px; accent-color: var(--gold);">
+                    <span>${answer}</span>
+                </label>
+            `).join('');
+        } else if (question.type === 'multiple') {
+            answersHTML = `<p style="color: var(--gris-elegant); font-size: 0.9em; margin-bottom: 10px;">⚠️ Plusieurs réponses possibles</p>` +
+                question.answers.map((answer, i) => `
+                <label style="display: flex; align-items: center; padding: 12px; background: var(--noir-medium); border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s;">
+                    <input type="checkbox" name="q-${question.id}" value="${i}" style="margin-right: 10px; accent-color: var(--gold);">
+                    <span>${answer}</span>
+                </label>
+            `).join('');
+        } else if (question.type === 'text') {
+            answersHTML = `
+                <input type="text" id="q-${question.id}" placeholder="Ta réponse..." style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--gold); background: var(--noir-medium); color: white; font-size: 1em;">
+            `;
+        }
+
+        // Bonus question if any
+        let bonusHTML = '';
+        if (question.bonus) {
+            bonusHTML = `
+                <div style="margin-top: 15px; padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 10px; border: 1px dashed var(--gold);">
+                    <label style="color: var(--gold); font-weight: bold;">⭐ BONUS (+${question.bonus.points} pt): ${question.bonus.question}</label>
+                    <input type="text" id="bonus-${question.id}" placeholder="Réponse bonus..." style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--gold); background: var(--noir-medium); color: white;">
+                </div>
+            `;
+        }
+
+        questionDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <span style="background: var(--gold); color: black; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em;">
+                    Q${index + 1}
+                </span>
+                <span style="color: var(--gold); font-size: 0.9em;">${question.points} pt${question.points > 1 ? 's' : ''}</span>
+            </div>
+            <h4 style="margin: 0 0 15px 0; color: var(--blanc-perle); line-height: 1.4;">${question.question}</h4>
+            ${question.info ? `<p style="color: var(--gris-elegant); font-size: 0.85em; margin-bottom: 15px; font-style: italic;">💡 ${question.info}</p>` : ''}
+            <div class="answers-area">${answersHTML}</div>
+            ${bonusHTML}
+        `;
+
+        container.appendChild(questionDiv);
+    });
+
+    // Check if all questions already answered
+    const unansweredCount = category.questions.filter(q => !q.answered).length;
+    if (unansweredCount === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <span style="font-size: 4em;">✅</span>
+                <h3 style="color: var(--gold); margin: 20px 0;">Catégorie terminée !</h3>
+                <p style="color: var(--gris-elegant);">Tu as déjà répondu à toutes les questions de cette catégorie.</p>
+            </div>
+        `;
+        document.getElementById('culture-g-submit-btn').style.display = 'none';
+    }
+}
+
+function closeCultureGCategory() {
+    document.getElementById('culture-g-categories').style.display = 'block';
+    document.querySelector('.culture-g-intro').style.display = 'block';
+    document.getElementById('culture-g-quiz-area').style.display = 'none';
+    currentCultureGCategory = null;
+    cultureGAnswers = {};
+
+    // Reload section to update progress
+    loadCultureGSection();
+}
+
+async function submitCultureGCategory() {
+    if (!currentCultureGCategory) return;
+
+    const category = cultureGData.categories[currentCultureGCategory];
+    const answers = {};
+
+    // Collect all answers
+    category.questions.forEach(question => {
+        if (question.answered) return;
+
+        let mainAnswer = null;
+        let bonusAnswer = null;
+
+        if (question.type === 'single') {
+            const selected = document.querySelector(`input[name="q-${question.id}"]:checked`);
+            if (selected) mainAnswer = parseInt(selected.value);
+        } else if (question.type === 'multiple') {
+            const selected = document.querySelectorAll(`input[name="q-${question.id}"]:checked`);
+            mainAnswer = Array.from(selected).map(s => parseInt(s.value));
+        } else if (question.type === 'text') {
+            const input = document.getElementById(`q-${question.id}`);
+            if (input) mainAnswer = input.value.trim();
+        }
+
+        // Bonus answer
+        if (question.bonus) {
+            const bonusInput = document.getElementById(`bonus-${question.id}`);
+            if (bonusInput) bonusAnswer = bonusInput.value.trim();
+        }
+
+        if (mainAnswer !== null && mainAnswer !== '' && (Array.isArray(mainAnswer) ? mainAnswer.length > 0 : true)) {
+            answers[question.id] = { main: mainAnswer, bonus: bonusAnswer };
+        }
+    });
+
+    if (Object.keys(answers).length === 0) {
+        alert('Réponds à au moins une question avant de valider !');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/culture-g/submit-category', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categoryKey: currentCultureGCategory, answers })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Show results
+            const resultsDiv = document.getElementById('culture-g-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = `
+                <div style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); padding: 25px; border-radius: 15px; text-align: center; margin-top: 20px;">
+                    <h3 style="margin: 0 0 15px 0; color: white;">🎉 Réponses enregistrées !</h3>
+                    <div style="display: flex; justify-content: center; gap: 30px;">
+                        <div>
+                            <span style="font-size: 2.5em; color: white;">${data.correctCount}</span>
+                            <p style="margin: 0; color: rgba(255,255,255,0.8);">Bonnes réponses</p>
+                        </div>
+                        <div>
+                            <span style="font-size: 2.5em; color: white;">+${data.totalPoints}</span>
+                            <p style="margin: 0; color: rgba(255,255,255,0.8);">Points gagnés</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <h4 style="color: var(--gold); margin-bottom: 15px;">📋 Détails des réponses :</h4>
+                    ${data.results.map(r => `
+                        <div style="background: var(--noir-medium); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: ${r.isCorrect ? '#27ae60' : '#e74c3c'};">
+                                ${r.isCorrect ? '✅' : '❌'} ${r.questionId}
+                            </span>
+                            <span style="color: var(--gris-elegant); font-size: 0.9em;">
+                                ${!r.isCorrect ? `Réponse: ${r.correctAnswer}` : `+${r.points} pt${r.points > 1 ? 's' : ''}`}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            document.getElementById('culture-g-submit-btn').style.display = 'none';
+            document.getElementById('culture-g-questions-container').innerHTML = '';
+
+            // Update scores
+            loadScore();
+        } else {
+            alert('Erreur: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Erreur soumission:', error);
+        alert('Erreur lors de la soumission');
+    }
 }

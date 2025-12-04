@@ -25,6 +25,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     quiz_score INTEGER DEFAULT 0,
+    culture_g_score REAL DEFAULT 0,
     pronostics_score INTEGER DEFAULT 0,
     predictions_score INTEGER DEFAULT 0,
     bingo_score INTEGER DEFAULT 0,
@@ -93,6 +94,16 @@ db.exec(`
     UNIQUE(voter_id)
   );
 
+  CREATE TABLE IF NOT EXISTS culture_g_answers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    question_id TEXT,
+    answer TEXT,
+    is_correct BOOLEAN,
+    points INTEGER DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
   CREATE TABLE IF NOT EXISTS official_results (
     id INTEGER PRIMARY KEY,
     top15 TEXT,
@@ -110,6 +121,14 @@ db.exec(`
 try {
   db.exec('ALTER TABLE pronostics ADD COLUMN prono_or TEXT');
   console.log('✅ Colonne prono_or ajoutée à la table pronostics');
+} catch (e) {
+  // La colonne existe déjà, c'est OK
+}
+
+// Migration: Ajouter la colonne culture_g_score si elle n'existe pas
+try {
+  db.exec('ALTER TABLE scores ADD COLUMN culture_g_score REAL DEFAULT 0');
+  console.log('✅ Colonne culture_g_score ajoutée à la table scores');
 } catch (e) {
   // La colonne existe déjà, c'est OK
 }
@@ -303,6 +322,148 @@ const quizQuestions = [
   { id: 30, question: "Combien de spectateurs en moyenne devant la TV ?", answers: ["3 millions", "5 millions", "7 millions", "10 millions"], correct: 2, points: 2, difficulty: "moyen" }
 ];
 
+// ============================================
+// QUESTIONNAIRE CULTURE GÉNÉRALE MISS FRANCE 2026
+// Questionnaire officiel passé par les candidates
+// ============================================
+const cultureGQuestions = {
+  actualite: {
+    name: "Actualité",
+    totalPoints: 10,
+    questions: [
+      { id: "actu1", question: "Quelle est la capitale de l'Ukraine, pays encore au cœur de l'actualité internationale en 2025 ?", type: "text", correct: ["Kiev", "Kyiv"], points: 1 },
+      { id: "actu2", question: "Quel droit fondamental pour les femmes a été inscrit dans la Constitution française le 8 mars 2024 ?", type: "text", correct: ["IVG", "avortement", "le libre recours à l'IVG", "droit à l'avortement", "droit à l'IVG"], points: 1 },
+      { id: "actu3", question: "Quel événement organisé par le vidéaste Squeezie a eu lieu sur le circuit Bugatti du Mans en octobre dernier ?", type: "text", correct: ["GP Explorer", "GP Explorer 3", "Grand Prix Explorer"], points: 1 },
+      { id: "actu4", question: "À quelle espèce animale Jane Goodall, décédée en octobre dernier, a-t-elle consacré sa carrière ?", type: "text", correct: ["chimpanzés", "chimpanzé", "singes", "singe"], points: 1 },
+      { id: "actu5", question: "Quel produit alimentaire à base de framboises congelées est devenu un phénomène viral sur TikTok ?", type: "text", correct: ["Franui", "Franuì"], points: 1 },
+      { id: "actu6", question: "Quel club de football a remporté la Ligue des Champions en mai 2025 ?", type: "text", correct: ["PSG", "Paris Saint-Germain", "Paris SG"], points: 1 },
+      { id: "actu7", question: "Vrai ou faux : le DSA a été mis en place pour réglementer les services numériques ?", type: "single", answers: ["Vrai", "Faux"], correct: 0, points: 1, bonus: { question: "De quel nom DSA est-il l'acronyme ?", correct: ["Digital Services Act"], points: 0.5 } },
+      { id: "actu8", question: "Quelle personnalité décédée en 2024 a fait son entrée au Panthéon le 9 octobre 2025 ?", type: "text", correct: ["Robert Badinter", "Badinter"], points: 1 },
+      { id: "actu9", question: "Quelle est la nationalité de María Corina Machado qui a reçu le prix Nobel de la paix en octobre dernier ?", type: "text", correct: ["vénézuélienne", "vénézuelienne", "venezuelienne", "Venezuela"], points: 1 },
+      { id: "actu10", question: "Quel joueur a remporté le tournoi de Roland-Garros en juin 2025 ?", type: "text", correct: ["Carlos Alcaraz", "Alcaraz"], points: 1 }
+    ]
+  },
+  histoire_geo: {
+    name: "Histoire / Géographie",
+    totalPoints: 14,
+    questions: [
+      { id: "hg1", question: "En quelle année a eu lieu la chute du mur de Berlin ?", type: "single", answers: ["1979", "1981", "1989", "1991"], correct: 2, points: 1 },
+      { id: "hg2", question: "Qui était le premier empereur de Rome ?", type: "single", answers: ["Jules César", "Auguste", "Astérix", "Trajan"], correct: 1, points: 1 },
+      { id: "hg3", question: "Quel mot est cité en premier dans La Marseillaise ?", type: "single", answers: ["Compagnes", "Campagnes", "Citoyens", "Armes"], correct: 1, points: 1 },
+      { id: "hg4", question: "Quel roi a construit le célèbre château de Chambord et est associé à la Renaissance française ?", type: "single", answers: ["François Ier", "Louis XIV", "Henri II", "Louis XV"], correct: 0, points: 1 },
+      { id: "hg5", question: "Quel événement historique a-t-on commémoré en France le 8 mai 2025 ?", type: "single", answers: ["Les 80 ans de l'abolition de la peine de mort", "Les 80 ans de la fête du Travail", "Les 80 ans de la fin de la guerre froide", "Les 80 ans de la fin de la Seconde Guerre mondiale en Europe"], correct: 3, points: 1 },
+      { id: "hg6", question: "Qui proclame officiellement les résultats de l'élection présidentielle en France ?", type: "single", answers: ["Conseil d'État", "Conseil constitutionnel", "Cour de cassation", "Assemblée nationale"], correct: 1, points: 1, bonus: { question: "Quand aura lieu la prochaine élection présidentielle en France ?", correct: ["2027"], points: 0.5 } },
+      { id: "hg7", question: "Lesquels de ces dieux appartiennent à la mythologie égyptienne ?", type: "multiple", answers: ["Râ", "Anubis", "Apollon", "Osiris"], correct: [0, 1, 3], points: 1 },
+      { id: "hg8", question: "Laquelle de ces inventions est la plus ancienne ?", type: "single", answers: ["Photographie", "Téléphone", "Radio", "Télévision"], correct: 0, points: 1 },
+      { id: "hg9", question: "La Préhistoire prend fin avec :", type: "single", answers: ["La disparition des dinosaures", "L'invention de l'écriture", "La chute de l'empire romain", "L'invention des smartphones"], correct: 1, points: 1 },
+      { id: "hg10", question: "Quel est le plus grand désert du monde par sa superficie ?", type: "single", answers: ["Sahara", "Gobi", "Antarctique", "Kalahari"], correct: 2, points: 1 },
+      { id: "hg11", question: "Placez ces 4 pays sur la carte : Brésil (A), Égypte (B), Inde (C), Australie (D). Dans quel ordre de gauche à droite ?", type: "text", correct: ["A B C D", "ABCD", "Brésil Égypte Inde Australie"], points: 2, info: "0.5 point par bonne réponse" },
+      { id: "hg12", question: "Reliez ces volcans à la bonne île : Montagne Pelée → ?, Eyjafjallajökull → ?, Piton de la Fournaise → ?, La Soufrière → ?", type: "text", correct: ["Martinique Islande Réunion Guadeloupe"], points: 2, info: "0.5 point par bonne réponse" }
+    ]
+  },
+  arts: {
+    name: "Arts et Divertissements",
+    totalPoints: 12,
+    questions: [
+      { id: "art1", question: "Quel est l'autre nom donné à la Joconde ?", type: "single", answers: ["Lisa Maria", "Mona Lisa", "Dona Amalia", "Il n'y en a pas d'autre"], correct: 1, points: 1, bonus: { question: "Qui a peint La Joconde ?", correct: ["Léonard de Vinci", "Leonard de Vinci", "De Vinci", "Vinci"], points: 0.5 } },
+      { id: "art2", question: "Lesquels de ces films sont l'adaptation d'une œuvre littéraire ?", type: "multiple", answers: ["Le Comte de Monte-Cristo", "Hunger Games", "Harry Potter", "Dune"], correct: [0, 1, 2, 3], points: 1 },
+      { id: "art3", question: "Qui a sculpté le Penseur de Rodin ?", type: "single", answers: ["Léonard de Vinci", "Picasso", "Rodin", "Camille Claudel"], correct: 2, points: 1 },
+      { id: "art4", question: "Lequel de ces longs métrages de Walt Disney est le plus ancien ?", type: "single", answers: ["La Petite Sirène", "La Belle et la Bête", "Blanche-Neige", "Peter Pan"], correct: 2, points: 1 },
+      { id: "art5", question: "Pour quelle série Owen Cooper a-t-il été le plus jeune acteur à recevoir un Emmy Awards à seulement 15 ans ?", type: "single", answers: ["Stranger Things", "La chronique des Bridgerton", "Mercredi", "Adolescence"], correct: 3, points: 1 },
+      { id: "art6", question: "Quelle information est fausse concernant la Vénus de Milo ?", type: "single", answers: ["Il lui manque les deux bras", "Il lui manque la tête", "Un drapé lui couvre le bas du corps", "Elle est seins nus"], correct: 1, points: 1 },
+      { id: "art7", question: "Quels sont les points communs entre The Voice, Star Academy, NRJ Music Awards ?", type: "multiple", answers: ["Ils sont animés par la même personne", "Ils sont diffusés sur TF1", "Ils sont tournés à Cannes", "Ils sont dédiés à la chanson"], correct: [0, 1, 3], points: 1, bonus: { question: "Qui les présente ?", correct: ["Nikos Aliagas", "Nikos", "Aliagas"], points: 0.5 } },
+      { id: "art8", question: "Quel peintre a donné son nom à une couleur ?", type: "single", answers: ["Yves Klein", "Claude Monet", "Gustave Klimt", "Salvador Dalí"], correct: 0, points: 1, bonus: { question: "Quelle est cette couleur ?", correct: ["bleu", "bleu Klein"], points: 0.5 } },
+      { id: "art9", question: "Quel écrivain est l'auteur de « Vingt mille lieues sous les mers » ?", type: "single", answers: ["Jules Verne", "Guy de Maupassant", "Émile Zola", "Victor Hugo"], correct: 0, points: 1 },
+      { id: "art10", question: "Quelle chanteuse francophone interprète le titre « Ensemble » aux côtés d'Aliocha Schneider ?", type: "single", answers: ["Angèle", "Aya Nakamura", "Charlotte Cardin", "Clara Luciani"], correct: 2, points: 1 },
+      { id: "art11", question: "Qui est le nouveau directeur artistique des collections femme et homme chez Dior ?", type: "single", answers: ["Maria Grazia Chiuri", "Jonathan Anderson", "Karl Lagerfeld", "Hedi Slimane"], correct: 1, points: 1 },
+      { id: "art12", question: "Quel est le youtubeur français qui cumule à ce jour le plus d'abonnés sur YouTube ?", type: "single", answers: ["Tibo InShape", "Squeezie", "Loft Girl", "Cyprien"], correct: 0, points: 1 }
+    ]
+  },
+  sciences: {
+    name: "Sciences",
+    totalPoints: 6,
+    questions: [
+      { id: "sci1", question: "Quel composant du corps humain transporte l'oxygène dans le sang grâce à l'hémoglobine ?", type: "single", answers: ["Les globules blancs", "Les plaquettes", "Le plasma", "Les globules rouges"], correct: 3, points: 1 },
+      { id: "sci2", question: "Pourquoi la Lune présente-t-elle des phases (croissant, quartier, pleine Lune) ?", type: "single", answers: ["La Lune change de taille tous les 28 jours", "Les phases varient selon la distance entre la Lune et la Terre", "Elles dépendent de la portion de Lune éclairée par le Soleil et visible depuis la Terre", "Des nuages interstellaires la recouvrent occasionnellement"], correct: 2, points: 1 },
+      { id: "sci3", question: "Une année bissextile compte combien de jours ?", type: "text", correct: ["366", "366 jours"], points: 1 },
+      { id: "sci4", question: "Quel est l'aliment qui ne pourrit jamais, même après 3000 ans ?", type: "single", answers: ["Le fromage", "Le miel", "Le chocolat", "Un vieux burger oublié sous un lit"], correct: 1, points: 1 },
+      { id: "sci5", question: "Sur une bicyclette classique, laquelle des deux roues est motrice ?", type: "single", answers: ["Les deux roues", "La roue avant", "La roue arrière", "Aucune"], correct: 2, points: 1 },
+      { id: "sci6", question: "En mathématiques, un nombre premier est un nombre…", type: "single", answers: ["Pair", "Plus grand que 10", "Qui se termine par 1", "Divisible uniquement par 1 et lui-même"], correct: 3, points: 1, bonus: { question: "Quel est le nombre premier qui arrive juste après 17 ?", correct: ["19"], points: 0.5 } }
+    ]
+  },
+  probleme: {
+    name: "Problème",
+    totalPoints: 3,
+    questions: [
+      { id: "prob1", question: "Si l'avion qui vous a emmené en Martinique volait à 840 km/h, quelle distance avez-vous parcouru en 2h15 ?", type: "text", correct: ["1890", "1890 km", "1890km", "1 890 km"], points: 3 }
+    ]
+  },
+  miss: {
+    name: "Le monde des Miss",
+    totalPoints: 4,
+    questions: [
+      { id: "miss1", question: "Quelle est l'année de règne de la première Miss Martinique élue Miss France ?", type: "text", correct: ["2025"], points: 1 },
+      { id: "miss2", question: "Combien de Miss France Jean-Pierre Foucault a-t-il déjà couronnées ?", type: "text", correct: ["30"], points: 1 },
+      { id: "miss3", question: "En quelle année Camille Cerf a-t-elle été élue Miss France ?", type: "text", correct: ["2014", "2015", "6 décembre 2014"], points: 1, info: "Elle est Miss France 2015, élue le 6 décembre 2014" },
+      { id: "miss4", question: "Dans quelle ville aura lieu l'élection de Miss Univers dans quelques jours ?", type: "text", correct: ["Pak Kret", "Bangkok", "Thaïlande"], points: 1 }
+    ]
+  },
+  francais: {
+    name: "Français",
+    totalPoints: 10,
+    questions: [
+      { id: "fr1", question: "Combien pèse un éléphant ?", type: "single", answers: ["Trois cent kilos", "Trois cents kilos"], correct: 1, points: 1 },
+      { id: "fr2", question: "Et un hippopotame ?", type: "single", answers: ["Trois cent cinquante kilos", "Trois cents cinquante kilos"], correct: 0, points: 1 },
+      { id: "fr3", question: "Pour l'Académie française, que dit-on fréquemment, bien que cela soit une faute ?", type: "single", answers: ["En vélo", "À cheval", "En voiture"], correct: 0, points: 1 },
+      { id: "fr4", question: "Quel mot n'est pas du genre masculin ?", type: "single", answers: ["Hémisphère", "Tentacule", "Pétale", "Octave"], correct: 3, points: 1 },
+      { id: "fr5", question: "Complétez : \"Il ne faut pas en faire tout un...\"", type: "text", correct: ["fromage"], points: 0.5 },
+      { id: "fr5b", question: "Complétez : \"Rira bien qui rira...\"", type: "text", correct: ["le dernier"], points: 0.5 },
+      { id: "fr5c", question: "Complétez : \"Il ne faut pas se mettre ... en tête\"", type: "text", correct: ["martel"], points: 0.5 },
+      { id: "fr5d", question: "Complétez : \"Ça ne casse pas trois pattes...\"", type: "text", correct: ["à un canard", "a un canard"], points: 0.5 },
+      { id: "fr6", question: "Quel mot se termine toujours par un « S » au singulier comme au pluriel ?", type: "multiple", answers: ["Bigoudis", "Canaris", "Soucis"], correct: [0, 1, 2], points: 1 },
+      { id: "fr7", question: "Dans quelle phrase y a-t-il une faute ?", type: "single", answers: ["Tu as été élue", "Vous avez été sacrée", "Nous avons été photographié", "Elles ont été sauvées"], correct: 2, points: 1 },
+      { id: "fr8", question: "Comment écrire : « je veux faire ……… de la bande » ?", type: "single", answers: ["Parti", "Partis", "Partie", "Partit"], correct: 2, points: 1 },
+      { id: "fr9", question: "Lequel de ces mots n'est pas un palindrome ?", type: "single", answers: ["Rêver", "Rire", "Stats", "Coloc"], correct: 1, points: 1 },
+      { id: "fr10", question: "Les abeilles sont importantes pour l'agriculture surtout parce qu'elles…", type: "single", answers: ["Pollonisent les plantes", "Pollinisent les plantes", "Pallonisent les plantes", "Polonnisent les plantes"], correct: 1, points: 1 }
+    ]
+  },
+  anglais: {
+    name: "Anglais",
+    totalPoints: 10,
+    questions: [
+      { id: "en1", question: "Which letter doesn't appear in the name of any U.S. state?", type: "single", answers: ["Q", "Z", "X", "J"], correct: 0, points: 1 },
+      { id: "en2", question: "How many sides are there on a french STOP sign?", type: "single", answers: ["3 sides", "6 sides", "8 sides", "10 sides"], correct: 2, points: 1 },
+      { id: "en3", question: "How long is the presidential term in the United States?", type: "single", answers: ["3 years", "4 years", "5 years", "7 years"], correct: 1, points: 1 },
+      { id: "en4", question: "A t-shirt costs €16. There is a 25% discount throughout the store. You also get an additional €3 off. How much will you pay for the t-shirt?", type: "text", correct: ["9", "9€", "9 euros", "9 €"], points: 1 },
+      { id: "en5", question: "In what year did the first man walk on the Moon?", type: "single", answers: ["1967", "1969", "1971", "1973"], correct: 1, points: 1, bonus: { question: "Who was he?", correct: ["Neil Armstrong", "Armstrong"], points: 0.5 } },
+      { id: "en6", question: "Complete: \"Every year, Miss France ... a beautiful crown.\" (Use the verb To wear)", type: "text", correct: ["wears"], points: 1 },
+      { id: "en7", question: "Complete: \"I .... to become Miss France when I was a little girl.\" (past tense)", type: "text", correct: ["dreamed", "wished", "wanted"], points: 1 },
+      { id: "en8", question: "Complete: \"This is ... amazing opportunity for all the contestants.\"", type: "text", correct: ["an"], points: 1 },
+      { id: "en9", question: "Complete: \"The candidates come .... all regions of France.\"", type: "text", correct: ["from"], points: 1 },
+      { id: "en10", question: "Complete: \"The crown is .... than last year's.\" (Use shine)", type: "text", correct: ["shinier"], points: 1 }
+    ]
+  },
+  logique: {
+    name: "Logique",
+    totalPoints: 10,
+    questions: [
+      { id: "log1", question: "Quel mot peut-on associer à ces trois définitions : Un novice, une combinaison de travail, une couleur.", type: "single", answers: ["Rouge", "Bleu", "Blanc", "Jaune"], correct: 1, points: 1 },
+      { id: "log2", question: "En respectant la logique de cette suite : 5, 14, 41, 122, ?, quel nombre remplace le point d'interrogation ?", type: "text", correct: ["365"], points: 1, info: "Chaque nombre = précédent × 3 - 1" },
+      { id: "log3", question: "Quelle proposition ne complète aucune de ces trois syllabes (PAN, TIR, PIE) pour former des mots ?", type: "single", answers: ["MAR", "SOR", "COR", "TOU"], correct: 3, points: 1 },
+      { id: "log4", question: "Selon la logique : 7+8=11, 9+4=10, 12+6=15, quel nombre doit s'inscrire pour 23+25=?", type: "single", answers: ["34", "46", "61", "75"], correct: 2, points: 1 },
+      { id: "log5", question: "Dans un carré magique, quel chiffre remplace le point d'interrogation ?", type: "text", correct: ["4"], points: 1 },
+      { id: "log6", question: "3 poissons sont dans un seau. L'un meurt. Combien en reste-t-il ?", type: "text", correct: ["3"], points: 1, info: "Il est mort mais toujours dans le seau !" },
+      { id: "log7", question: "Si avant-hier on était mardi, quel jour serons-nous après-demain ?", type: "text", correct: ["samedi", "Samedi"], points: 1 },
+      { id: "log8", question: "Trouvez l'intrus parmi ces formes géométriques (carré, triangle, rectangle, cercle) ?", type: "text", correct: ["cercle", "le cercle", "D"], points: 1, info: "Le cercle n'a pas de côtés droits" },
+      { id: "log9", question: "Un espion voit son contact après 12h. Restaurant 8h→20h, Parc 22h→10h, Café 16h→4h. Musée 5h→?", type: "text", correct: ["17h", "17", "17H"], points: 1 },
+      { id: "log10", question: "Quelle proposition complète cette suite logique : BFJN, CGKO, DHLP, ?", type: "single", answers: ["NCIQ", "MNOS", "ESRT", "XULS"], correct: 0, points: 1 }
+    ]
+  }
+};
+
+// Calculer le total des points du questionnaire Culture G
+const cultureGTotalPoints = Object.values(cultureGQuestions).reduce((total, category) => total + category.totalPoints, 0);
+
 app.get('/api/quiz/questions', requireAuth, (req, res) => {
   // Récupérer les questions déjà répondues par l'utilisateur
   const answeredQuestions = db.prepare('SELECT question_id FROM quiz_answers WHERE user_id = ?')
@@ -361,11 +522,244 @@ app.post('/api/quiz/answer', requireAuth, (req, res) => {
 app.get('/api/quiz/score', requireAuth, (req, res) => {
   const answers = db.prepare('SELECT * FROM quiz_answers WHERE user_id = ?').all(req.session.userId);
   const totalPoints = answers.reduce((sum, a) => sum + a.points, 0);
-  
-  res.json({ 
+
+  res.json({
     totalAnswers: answers.length,
     correctAnswers: answers.filter(a => a.is_correct).length,
     totalPoints: totalPoints
+  });
+});
+
+// ============================================
+// ROUTES QUESTIONNAIRE CULTURE G OFFICIEL
+// ============================================
+
+// Récupérer les questions du questionnaire Culture G
+app.get('/api/culture-g/questions', requireAuth, (req, res) => {
+  // Récupérer les réponses déjà données par l'utilisateur
+  const answeredQuestions = db.prepare('SELECT question_id FROM culture_g_answers WHERE user_id = ?')
+    .all(req.session.userId)
+    .map(a => a.question_id);
+
+  // Préparer les questions par catégorie
+  const questionsWithStatus = {};
+  let totalQuestions = 0;
+
+  Object.entries(cultureGQuestions).forEach(([categoryKey, category]) => {
+    questionsWithStatus[categoryKey] = {
+      name: category.name,
+      totalPoints: category.totalPoints,
+      questions: category.questions.map(q => ({
+        ...q,
+        answered: answeredQuestions.includes(q.id)
+      }))
+    };
+    totalQuestions += category.questions.length;
+  });
+
+  res.json({
+    categories: questionsWithStatus,
+    totalQuestions,
+    answeredCount: answeredQuestions.length,
+    totalPoints: cultureGTotalPoints,
+    isCompleted: answeredQuestions.length >= totalQuestions
+  });
+});
+
+// Récupérer la progression de l'utilisateur
+app.get('/api/culture-g/progress', requireAuth, (req, res) => {
+  const answers = db.prepare('SELECT * FROM culture_g_answers WHERE user_id = ?').all(req.session.userId);
+  const totalPoints = answers.reduce((sum, a) => sum + (a.points || 0), 0);
+
+  // Compter les questions par catégorie
+  const categoryProgress = {};
+  Object.entries(cultureGQuestions).forEach(([categoryKey, category]) => {
+    const categoryAnswers = answers.filter(a => a.question_id.startsWith(categoryKey.substring(0, 3)));
+    categoryProgress[categoryKey] = {
+      name: category.name,
+      answered: categoryAnswers.length,
+      total: category.questions.length,
+      points: categoryAnswers.reduce((sum, a) => sum + (a.points || 0), 0),
+      maxPoints: category.totalPoints
+    };
+  });
+
+  let totalQuestions = Object.values(cultureGQuestions).reduce((sum, cat) => sum + cat.questions.length, 0);
+
+  res.json({
+    totalAnswers: answers.length,
+    totalQuestions,
+    correctAnswers: answers.filter(a => a.is_correct).length,
+    totalPoints,
+    maxPoints: cultureGTotalPoints,
+    categoryProgress,
+    isCompleted: answers.length >= totalQuestions
+  });
+});
+
+// Soumettre une réponse au questionnaire Culture G
+app.post('/api/culture-g/answer', requireAuth, (req, res) => {
+  const { questionId, answer, bonusAnswer } = req.body;
+
+  // Trouver la question dans les catégories
+  let question = null;
+  let categoryKey = null;
+
+  for (const [key, category] of Object.entries(cultureGQuestions)) {
+    const found = category.questions.find(q => q.id === questionId);
+    if (found) {
+      question = found;
+      categoryKey = key;
+      break;
+    }
+  }
+
+  if (!question) {
+    return res.status(404).json({ error: 'Question non trouvée' });
+  }
+
+  // Vérifier si l'utilisateur a déjà répondu à cette question
+  const existingAnswer = db.prepare('SELECT id FROM culture_g_answers WHERE user_id = ? AND question_id = ?')
+    .get(req.session.userId, questionId);
+
+  if (existingAnswer) {
+    return res.status(400).json({ error: 'Tu as déjà répondu à cette question' });
+  }
+
+  let isCorrect = false;
+  let points = 0;
+  let correctAnswer = '';
+  let bonusCorrect = false;
+  let bonusPoints = 0;
+
+  // Vérifier la réponse selon le type de question
+  if (question.type === 'single') {
+    isCorrect = answer === question.correct;
+    points = isCorrect ? question.points : 0;
+    correctAnswer = question.answers[question.correct];
+  } else if (question.type === 'multiple') {
+    // Pour les questions à choix multiples, vérifier si toutes les bonnes réponses sont sélectionnées
+    const userAnswers = Array.isArray(answer) ? answer.sort() : [];
+    const correctAnswers = question.correct.sort();
+    isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers);
+    points = isCorrect ? question.points : 0;
+    correctAnswer = question.correct.map(i => question.answers[i]).join(', ');
+  } else if (question.type === 'text') {
+    // Pour les questions texte, vérifier si la réponse correspond à l'une des réponses acceptées
+    const userAnswer = answer.toString().toLowerCase().trim();
+    isCorrect = question.correct.some(c => c.toLowerCase().trim() === userAnswer);
+    points = isCorrect ? question.points : 0;
+    correctAnswer = question.correct[0];
+  }
+
+  // Vérifier le bonus si présent
+  if (question.bonus && bonusAnswer) {
+    const userBonus = bonusAnswer.toString().toLowerCase().trim();
+    bonusCorrect = question.bonus.correct.some(c => c.toLowerCase().trim() === userBonus);
+    bonusPoints = bonusCorrect ? question.bonus.points : 0;
+    points += bonusPoints;
+  }
+
+  // Enregistrer la réponse
+  db.prepare('INSERT INTO culture_g_answers (user_id, question_id, answer, is_correct, points) VALUES (?, ?, ?, ?, ?)')
+    .run(req.session.userId, questionId, JSON.stringify({ main: answer, bonus: bonusAnswer }), isCorrect ? 1 : 0, points);
+
+  // Mettre à jour le score
+  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
+  const newCultureGScore = (currentScore.culture_g_score || 0) + points;
+  const newTotalScore = (currentScore.quiz_score || 0) + newCultureGScore + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+  db.prepare('UPDATE scores SET culture_g_score = ?, total_score = ? WHERE user_id = ?')
+    .run(newCultureGScore, newTotalScore, req.session.userId);
+
+  res.json({
+    correct: isCorrect,
+    points: points,
+    correctAnswer: correctAnswer,
+    bonusCorrect: bonusCorrect,
+    bonusPoints: bonusPoints,
+    info: question.info || null
+  });
+});
+
+// Soumettre toutes les réponses d'une catégorie en une fois
+app.post('/api/culture-g/submit-category', requireAuth, (req, res) => {
+  const { categoryKey, answers } = req.body;
+
+  const category = cultureGQuestions[categoryKey];
+  if (!category) {
+    return res.status(404).json({ error: 'Catégorie non trouvée' });
+  }
+
+  let totalPoints = 0;
+  let correctCount = 0;
+  const results = [];
+
+  for (const [questionId, answerData] of Object.entries(answers)) {
+    // Vérifier si déjà répondu
+    const existingAnswer = db.prepare('SELECT id FROM culture_g_answers WHERE user_id = ? AND question_id = ?')
+      .get(req.session.userId, questionId);
+
+    if (existingAnswer) continue;
+
+    const question = category.questions.find(q => q.id === questionId);
+    if (!question) continue;
+
+    let isCorrect = false;
+    let points = 0;
+    let correctAnswer = '';
+
+    const answer = answerData.main;
+    const bonusAnswer = answerData.bonus;
+
+    // Vérifier la réponse selon le type
+    if (question.type === 'single') {
+      isCorrect = answer === question.correct;
+      points = isCorrect ? question.points : 0;
+      correctAnswer = question.answers[question.correct];
+    } else if (question.type === 'multiple') {
+      const userAnswers = Array.isArray(answer) ? answer.sort() : [];
+      const correctAnswers = question.correct.sort();
+      isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers);
+      points = isCorrect ? question.points : 0;
+      correctAnswer = question.correct.map(i => question.answers[i]).join(', ');
+    } else if (question.type === 'text') {
+      const userAnswer = (answer || '').toString().toLowerCase().trim();
+      isCorrect = question.correct.some(c => c.toLowerCase().trim() === userAnswer);
+      points = isCorrect ? question.points : 0;
+      correctAnswer = question.correct[0];
+    }
+
+    // Bonus
+    if (question.bonus && bonusAnswer) {
+      const userBonus = bonusAnswer.toString().toLowerCase().trim();
+      const bonusCorrect = question.bonus.correct.some(c => c.toLowerCase().trim() === userBonus);
+      if (bonusCorrect) points += question.bonus.points;
+    }
+
+    // Enregistrer
+    db.prepare('INSERT INTO culture_g_answers (user_id, question_id, answer, is_correct, points) VALUES (?, ?, ?, ?, ?)')
+      .run(req.session.userId, questionId, JSON.stringify(answerData), isCorrect ? 1 : 0, points);
+
+    totalPoints += points;
+    if (isCorrect) correctCount++;
+
+    results.push({ questionId, isCorrect, points, correctAnswer });
+  }
+
+  // Mettre à jour le score
+  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
+  const newCultureGScore = (currentScore.culture_g_score || 0) + totalPoints;
+  const newTotalScore = (currentScore.quiz_score || 0) + newCultureGScore + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
+
+  db.prepare('UPDATE scores SET culture_g_score = ?, total_score = ? WHERE user_id = ?')
+    .run(newCultureGScore, newTotalScore, req.session.userId);
+
+  res.json({
+    success: true,
+    totalPoints,
+    correctCount,
+    results
   });
 });
 

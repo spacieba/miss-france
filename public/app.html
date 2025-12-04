@@ -31,6 +31,9 @@
             <button class="nav-btn" onclick="showSection('quiz')" data-section="quiz">
                 Quiz
             </button>
+            <button class="nav-btn" onclick="showSection('culture-g')" data-section="culture-g">
+                Culture G
+            </button>
             <button class="nav-btn" onclick="showSection('predictions')" data-section="predictions">
                 Prédictions
             </button>
@@ -80,6 +83,13 @@
                         <h3>Quiz</h3>
                         <p>Teste ta culture Miss France</p>
                         <span class="card-points" id="quiz-score">0 pts</span>
+                    </div>
+
+                    <div class="feature-card" onclick="showSection('culture-g')" style="background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);">
+                        <div class="card-icon">🎓</div>
+                        <h3>Culture G Officiel</h3>
+                        <p>Le vrai test des Miss !</p>
+                        <span class="card-points" id="culture-g-score">0 pts</span>
                     </div>
 
                     <div class="feature-card" onclick="showSection('predictions')">
@@ -246,11 +256,63 @@
                 </div>
             </section>
 
+            <!-- Section Culture G Officiel -->
+            <section id="culture-g" class="section">
+                <h2>🎓 Questionnaire Culture Générale Officiel</h2>
+                <p class="subtitle">Le vrai test passé par les Miss France 2026 !</p>
+
+                <div class="culture-g-intro">
+                    <div class="culture-g-header" style="background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; color: white;">
+                        <h3 style="margin: 0 0 10px 0;">📋 À propos de ce questionnaire</h3>
+                        <p style="margin: 0; opacity: 0.9;">Ce questionnaire est le test officiel de culture générale passé par les candidates Miss France il y a quelques semaines. 9 catégories, ~80 questions, ~80 points possibles.</p>
+                    </div>
+
+                    <div class="culture-g-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
+                            <span class="stat-number" id="culture-g-answered" style="font-size: 2em; color: var(--gold); display: block;">0</span>
+                            <span class="stat-label" style="color: var(--gris-elegant);">Réponses</span>
+                        </div>
+                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
+                            <span class="stat-number" id="culture-g-total" style="font-size: 2em; color: var(--gold); display: block;">0</span>
+                            <span class="stat-label" style="color: var(--gris-elegant);">Questions</span>
+                        </div>
+                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
+                            <span class="stat-number" id="culture-g-points-display" style="font-size: 2em; color: var(--gold); display: block;">0</span>
+                            <span class="stat-label" style="color: var(--gris-elegant);">Points</span>
+                        </div>
+                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
+                            <span class="stat-number" id="culture-g-max" style="font-size: 2em; color: var(--gold); display: block;">~80</span>
+                            <span class="stat-label" style="color: var(--gris-elegant);">Max</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Catégories du questionnaire -->
+                <div id="culture-g-categories" class="culture-g-categories">
+                    <!-- Les catégories seront générées dynamiquement -->
+                </div>
+
+                <!-- Zone de quiz active -->
+                <div id="culture-g-quiz-area" class="culture-g-quiz-area" style="display: none;">
+                    <div class="quiz-category-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 id="culture-g-category-name" style="margin: 0;"></h3>
+                        <button onclick="closeCultureGCategory()" class="btn-secondary">← Retour aux catégories</button>
+                    </div>
+                    <div id="culture-g-questions-container"></div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button onclick="submitCultureGCategory()" class="btn-primary btn-large" id="culture-g-submit-btn">
+                            ✅ Valider mes réponses
+                        </button>
+                    </div>
+                    <div id="culture-g-results" class="culture-g-results" style="display: none;"></div>
+                </div>
+            </section>
+
             <!-- Section Prédictions Live -->
             <section id="predictions" class="section">
                 <h2>Prédictions Live</h2>
                 <p class="subtitle">Fais tes prédictions pendant l'émission !</p>
-                
+
                 <div id="predictions-list" class="predictions-list"></div>
             </section>
 
