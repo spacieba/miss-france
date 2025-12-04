@@ -343,6 +343,42 @@
                 <h2>Défis & Votes</h2>
                 <p class="subtitle">Relève des défis et vote pour le meilleur costume !</p>
 
+                <!-- Upload Photo Costume -->
+                <div class="costume-upload-section" style="background: linear-gradient(135deg, #8e44ad, #9b59b6); border-radius: 15px; padding: 25px; margin-bottom: 30px; color: white;">
+                    <h3 style="margin-bottom: 15px;">📸 Ma Photo de Costume</h3>
+                    <p style="margin-bottom: 20px; opacity: 0.9;">Ajoute une photo de ton déguisement pour participer au concours !</p>
+
+                    <div id="my-costume-photo-preview" style="margin-bottom: 20px; text-align: center;">
+                        <!-- Photo preview will be inserted here -->
+                    </div>
+
+                    <div id="costume-upload-form">
+                        <input type="file" id="costume-photo-input" accept="image/*" capture="environment" style="display: none;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="document.getElementById('costume-photo-input').click()" class="btn-primary" style="flex: 1; min-width: 150px; background: white; color: #8e44ad;">
+                                📷 Choisir une photo
+                            </button>
+                            <button onclick="deleteCostumePhoto()" id="delete-photo-btn" class="btn-secondary" style="flex: 1; min-width: 150px; display: none; background: rgba(231, 76, 60, 0.8); border: none;">
+                                🗑️ Supprimer
+                            </button>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.8;">
+                            💡 La photo sera automatiquement redimensionnée. Formats acceptés : JPG, PNG, WebP
+                        </p>
+                    </div>
+
+                    <div id="costume-upload-message" class="message" style="margin-top: 15px;"></div>
+                </div>
+
+                <!-- Galerie des Costumes -->
+                <div class="costume-gallery-section" style="background: var(--noir-card); border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin-bottom: 30px;">
+                    <h3 style="color: var(--gold); margin-bottom: 15px;">🎭 Galerie des Costumes</h3>
+                    <p style="margin-bottom: 20px; color: var(--gris-elegant);">Regarde les costumes des autres joueurs avant de voter !</p>
+                    <div id="costume-gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                        <!-- Photos will be inserted here -->
+                    </div>
+                </div>
+
                 <!-- Vote Meilleur Costume -->
                 <div class="costume-vote-section" style="background: linear-gradient(135deg, var(--noir-card), var(--noir-soft)); border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin-bottom: 30px;">
                     <h3 style="color: var(--gold); margin-bottom: 15px;">👗 Élection du Plus Beau Costume</h3>

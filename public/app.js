@@ -745,8 +745,17 @@ async function loadDefisSection() {
         `;
     }
 
+    // Charger ma photo de costume
+    await loadMyCostumePhoto();
+
+    // Charger la galerie des costumes
+    await loadCostumeGallery();
+
     // Charger le vote costume
     await loadCostumeVoting();
+
+    // Initialiser l'input file pour l'upload
+    initCostumePhotoUpload();
 }
 
 async function completeDefi(defiId) {
@@ -768,6 +777,190 @@ async function completeDefi(defiId) {
     } else {
         alert(data.error || 'Erreur');
     }
+}
+
+// === PHOTO COSTUME ===
+
+async function loadMyCostumePhoto() {
+    try {
+        const response = await fetch('/api/costume/my-photo');
+        const data = await response.json();
+
+        const previewContainer = document.getElementById('my-costume-photo-preview');
+        const deleteBtn = document.getElementById('delete-photo-btn');
+
+        if (data.photo) {
+            previewContainer.innerHTML = `
+                <img src="${data.photo}" alt="Mon costume" style="max-width: 100%; max-height: 300px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
+                <p style="margin-top: 10px; opacity: 0.9;">Ta photo est visible par tous les joueurs !</p>
+            `;
+            deleteBtn.style.display = 'block';
+        } else {
+            previewContainer.innerHTML = `
+                <div style="padding: 40px; background: rgba(255,255,255,0.1); border-radius: 15px; border: 2px dashed rgba(255,255,255,0.3);">
+                    <span style="font-size: 3em;">📷</span>
+                    <p style="margin-top: 10px;">Aucune photo pour le moment</p>
+                </div>
+            `;
+            deleteBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Erreur chargement photo:', error);
+    }
+}
+
+function initCostumePhotoUpload() {
+    const input = document.getElementById('costume-photo-input');
+    if (!input) return;
+
+    // Retirer les anciens listeners
+    input.replaceWith(input.cloneNode(true));
+    const newInput = document.getElementById('costume-photo-input');
+
+    newInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Vérifier le type
+        if (!file.type.startsWith('image/')) {
+            alert('Veuillez sélectionner une image');
+            return;
+        }
+
+        // Vérifier la taille (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('La photo est trop grande (max 10MB)');
+            return;
+        }
+
+        const messageDiv = document.getElementById('costume-upload-message');
+        messageDiv.innerHTML = '<span style="color: white;">Envoi en cours...</span>';
+        messageDiv.style.display = 'block';
+
+        try {
+            const formData = new FormData();
+            formData.append('photo', file);
+
+            const response = await fetch('/api/costume/upload-photo', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                messageDiv.innerHTML = `<span style="color: #2ecc71;">✅ ${data.message}</span>`;
+                await loadMyCostumePhoto();
+                await loadCostumeGallery();
+            } else {
+                messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${data.error}</span>`;
+            }
+        } catch (error) {
+            console.error('Erreur upload:', error);
+            messageDiv.innerHTML = '<span style="color: #e74c3c;">❌ Erreur lors de l\'envoi</span>';
+        }
+
+        // Reset input
+        newInput.value = '';
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    });
+}
+
+async function deleteCostumePhoto() {
+    const confirmed = confirm('Supprimer ta photo de costume ?');
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('/api/costume/delete-photo', {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+        const messageDiv = document.getElementById('costume-upload-message');
+
+        if (response.ok) {
+            messageDiv.innerHTML = '<span style="color: #2ecc71;">✅ Photo supprimée</span>';
+            messageDiv.style.display = 'block';
+            await loadMyCostumePhoto();
+            await loadCostumeGallery();
+        } else {
+            messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${data.error}</span>`;
+            messageDiv.style.display = 'block';
+        }
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    } catch (error) {
+        console.error('Erreur suppression:', error);
+        alert('Erreur lors de la suppression');
+    }
+}
+
+async function loadCostumeGallery() {
+    try {
+        const response = await fetch('/api/costume/players');
+        const players = await response.json();
+
+        const gallery = document.getElementById('costume-gallery');
+        if (!gallery) return;
+
+        // Filtrer les joueurs qui ont une photo
+        const playersWithPhotos = players.filter(p => p.costume_photo);
+
+        if (playersWithPhotos.length === 0) {
+            gallery.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--gris-elegant);">
+                    <span style="font-size: 3em;">🎭</span>
+                    <p style="margin-top: 10px;">Aucune photo pour le moment. Sois le premier à partager ton costume !</p>
+                </div>
+            `;
+            return;
+        }
+
+        gallery.innerHTML = playersWithPhotos.map(player => `
+            <div class="costume-gallery-item" style="background: var(--noir-soft); border-radius: 10px; overflow: hidden; cursor: pointer;" onclick="openCostumeModal('${player.costume_photo}', '${player.pseudo}')">
+                <img src="${player.costume_photo}" alt="Costume de ${player.pseudo}" style="width: 100%; height: 150px; object-fit: cover;">
+                <div style="padding: 10px; text-align: center;">
+                    <strong style="color: var(--gold);">${player.pseudo}</strong>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erreur chargement galerie:', error);
+    }
+}
+
+function openCostumeModal(photoUrl, pseudo) {
+    // Créer un modal pour voir la photo en grand
+    const modal = document.createElement('div');
+    modal.id = 'costume-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        cursor: pointer;
+    `;
+    modal.onclick = () => modal.remove();
+
+    modal.innerHTML = `
+        <img src="${photoUrl}" alt="Costume de ${pseudo}" style="max-width: 90%; max-height: 80%; border-radius: 10px; box-shadow: 0 5px 30px rgba(0,0,0,0.5);">
+        <p style="color: white; margin-top: 20px; font-size: 1.2em;"><strong style="color: var(--gold);">${pseudo}</strong></p>
+        <p style="color: #888; margin-top: 10px;">Clique n'importe où pour fermer</p>
+    `;
+
+    document.body.appendChild(modal);
 }
 
 // === VOTE MEILLEUR COSTUME ===

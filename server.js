@@ -4,6 +4,9 @@ const bcrypt = require('bcrypt');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const multer = require('multer');
+const sharp = require('sharp');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -140,6 +143,38 @@ try {
 } catch (e) {
   // La colonne existe déjà, c'est OK
 }
+
+// Migration: Ajouter la colonne costume_photo pour les photos de déguisement
+try {
+  db.exec('ALTER TABLE users ADD COLUMN costume_photo TEXT');
+  console.log('✅ Colonne costume_photo ajoutée à la table users');
+} catch (e) {
+  // La colonne existe déjà, c'est OK
+}
+
+// Créer le dossier uploads si nécessaire
+const uploadsDir = path.join(__dirname, 'public', 'uploads', 'costumes');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('✅ Dossier uploads/costumes créé');
+}
+
+// Configuration Multer pour l'upload de photos
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Type de fichier non supporté. Utilisez JPG, PNG ou WebP.'));
+    }
+  }
+});
 
 // Initialiser la ligne des résultats officiels si elle n'existe pas
 const existingResults = db.prepare('SELECT id FROM official_results WHERE id = 1').get();
@@ -1047,12 +1082,79 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
 // Récupérer la liste des autres joueurs pour voter
 app.get('/api/costume/players', requireAuth, (req, res) => {
   const players = db.prepare(`
-    SELECT id, pseudo FROM users
+    SELECT id, pseudo, costume_photo FROM users
     WHERE id != ? AND is_admin = 0
     ORDER BY pseudo
   `).all(req.session.userId);
 
   res.json(players);
+});
+
+// Récupérer ma photo de costume
+app.get('/api/costume/my-photo', requireAuth, (req, res) => {
+  const user = db.prepare('SELECT costume_photo FROM users WHERE id = ?').get(req.session.userId);
+  res.json({ photo: user?.costume_photo || null });
+});
+
+// Uploader une photo de costume
+app.post('/api/costume/upload-photo', requireAuth, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Aucune photo fournie' });
+    }
+
+    const userId = req.session.userId;
+    const filename = `costume_${userId}_${Date.now()}.jpg`;
+    const filepath = path.join(uploadsDir, filename);
+
+    // Supprimer l'ancienne photo si elle existe
+    const oldPhoto = db.prepare('SELECT costume_photo FROM users WHERE id = ?').get(userId);
+    if (oldPhoto?.costume_photo) {
+      const oldPath = path.join(__dirname, 'public', oldPhoto.costume_photo);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    // Redimensionner et compresser l'image avec sharp
+    await sharp(req.file.buffer)
+      .resize(800, 800, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 80 })
+      .toFile(filepath);
+
+    // Sauvegarder le chemin en base
+    const photoUrl = `/uploads/costumes/${filename}`;
+    db.prepare('UPDATE users SET costume_photo = ? WHERE id = ?').run(photoUrl, userId);
+
+    res.json({ success: true, photo: photoUrl, message: 'Photo uploadée avec succès !' });
+  } catch (error) {
+    console.error('Erreur upload photo:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'upload de la photo' });
+  }
+});
+
+// Supprimer ma photo de costume
+app.delete('/api/costume/delete-photo', requireAuth, (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const user = db.prepare('SELECT costume_photo FROM users WHERE id = ?').get(userId);
+
+    if (user?.costume_photo) {
+      const photoPath = path.join(__dirname, 'public', user.costume_photo);
+      if (fs.existsSync(photoPath)) {
+        fs.unlinkSync(photoPath);
+      }
+      db.prepare('UPDATE users SET costume_photo = NULL WHERE id = ?').run(userId);
+    }
+
+    res.json({ success: true, message: 'Photo supprimée' });
+  } catch (error) {
+    console.error('Erreur suppression photo:', error);
+    res.status(500).json({ error: 'Erreur lors de la suppression' });
+  }
 });
 
 // Vérifier si l'utilisateur a déjà voté
