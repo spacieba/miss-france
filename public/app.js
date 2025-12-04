@@ -883,8 +883,8 @@ function openCostumeModal(photoUrl, pseudo) {
 // === VOTE MEILLEUR COSTUME ===
 
 async function loadCostumeVoting() {
-    // Charger la liste des joueurs
-    const playersResponse = await fetch('/api/costume/players');
+    // Charger la liste des autres joueurs (pas soi-même) pour voter
+    const playersResponse = await fetch('/api/costume/players-for-vote');
     const players = await playersResponse.json();
 
     const select = document.getElementById('costume-vote-select');
