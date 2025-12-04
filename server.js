@@ -211,18 +211,24 @@ app.post('/api/register', async (req, res) => {
   }
 
   try {
+    // Vérifier si le pseudo existe déjà (case-insensitive)
+    const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(pseudo) = LOWER(?)').get(pseudo);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Ce pseudo existe déjà' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const stmt = db.prepare('INSERT INTO users (pseudo, password) VALUES (?, ?)');
     const result = stmt.run(pseudo, hashedPassword);
-    
+
     // Créer le score initial
     db.prepare('INSERT INTO scores (user_id) VALUES (?)').run(result.lastInsertRowid);
-    
+
     req.session.userId = result.lastInsertRowid;
     req.session.pseudo = pseudo;
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       userId: result.lastInsertRowid,
       pseudo: pseudo
     });
@@ -246,7 +252,8 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'Mot de passe requis' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE pseudo = ?').get(pseudo);
+  // Recherche case-insensitive du pseudo
+  const user = db.prepare('SELECT * FROM users WHERE LOWER(pseudo) = LOWER(?)').get(pseudo);
 
   if (!user) {
     return res.status(404).json({ error: 'Utilisateur non trouvé' });
