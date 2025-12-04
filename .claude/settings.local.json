@@ -15,7 +15,11 @@
       "Bash(git commit -m \"Fix admin interface loading - ensure it loads when clicking admin button\")",
       "Bash(git commit -m \"Fix accessibility: add proper label for attributes to form inputs\")",
       "Bash(git commit -m \"Add debug logs for admin interface troubleshooting\")",
-      "Bash(git commit -m \"Add comprehensive debug logs for admin interface\")"
+      "Bash(git commit -m \"Add comprehensive debug logs for admin interface\")",
+      "Bash(del /f \"C:\\Users\\kholo\\Downloads\\miss-france-app\\miss-france-app\\public\\admin.html\" \"C:\\Users\\kholo\\Downloads\\miss-france-app\\miss-france-app\\public\\admin.js\")",
+      "Bash(del /f \"C:\\Users\\kholo\\Downloads\\miss-france-app\\miss-france-app\\data\\miss-france.db\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix critical security and stability bugs\n\nSecurity fixes:\n- Add password authentication for login/register\n- Protect all admin routes with requireAuth + requireAdmin middleware\n- Use environment variable for session secret\n- Block \"admin\" pseudo registration\n\nBug fixes:\n- Fix JSON.parse crash on NULL values in pronostics\n- Fix score calculation (total_score was using old values)\n- Fix bingo grid randomization (now persistent per user)\n- Prevent duplicate quiz answers\n- Prevent duplicate predictions (update instead of insert)\n- Add trim() for prediction comparison\n- Fix admin validation crash on partial pronostics\n\nCleanup:\n- Remove duplicate admin interface (admin.html, admin.js)\n- Admin panel remains accessible via app.html for admin users\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

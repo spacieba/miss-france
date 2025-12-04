@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miss France 2025 - App</title>
+    <title>Comité Parallèle - Miss France 2026</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <h1>👑 MISS FRANCE 2025</h1>
+                <h1>👑 Comité Parallèle 2026</h1>
                 <div class="user-info">
                     <span id="user-pseudo"></span>
                     <span class="score" id="user-score">0 pts</span>
@@ -23,28 +23,28 @@
         <!-- Navigation -->
         <nav class="main-nav">
             <button class="nav-btn active" onclick="showSection('home')" data-section="home">
-                🏠 Accueil
+                Accueil
             </button>
             <button class="nav-btn" onclick="showSection('pronostics')" data-section="pronostics">
-                🏆 Pronostics
+                Pronostics
             </button>
             <button class="nav-btn" onclick="showSection('quiz')" data-section="quiz">
-                📚 Quiz
+                Quiz
             </button>
             <button class="nav-btn" onclick="showSection('predictions')" data-section="predictions">
-                🎭 Prédictions Live
+                Prédictions
             </button>
             <button class="nav-btn" onclick="showSection('bingo')" data-section="bingo">
-                🎯 Bingo
+                Bingo
             </button>
             <button class="nav-btn" onclick="showSection('defis')" data-section="defis">
-                🌟 Défis
+                Défis
             </button>
             <button class="nav-btn" onclick="showSection('leaderboard')" data-section="leaderboard">
-                📊 Classement
+                Classement
             </button>
-            <button class="nav-btn" onclick="showSection('admin')" data-section="admin" id="admin-nav-btn" style="display: none; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
-                ⚙️ Admin
+            <button class="nav-btn" onclick="showSection('admin')" data-section="admin" id="admin-nav-btn" style="display: none; background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%);">
+                Admin
             </button>
         </nav>
 
@@ -53,7 +53,8 @@
             <!-- Section Accueil -->
             <section id="home" class="section active">
                 <div class="welcome-card">
-                    <h2>Bienvenue <span id="welcome-pseudo"></span> ! 🎉</h2>
+                    <h2>Bienvenue dans le Comité Parallèle</h2>
+                    <p class="welcome-subtitle">d'élection de Miss France 2026, <span id="welcome-pseudo"></span> !</p>
                     <div class="score-display">
                         <div class="score-item">
                             <span class="score-label">Score Total</span>
@@ -112,7 +113,7 @@
 
             <!-- Section Pronostics -->
             <section id="pronostics" class="section">
-                <h2>🏆 Tes Pronostics</h2>
+                <h2>Tes Pronostics</h2>
                 <p style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
                     ⏱️ <strong>Pendant la soirée :</strong> Valide tes choix au fur et à mesure ! Tu n'es pas obligé de tout remplir d'un coup.
                 </p>
@@ -167,7 +168,7 @@
                         <div class="rank-item">
                             <span class="rank-number">1️⃣</span>
                             <select class="select-candidate select-rank" data-rank="1">
-                                <option value="">-- Miss France 2025 --</option>
+                                <option value="">-- Miss France 2026 --</option>
                             </select>
                         </div>
                         <div class="rank-item">
@@ -205,7 +206,7 @@
 
             <!-- Section Quiz -->
             <section id="quiz" class="section">
-                <h2>📚 Quiz Miss France</h2>
+                <h2>Quiz Miss France</h2>
                 
                 <div id="quiz-intro" class="quiz-intro">
                     <p>Teste ta culture Miss France avec 30 questions !</p>
@@ -241,7 +242,7 @@
 
             <!-- Section Prédictions Live -->
             <section id="predictions" class="section">
-                <h2>🎭 Prédictions Live</h2>
+                <h2>Prédictions Live</h2>
                 <p class="subtitle">Fais tes prédictions pendant l'émission !</p>
                 
                 <div id="predictions-list" class="predictions-list"></div>
@@ -249,7 +250,7 @@
 
             <!-- Section Bingo -->
             <section id="bingo" class="section">
-                <h2>🎯 Bingo Miss France</h2>
+                <h2>Bingo Miss France</h2>
                 <p class="subtitle">Coche les cases quand ça arrive ! 20 pts par ligne complète</p>
                 
                 <div id="bingo-grid" class="bingo-grid"></div>
@@ -268,7 +269,7 @@
 
             <!-- Section Défis -->
             <section id="defis" class="section">
-                <h2>🌟 Défis Bonus</h2>
+                <h2>Défis Bonus</h2>
                 <p class="subtitle">Relève des défis pour gagner des points !</p>
                 
                 <div id="defi-card" class="defi-card"></div>
@@ -276,7 +277,7 @@
 
             <!-- Section Classement -->
             <section id="leaderboard" class="section">
-                <h2>📊 Classement Général</h2>
+                <h2>Classement Général</h2>
                 
                 <div class="leaderboard-container">
                     <table class="leaderboard-table">
@@ -299,9 +300,9 @@
 
             <!-- Section Admin -->
             <section id="admin" class="section" style="display: none;">
-                <div class="admin-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); padding: 25px; border-radius: 15px; color: white; margin-bottom: 30px;">
-                    <h2 style="margin: 0; color: white;">⚙️ Interface Admin</h2>
-                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Saisie des résultats en temps réel</p>
+                <div class="admin-header" style="background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%); padding: 25px; border-radius: 15px; color: white; margin-bottom: 30px;">
+                    <h2 style="margin: 0; color: var(--gold); font-family: 'Playfair Display', serif;">Interface Admin</h2>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9; color: var(--rose-poudre);">Saisie des résultats en temps réel</p>
                 </div>
 
                 <!-- Statistiques -->
@@ -357,7 +358,7 @@
                         <div class="rank-item">
                             <span class="rank-num">1️⃣</span>
                             <select class="admin-final-rank" data-rank="1">
-                                <option value="">-- Miss France 2025 --</option>
+                                <option value="">-- Miss France 2026 --</option>
                             </select>
                         </div>
                         <div class="rank-item">
