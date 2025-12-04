@@ -133,6 +133,14 @@ try {
   // La colonne existe déjà, c'est OK
 }
 
+// Migration: Ajouter la colonne culture_g_correct pour le nombre de bonnes réponses
+try {
+  db.exec('ALTER TABLE scores ADD COLUMN culture_g_correct INTEGER DEFAULT 0');
+  console.log('✅ Colonne culture_g_correct ajoutée à la table scores');
+} catch (e) {
+  // La colonne existe déjà, c'est OK
+}
+
 // Initialiser la ligne des résultats officiels si elle n'existe pas
 const existingResults = db.prepare('SELECT id FROM official_results WHERE id = 1').get();
 if (!existingResults) {
@@ -658,21 +666,21 @@ app.post('/api/culture-g/answer', requireAuth, (req, res) => {
     points += bonusPoints;
   }
 
-  // Enregistrer la réponse
+  // Enregistrer la réponse (on garde les points pour info mais on ne les ajoute pas au total)
   db.prepare('INSERT INTO culture_g_answers (user_id, question_id, answer, is_correct, points) VALUES (?, ?, ?, ?, ?)')
     .run(req.session.userId, questionId, JSON.stringify({ main: answer, bonus: bonusAnswer }), isCorrect ? 1 : 0, points);
 
-  // Mettre à jour le score
-  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
-  const newCultureGScore = (currentScore.culture_g_score || 0) + points;
-  const newTotalScore = (currentScore.quiz_score || 0) + newCultureGScore + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
-
-  db.prepare('UPDATE scores SET culture_g_score = ?, total_score = ? WHERE user_id = ?')
-    .run(newCultureGScore, newTotalScore, req.session.userId);
+  // Mettre à jour le compteur de bonnes réponses (pas le score final)
+  if (isCorrect) {
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
+    const newCultureGCorrect = (currentScore.culture_g_correct || 0) + 1;
+    db.prepare('UPDATE scores SET culture_g_correct = ? WHERE user_id = ?')
+      .run(newCultureGCorrect, req.session.userId);
+  }
 
   res.json({
     correct: isCorrect,
-    points: points,
+    rawPoints: points,
     correctAnswer: correctAnswer,
     bonusCorrect: bonusCorrect,
     bonusPoints: bonusPoints,
@@ -745,17 +753,17 @@ app.post('/api/culture-g/submit-category', requireAuth, (req, res) => {
     results.push({ questionId, isCorrect, points, correctAnswer });
   }
 
-  // Mettre à jour le score
-  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
-  const newCultureGScore = (currentScore.culture_g_score || 0) + totalPoints;
-  const newTotalScore = (currentScore.quiz_score || 0) + newCultureGScore + (currentScore.pronostics_score || 0) + (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) + (currentScore.defis_score || 0);
-
-  db.prepare('UPDATE scores SET culture_g_score = ?, total_score = ? WHERE user_id = ?')
-    .run(newCultureGScore, newTotalScore, req.session.userId);
+  // Mettre à jour le compteur de bonnes réponses (pas le score final - celui-ci sera attribué par l'admin)
+  if (correctCount > 0) {
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
+    const newCultureGCorrect = (currentScore.culture_g_correct || 0) + correctCount;
+    db.prepare('UPDATE scores SET culture_g_correct = ? WHERE user_id = ?')
+      .run(newCultureGCorrect, req.session.userId);
+  }
 
   res.json({
     success: true,
-    totalPoints,
+    rawPoints: totalPoints,
     correctCount,
     results
   });
@@ -1514,6 +1522,82 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
     pronoOrWinners,
     currentStep: 3,
     missFramce2026
+  });
+});
+
+// ============================================
+// VALIDATION CULTURE G - Attribution des points 15/10/5
+// ============================================
+
+// Route pour voir le classement Culture G
+app.get('/api/admin/culture-g-ranking', requireAuth, requireAdmin, (req, res) => {
+  // Récupérer tous les utilisateurs avec leur nombre de bonnes réponses Culture G
+  const rankings = db.prepare(`
+    SELECT u.id, u.pseudo, s.culture_g_correct, s.culture_g_score,
+           (SELECT COUNT(*) FROM culture_g_answers WHERE user_id = u.id) as total_answered
+    FROM users u
+    JOIN scores s ON u.id = s.user_id
+    WHERE u.is_admin = 0
+    ORDER BY s.culture_g_correct DESC, total_answered DESC
+  `).all();
+
+  res.json({
+    rankings,
+    isValidated: rankings.some(r => r.culture_g_score > 0)
+  });
+});
+
+// Route pour valider et attribuer les points Culture G (15/10/5)
+app.post('/api/admin/validate-culture-g', requireAuth, requireAdmin, (req, res) => {
+  // Vérifier si déjà validé
+  const alreadyValidated = db.prepare('SELECT id FROM scores WHERE culture_g_score > 0').get();
+  if (alreadyValidated) {
+    return res.status(400).json({ error: 'Culture G déjà validé ! Les points ont déjà été attribués.' });
+  }
+
+  // Récupérer le classement des joueurs par nombre de bonnes réponses
+  const rankings = db.prepare(`
+    SELECT u.id, u.pseudo, s.culture_g_correct
+    FROM users u
+    JOIN scores s ON u.id = s.user_id
+    WHERE u.is_admin = 0 AND s.culture_g_correct > 0
+    ORDER BY s.culture_g_correct DESC
+  `).all();
+
+  if (rankings.length === 0) {
+    return res.status(400).json({ error: 'Aucun joueur n\'a participé au questionnaire Culture G' });
+  }
+
+  const pointsToAward = [15, 10, 5];
+  const winners = [];
+
+  // Attribuer les points aux 3 premiers
+  for (let i = 0; i < Math.min(3, rankings.length); i++) {
+    const user = rankings[i];
+    const points = pointsToAward[i];
+
+    // Mettre à jour le score
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(user.id);
+    const newCultureGScore = points;
+    const newTotalScore = (currentScore.quiz_score || 0) + (currentScore.pronostics_score || 0) +
+                          (currentScore.predictions_score || 0) + (currentScore.bingo_score || 0) +
+                          (currentScore.defis_score || 0) + newCultureGScore;
+
+    db.prepare('UPDATE scores SET culture_g_score = ?, total_score = ? WHERE user_id = ?')
+      .run(newCultureGScore, newTotalScore, user.id);
+
+    winners.push({
+      rank: i + 1,
+      pseudo: user.pseudo,
+      correctAnswers: user.culture_g_correct,
+      pointsAwarded: points
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Culture G validé ! Points attribués aux 3 meilleurs.',
+    winners
   });
 });
 

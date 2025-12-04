@@ -875,30 +875,31 @@ async function loadCostumeResults() {
 async function loadLeaderboard() {
     const response = await fetch('/api/leaderboard');
     const leaderboard = await response.json();
-    
+
     const tbody = document.getElementById('leaderboard-body');
     tbody.innerHTML = '';
-    
+
     leaderboard.forEach((player, index) => {
         const row = document.createElement('tr');
         if (currentUser && player.user_id === currentUser.id) {
             row.className = 'current-user';
         }
-        
+
         row.innerHTML = `
             <td class="rank">${index + 1}</td>
             <td class="player-name">${player.pseudo}</td>
             <td>${player.quiz_score}</td>
+            <td>${player.culture_g_score || 0}</td>
             <td>${player.pronostics_score}</td>
             <td>${player.predictions_score}</td>
             <td>${player.bingo_score}</td>
             <td>${player.defis_score}</td>
             <td class="total-score">${player.total_score}</td>
         `;
-        
+
         tbody.appendChild(row);
     });
-    
+
     // Mettre à jour le rang de l'utilisateur
     if (currentUser) {
         const userRank = leaderboard.findIndex(p => p.user_id === currentUser.id) + 1;
@@ -1013,6 +1014,9 @@ async function loadAdminInterface() {
 
     // Charger le preview des votes costume
     await loadAdminCostumePreview();
+
+    // Charger le classement Culture G
+    await loadAdminCultureGRanking();
 
     console.log('✅ loadAdminInterface terminée avec succès');
 }
@@ -1759,6 +1763,103 @@ function closeCultureGCategory() {
 
     // Reload section to update progress
     loadCultureGSection();
+}
+
+// ============================================
+// ADMIN CULTURE G FUNCTIONS
+// ============================================
+
+async function loadAdminCultureGRanking() {
+    try {
+        const response = await fetch('/api/admin/culture-g-ranking');
+        const data = await response.json();
+
+        const container = document.getElementById('admin-culture-g-ranking');
+        const statusEl = document.getElementById('culture-g-admin-status');
+        const validateBtn = document.getElementById('culture-g-validate-btn');
+
+        if (!container) return;
+
+        if (data.isValidated) {
+            statusEl.textContent = '✅ Déjà validé';
+            statusEl.style.color = '#27ae60';
+            validateBtn.disabled = true;
+            validateBtn.textContent = '✅ CULTURE G DÉJÀ VALIDÉ';
+            validateBtn.style.background = '#27ae60';
+            validateBtn.style.cursor = 'not-allowed';
+            validateBtn.style.opacity = '0.7';
+        } else {
+            statusEl.textContent = '⏳ En attente';
+            statusEl.style.color = '#f39c12';
+        }
+
+        if (data.rankings.length === 0) {
+            container.innerHTML = '<p style="color: var(--gris-elegant); font-style: italic;">Aucun joueur n\'a encore participé au questionnaire Culture G.</p>';
+            return;
+        }
+
+        const medals = ['🥇', '🥈', '🥉'];
+        const points = [15, 10, 5];
+
+        container.innerHTML = `
+            <p style="margin-bottom: 10px; color: var(--blanc-perle);">Classement des joueurs par nombre de bonnes réponses :</p>
+            ${data.rankings.map((player, index) => `
+                <div style="display: flex; justify-content: space-between; padding: 10px; background: ${index < 3 ? 'rgba(155, 89, 182, 0.2)' : 'var(--noir-medium)'}; border-radius: 8px; margin-bottom: 8px;">
+                    <span>
+                        ${medals[index] || `${index + 1}.`} <strong>${player.pseudo}</strong>
+                        <span style="color: var(--gris-elegant); font-size: 0.85em;">(${player.total_answered} questions)</span>
+                    </span>
+                    <span>
+                        <strong style="color: #9b59b6;">${player.culture_g_correct || 0} bonnes réponses</strong>
+                        ${index < 3 && !data.isValidated ? ` → <span style="color: var(--gold);">+${points[index]} pts</span>` : ''}
+                        ${data.isValidated && player.culture_g_score > 0 ? ` <span style="color: #27ae60;">✅ +${player.culture_g_score} pts</span>` : ''}
+                    </span>
+                </div>
+            `).join('')}
+        `;
+    } catch (error) {
+        console.error('Erreur chargement classement Culture G:', error);
+    }
+}
+
+async function adminValidateCultureG() {
+    const confirmation = confirm(
+        `🎓 ATTRIBUTION DES POINTS CULTURE G 🎓\n\n` +
+        `Tu vas attribuer les points aux 3 meilleurs scores:\n` +
+        `🥇 1er: 15 points\n` +
+        `🥈 2ème: 10 points\n` +
+        `🥉 3ème: 5 points\n\n` +
+        `Cette action est irréversible. Continuer ?`
+    );
+
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch('/api/admin/validate-culture-g', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        const messageDiv = document.getElementById('culture-g-award-message');
+
+        if (response.ok) {
+            messageDiv.innerHTML = `✅ Points Culture G attribués !<br>${data.awarded.map(a => `<strong>${a.pseudo}</strong>: +${a.points} pts`).join('<br>')}`;
+            messageDiv.style.color = '#27ae60';
+
+            // Recharger les données
+            await loadAdminCultureGRanking();
+            await loadAdminStats();
+            await loadLeaderboard();
+            await loadScore();
+        } else {
+            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.style.color = '#e74c3c';
+        }
+    } catch (error) {
+        console.error('Erreur validation Culture G:', error);
+        alert('Erreur lors de l\'attribution des points');
+    }
 }
 
 async function submitCultureGCategory() {

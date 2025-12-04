@@ -46,6 +46,9 @@
             <button class="nav-btn" onclick="showSection('leaderboard')" data-section="leaderboard">
                 Classement
             </button>
+            <button class="nav-btn" onclick="showSection('points')" data-section="points" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
+                Points
+            </button>
             <button class="nav-btn" onclick="showSection('admin')" data-section="admin" id="admin-nav-btn" style="display: none; background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%);">
                 Admin
             </button>
@@ -379,7 +382,7 @@
             <!-- Section Classement -->
             <section id="leaderboard" class="section">
                 <h2>Classement Général</h2>
-                
+
                 <div class="leaderboard-container">
                     <table class="leaderboard-table">
                         <thead>
@@ -387,6 +390,7 @@
                                 <th>Rang</th>
                                 <th>Joueur</th>
                                 <th>Quiz</th>
+                                <th>Culture G</th>
                                 <th>Pronostics</th>
                                 <th>Prédictions</th>
                                 <th>Bingo</th>
@@ -396,6 +400,111 @@
                         </thead>
                         <tbody id="leaderboard-body"></tbody>
                     </table>
+                </div>
+            </section>
+
+            <!-- Section Points -->
+            <section id="points" class="section">
+                <h2>💰 Détail des Points</h2>
+                <p class="subtitle">Tous les points à aller chercher pendant la soirée !</p>
+
+                <div class="points-categories" style="display: grid; gap: 20px;">
+
+                    <!-- Quiz Miss France -->
+                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #3498db;">
+                        <h3 style="color: #3498db; margin: 0 0 15px 0;">📚 Quiz Miss France</h3>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">30 questions sur l'univers Miss France</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Questions faciles : <strong style="color: var(--gold);">1 pt</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Questions moyennes : <strong style="color: var(--gold);">2 pts</strong></li>
+                            <li style="padding: 8px 0;">• Questions difficiles : <strong style="color: var(--gold);">3 pts</strong></li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(52, 152, 219, 0.2); border-radius: 8px;">
+                            <strong style="color: #3498db;">Maximum possible : ~60 pts</strong>
+                        </div>
+                    </div>
+
+                    <!-- Culture G Officiel -->
+                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #9b59b6;">
+                        <h3 style="color: #9b59b6; margin: 0 0 15px 0;">🎓 Culture G Officiel</h3>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Le vrai questionnaire des Miss ! Points attribués selon classement.</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥇 1er meilleur score : <strong style="color: var(--gold);">15 pts</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥈 2ème meilleur score : <strong style="color: var(--gold);">10 pts</strong></li>
+                            <li style="padding: 8px 0;">🥉 3ème meilleur score : <strong style="color: var(--gold);">5 pts</strong></li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(155, 89, 182, 0.2); border-radius: 8px;">
+                            <strong style="color: #9b59b6;">Maximum possible : 15 pts</strong>
+                        </div>
+                    </div>
+
+                    <!-- Pronostics -->
+                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid var(--gold);">
+                        <h3 style="color: var(--gold); margin: 0 0 15px 0;">🏆 Pronostics</h3>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Devine le parcours des candidates !</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Top 15 : <strong style="color: var(--gold);">5 pts</strong> par bonne candidate (15 × 5 = 75 pts max)</li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Bonus Top 15 (celle qui passe pas) : <strong style="color: var(--gold);">10 pts</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Top 5 : <strong style="color: var(--gold);">10 pts</strong> par bonne candidate (5 × 10 = 50 pts max)</li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Bonus Top 5 (celle qui passe pas) : <strong style="color: var(--gold);">20 pts</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Classement final (1-5) : <strong style="color: var(--gold);">20 pts</strong> par position exacte (5 × 20 = 100 pts max)</li>
+                            <li style="padding: 8px 0;">• 👑 <strong>PRONO D'OR</strong> (Miss France 2026) : <strong style="color: var(--gold);">80 pts</strong></li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(212, 175, 55, 0.2); border-radius: 8px;">
+                            <strong style="color: var(--gold);">Maximum possible : 335 pts</strong>
+                        </div>
+                    </div>
+
+                    <!-- Prédictions Live -->
+                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #e74c3c;">
+                        <h3 style="color: #e74c3c; margin: 0 0 15px 0;">🎭 Prédictions Live</h3>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Paris en direct pendant l'émission !</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Première question du public : <strong style="color: var(--gold);">10 pts</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Miss qui trébuche : <strong style="color: var(--gold);">15 pts</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Couleur robe Miss France : <strong style="color: var(--gold);">10 pts</strong></li>
+                            <li style="padding: 8px 0;">• Premier mot de Miss France : <strong style="color: var(--gold);">20 pts</strong></li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(231, 76, 60, 0.2); border-radius: 8px;">
+                            <strong style="color: #e74c3c;">Maximum possible : 55 pts</strong>
+                        </div>
+                    </div>
+
+                    <!-- Bingo -->
+                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #2ecc71;">
+                        <h3 style="color: #2ecc71; margin: 0 0 15px 0;">🎯 Bingo</h3>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Coche les cases quand ça arrive à l'écran !</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0;">• Chaque ligne complétée : <strong style="color: var(--gold);">20 pts</strong></li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(46, 204, 113, 0.2); border-radius: 8px;">
+                            <strong style="color: #2ecc71;">Maximum possible : ~60 pts</strong> (3 lignes)
+                        </div>
+                    </div>
+
+                    <!-- Défis -->
+                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #f39c12;">
+                        <h3 style="color: #f39c12; margin: 0 0 15px 0;">🌟 Défis</h3>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Défis amusants pendant la soirée !</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Couronne improvisée : <strong style="color: var(--gold);">15 pts</strong></li>
+                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Meilleur costume (vote) :</li>
+                            <li style="padding: 8px 0; margin-left: 20px;">🥇 1er : <strong style="color: var(--gold);">30 pts</strong></li>
+                            <li style="padding: 8px 0; margin-left: 20px;">🥈 2ème : <strong style="color: var(--gold);">20 pts</strong></li>
+                            <li style="padding: 8px 0; margin-left: 20px;">🥉 3ème : <strong style="color: var(--gold);">10 pts</strong></li>
+                        </ul>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(243, 156, 18, 0.2); border-radius: 8px;">
+                            <strong style="color: #f39c12;">Maximum possible : 45 pts</strong>
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="points-card" style="background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%); padding: 30px; border-radius: 15px; text-align: center;">
+                        <h3 style="color: black; margin: 0 0 10px 0; font-size: 1.5em;">🎉 TOTAL MAXIMUM</h3>
+                        <p style="color: rgba(0,0,0,0.7); font-size: 3em; font-weight: bold; margin: 0;">~570 pts</p>
+                        <p style="color: rgba(0,0,0,0.6); margin-top: 10px;">Bonne chance à tous !</p>
+                    </div>
+
                 </div>
             </section>
 
@@ -533,6 +642,28 @@
                         🏆 ATTRIBUER LES POINTS COSTUME
                     </button>
                     <div id="costume-award-message" class="admin-step-message"></div>
+                </div>
+
+                <!-- Culture G Admin -->
+                <div class="admin-card" style="border: 2px solid #9b59b6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #9b59b6;">🎓 Attribution des Points Culture G</h3>
+                        <span id="culture-g-admin-status" class="step-status"></span>
+                    </div>
+                    <p style="color: #888; margin-bottom: 15px;">Attribue les points aux 3 meilleurs scores au questionnaire Culture G Officiel</p>
+                    <div style="background: rgba(155, 89, 182, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <p style="color: #9b59b6; margin: 0 0 10px 0;"><strong>Points attribués :</strong></p>
+                        <ul style="list-style: none; padding: 0; margin: 0; color: var(--blanc-perle);">
+                            <li>🥇 1er meilleur score : <strong style="color: var(--gold);">15 pts</strong></li>
+                            <li>🥈 2ème meilleur score : <strong style="color: var(--gold);">10 pts</strong></li>
+                            <li>🥉 3ème meilleur score : <strong style="color: var(--gold);">5 pts</strong></li>
+                        </ul>
+                    </div>
+                    <div id="admin-culture-g-ranking" style="margin-bottom: 20px;"></div>
+                    <button onclick="adminValidateCultureG()" id="culture-g-validate-btn" class="btn-admin-step" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                        🎓 ATTRIBUER LES POINTS CULTURE G (15/10/5)
+                    </button>
+                    <div id="culture-g-award-message" class="admin-step-message"></div>
                 </div>
 
                 <div id="admin-status" class="admin-status-message"></div>
