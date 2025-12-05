@@ -625,9 +625,14 @@
                         💡 <strong>Bonus automatique :</strong> Les joueurs qui ont choisi une candidate qui n'est PAS dans le top 15 gagnent 10 pts
                     </p>
                     <div id="admin-top15-grid" class="admin-candidates-grid"></div>
-                    <button onclick="adminValidateTop15()" class="btn-admin-step" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                        ✅ VALIDER LE TOP 15 (met à jour les scores)
-                    </button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="adminValidateTop15()" class="btn-admin-step" style="background: linear-gradient(135deg, #667eea, #764ba2); flex: 1;">
+                            ✅ VALIDER LE TOP 15 (met à jour les scores)
+                        </button>
+                        <button onclick="adminResetStep(0)" id="btn-reset-step1" class="btn-admin-reset" style="background: linear-gradient(135deg, #666, #444); display: none;">
+                            ↩️ ANNULER
+                        </button>
+                    </div>
                     <div id="step1-message" class="admin-step-message"></div>
                 </div>
 
@@ -642,9 +647,14 @@
                         💡 <strong>Bonus automatique :</strong> Les joueurs qui ont choisi une candidate qui n'est PAS dans le top 5 gagnent 20 pts
                     </p>
                     <div id="admin-top5-grid" class="admin-candidates-grid"></div>
-                    <button onclick="adminValidateTop5()" class="btn-admin-step" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
-                        ✅ VALIDER LE TOP 5 (met à jour les scores)
-                    </button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="adminValidateTop5()" class="btn-admin-step" style="background: linear-gradient(135deg, #f39c12, #e67e22); flex: 1;">
+                            ✅ VALIDER LE TOP 5 (met à jour les scores)
+                        </button>
+                        <button onclick="adminResetStep(1)" id="btn-reset-step2" class="btn-admin-reset" style="background: linear-gradient(135deg, #666, #444); display: none;">
+                            ↩️ ANNULER
+                        </button>
+                    </div>
                     <div id="step2-message" class="admin-step-message"></div>
                 </div>
 
@@ -687,9 +697,14 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="adminValidateFinal()" class="btn-admin-step" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                        ✅ VALIDER LE CLASSEMENT FINAL + PRONO D'OR (scores finaux)
-                    </button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="adminValidateFinal()" class="btn-admin-step" style="background: linear-gradient(135deg, #e74c3c, #c0392b); flex: 1;">
+                            ✅ VALIDER LE CLASSEMENT FINAL + PRONO D'OR (scores finaux)
+                        </button>
+                        <button onclick="adminResetStep(2)" id="btn-reset-step3" class="btn-admin-reset" style="background: linear-gradient(135deg, #666, #444); display: none;">
+                            ↩️ ANNULER
+                        </button>
+                    </div>
                     <div id="step3-message" class="admin-step-message"></div>
                 </div>
 

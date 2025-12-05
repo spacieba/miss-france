@@ -1490,6 +1490,118 @@ function updateAdminStepDisplay() {
             select.disabled = true;
         });
     }
+
+    // Afficher/cacher les boutons d'annulation selon l'étape actuelle
+    const btnResetStep1 = document.getElementById('btn-reset-step1');
+    const btnResetStep2 = document.getElementById('btn-reset-step2');
+    const btnResetStep3 = document.getElementById('btn-reset-step3');
+
+    // Bouton annuler Top 15 : visible si step >= 1
+    if (btnResetStep1) {
+        btnResetStep1.style.display = officialResults.current_step >= 1 ? 'block' : 'none';
+    }
+    // Bouton annuler Top 5 : visible si step >= 2
+    if (btnResetStep2) {
+        btnResetStep2.style.display = officialResults.current_step >= 2 ? 'block' : 'none';
+    }
+    // Bouton annuler Final : visible si step >= 3
+    if (btnResetStep3) {
+        btnResetStep3.style.display = officialResults.current_step >= 3 ? 'block' : 'none';
+    }
+}
+
+// Annuler une étape de validation (retour en arrière)
+async function adminResetStep(targetStep) {
+    const stepNames = {
+        0: 'annuler le Top 15 (revenir à zéro)',
+        1: 'annuler le Top 5 (garder seulement le Top 15)',
+        2: 'annuler le Classement Final (garder Top 15 et Top 5)'
+    };
+
+    const confirmation = confirm(
+        `⚠️ ANNULATION ⚠️\n\n` +
+        `Tu vas ${stepNames[targetStep]}.\n\n` +
+        `Les scores de tous les joueurs seront recalculés.\n\n` +
+        `Cette action est irréversible. Continuer ?`
+    );
+
+    if (!confirmation) return;
+
+    try {
+        const response = await fetch('/api/admin/reset-step', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetStep })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(`✅ ${data.message}\n\n${data.usersUpdated} joueurs mis à jour.`);
+
+            // Recharger les données et rafraîchir l'interface
+            await loadOfficialResults();
+            updateAdminStepDisplay();
+            updateAdminTop5Grid();
+            updateAdminFinalSelects();
+            await loadAdminStats();
+            await loadLeaderboard();
+            await loadScore();
+
+            // Réinitialiser les boutons de validation
+            resetValidationButtons();
+        } else {
+            alert(`❌ Erreur: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Erreur reset step:', error);
+        alert('Erreur lors de l\'annulation');
+    }
+}
+
+// Réinitialiser l'apparence des boutons de validation après un reset
+function resetValidationButtons() {
+    // Reset bouton Top 15
+    const top15Button = document.querySelector('button[onclick="adminValidateTop15()"]');
+    if (top15Button && officialResults.current_step < 1) {
+        top15Button.disabled = false;
+        top15Button.textContent = '✅ VALIDER LE TOP 15 (met à jour les scores)';
+        top15Button.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+        top15Button.style.cursor = 'pointer';
+        top15Button.style.opacity = '1';
+    }
+    const top15Checkboxes = document.querySelectorAll('input[data-admin-type="top15"]');
+    if (officialResults.current_step < 1) {
+        top15Checkboxes.forEach(cb => cb.disabled = false);
+    }
+
+    // Reset bouton Top 5
+    const top5Button = document.querySelector('button[onclick="adminValidateTop5()"]');
+    if (top5Button && officialResults.current_step < 2) {
+        top5Button.disabled = false;
+        top5Button.textContent = '✅ VALIDER LE TOP 5 (met à jour les scores)';
+        top5Button.style.background = 'linear-gradient(135deg, #f39c12, #e67e22)';
+        top5Button.style.cursor = 'pointer';
+        top5Button.style.opacity = '1';
+    }
+    const top5Checkboxes = document.querySelectorAll('input[data-admin-type="top5"]');
+    if (officialResults.current_step < 2) {
+        top5Checkboxes.forEach(cb => cb.disabled = false);
+    }
+
+    // Reset bouton Final
+    const finalButton = document.querySelector('button[onclick="adminValidateFinal()"]');
+    if (finalButton && officialResults.current_step < 3) {
+        finalButton.disabled = false;
+        finalButton.textContent = '✅ VALIDER LE CLASSEMENT FINAL + PRONO D\'OR (scores finaux)';
+        finalButton.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+        finalButton.style.cursor = 'pointer';
+        finalButton.style.opacity = '1';
+    }
+    const finalSelects = document.querySelectorAll('.admin-final-rank');
+    if (officialResults.current_step < 3) {
+        finalSelects.forEach(select => select.disabled = false);
+    }
 }
 
 // Mettre à jour la grille Top 5 admin (afficher seulement les candidates du Top 15 validé)

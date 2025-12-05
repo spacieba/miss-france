@@ -1535,6 +1535,117 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
 });
 
 // ============================================
+// ANNULATION VALIDATION - Retour en arrière
+// ============================================
+
+app.post('/api/admin/reset-step', requireAuth, requireAdmin, (req, res) => {
+  const { targetStep } = req.body;
+
+  // Validation du targetStep (0, 1 ou 2)
+  if (targetStep === undefined || targetStep < 0 || targetStep > 2) {
+    return res.status(400).json({ error: 'Étape cible invalide (doit être 0, 1 ou 2)' });
+  }
+
+  const currentResults = db.prepare('SELECT * FROM official_results WHERE id = 1').get();
+
+  if (!currentResults || currentResults.current_step <= targetStep) {
+    return res.status(400).json({ error: 'Impossible de revenir à cette étape' });
+  }
+
+  // Reset des données selon l'étape cible
+  if (targetStep === 0) {
+    // Reset complet - effacer top15, top5, classement_final
+    db.prepare(`
+      UPDATE official_results
+      SET top15 = NULL, bonus_top15 = NULL, top5 = NULL, bonus_top5 = NULL,
+          classement_final = NULL, miss_france = NULL, current_step = 0,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1
+    `).run();
+  } else if (targetStep === 1) {
+    // Garder top15, effacer top5 et classement_final
+    db.prepare(`
+      UPDATE official_results
+      SET top5 = NULL, bonus_top5 = NULL, classement_final = NULL, miss_france = NULL,
+          current_step = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1
+    `).run();
+  } else if (targetStep === 2) {
+    // Garder top15 et top5, effacer classement_final
+    db.prepare(`
+      UPDATE official_results
+      SET classement_final = NULL, miss_france = NULL, current_step = 2,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1
+    `).run();
+  }
+
+  // Recalculer les scores de tous les joueurs
+  const updatedResults = db.prepare('SELECT * FROM official_results WHERE id = 1').get();
+  const top15Official = updatedResults.top15 ? JSON.parse(updatedResults.top15) : [];
+  const top5Official = updatedResults.top5 ? JSON.parse(updatedResults.top5) : [];
+
+  const allPronostics = db.prepare('SELECT * FROM pronostics').all();
+  let usersUpdated = 0;
+
+  allPronostics.forEach(prono => {
+    let pronosticsScore = 0;
+
+    // Calculer les points Top 15 (si step >= 1)
+    if (targetStep >= 1 && prono.top15 && top15Official.length > 0) {
+      try {
+        const top15User = JSON.parse(prono.top15);
+        top15User.forEach(candidate => {
+          if (top15Official.includes(candidate)) {
+            pronosticsScore += 5;
+          }
+        });
+      } catch (e) {}
+
+      // Bonus Top 15
+      if (prono.bonus_top15 && !top15Official.includes(prono.bonus_top15)) {
+        pronosticsScore += 10;
+      }
+    }
+
+    // Calculer les points Top 5 (si step >= 2)
+    if (targetStep >= 2 && prono.top5 && top5Official.length > 0) {
+      try {
+        const top5User = JSON.parse(prono.top5);
+        top5User.forEach(candidate => {
+          if (top5Official.includes(candidate)) {
+            pronosticsScore += 8;
+          }
+        });
+      } catch (e) {}
+
+      // Bonus Top 5
+      if (prono.bonus_top5 && !top5Official.includes(prono.bonus_top5)) {
+        pronosticsScore += 20;
+      }
+    }
+
+    // Mettre à jour le score
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(prono.user_id);
+    if (currentScore) {
+      const newTotalScore = currentScore.quiz_score + pronosticsScore + currentScore.defis_score + currentScore.culture_g_score;
+      db.prepare('UPDATE scores SET pronostics_score = ?, total_score = ? WHERE user_id = ?')
+        .run(pronosticsScore, newTotalScore, prono.user_id);
+      usersUpdated++;
+    }
+  });
+
+  const stepNames = ['Aucune validation', 'Top 15 validé', 'Top 5 validé'];
+
+  res.json({
+    success: true,
+    message: `Retour effectué ! État actuel : ${stepNames[targetStep]}`,
+    currentStep: targetStep,
+    usersUpdated
+  });
+});
+
+// ============================================
 // VALIDATION CULTURE G - Attribution des points 15/10/5
 // ============================================
 
