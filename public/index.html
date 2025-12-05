@@ -185,11 +185,6 @@
                 <button onclick="handleSubmit()" class="btn-submit" id="submit-btn">
                     Se connecter
                 </button>
-
-                <div class="admin-note">
-                    <strong>🔐 Accès Admin</strong>
-                    Pour accéder à l'interface admin, connecte-toi avec <code><strong>Dam admin</strong></code> ou <code><strong>lucie admin</strong></code>
-                </div>
             </div>
         </div>
     </div>
@@ -294,9 +289,9 @@
                 return;
             }
 
-            const reservedPseudos = ['admin', 'dam admin', 'lucie admin'];
+            const reservedPseudos = ['admin', 'dam', 'lucie'];
             if (reservedPseudos.includes(pseudo.toLowerCase())) {
-                errorDiv.textContent = '⚠️ Ce pseudo est réservé pour l\'administrateur';
+                errorDiv.textContent = '⚠️ Ce pseudo est réservé';
                 errorDiv.style.display = 'block';
                 return;
             }
