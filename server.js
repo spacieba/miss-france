@@ -172,6 +172,23 @@ try {
   // La colonne existe déjà, c'est OK
 }
 
+// Nettoyage: Supprimer les anciens comptes admin "dam admin" et "lucie admin"
+try {
+  const oldAdmins = db.prepare("SELECT id FROM users WHERE pseudo IN ('dam admin', 'lucie admin', 'Dam admin', 'Lucie admin')").all();
+  if (oldAdmins.length > 0) {
+    const oldIds = oldAdmins.map(a => a.id);
+    db.prepare(`DELETE FROM pronostics WHERE user_id IN (${oldIds.join(',')})`).run();
+    db.prepare(`DELETE FROM quiz_answers WHERE user_id IN (${oldIds.join(',')})`).run();
+    db.prepare(`DELETE FROM culture_g_answers WHERE user_id IN (${oldIds.join(',')})`).run();
+    db.prepare(`DELETE FROM costume_votes WHERE voter_id IN (${oldIds.join(',')})`).run();
+    db.prepare(`DELETE FROM scores WHERE user_id IN (${oldIds.join(',')})`).run();
+    db.prepare("DELETE FROM users WHERE pseudo IN ('dam admin', 'lucie admin', 'Dam admin', 'Lucie admin')").run();
+    console.log(`✅ ${oldAdmins.length} ancien(s) compte(s) admin supprimé(s)`);
+  }
+} catch (e) {
+  console.log('Nettoyage anciens admins:', e.message);
+}
+
 // Créer le dossier uploads si nécessaire
 const uploadsDir = path.join(uploadsBaseDir, 'costumes');
 if (!fs.existsSync(uploadsDir)) {
@@ -739,6 +756,9 @@ app.post('/api/culture-g/answer', requireAuth, (req, res) => {
       .run(newCultureGCorrect, req.session.userId);
   }
 
+  // Recalculer automatiquement les points culture G (classement 15/10/5)
+  recalculateCultureGPoints();
+
   res.json({
     correct: isCorrect,
     rawPoints: points,
@@ -814,13 +834,16 @@ app.post('/api/culture-g/submit-category', requireAuth, (req, res) => {
     results.push({ questionId, isCorrect, points, correctAnswer });
   }
 
-  // Mettre à jour le compteur de bonnes réponses (pas le score final - celui-ci sera attribué par l'admin)
+  // Mettre à jour le compteur de bonnes réponses
   if (correctCount > 0) {
     const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
     const newCultureGCorrect = (currentScore.culture_g_correct || 0) + correctCount;
     db.prepare('UPDATE scores SET culture_g_correct = ? WHERE user_id = ?')
       .run(newCultureGCorrect, req.session.userId);
   }
+
+  // Recalculer automatiquement les points culture G (classement 15/10/5)
+  recalculateCultureGPoints();
 
   res.json({
     success: true,
@@ -1032,6 +1055,68 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
 // VOTE MEILLEUR COSTUME
 // ============================================
 
+// Fonction pour recalculer automatiquement les points costume après chaque vote
+function recalculateCostumePoints() {
+  // D'abord, remettre à zéro tous les points costume (defis_score)
+  db.prepare('UPDATE scores SET defis_score = 0').run();
+
+  // Récupérer le classement des votes
+  const results = db.prepare(`
+    SELECT u.id, u.pseudo, COUNT(cv.id) as votes
+    FROM users u
+    LEFT JOIN costume_votes cv ON u.id = cv.voted_for
+    WHERE u.is_admin = 0
+    GROUP BY u.id
+    HAVING votes > 0
+    ORDER BY votes DESC
+  `).all();
+
+  // Attribuer les points: 1er = 30pts, 2ème = 20pts, 3ème = 10pts
+  const pointsTable = [30, 20, 10];
+
+  results.forEach((player, index) => {
+    if (index < 3) {
+      const points = pointsTable[index];
+      db.prepare('UPDATE scores SET defis_score = ? WHERE user_id = ?').run(points, player.id);
+    }
+  });
+
+  // Recalculer les totaux pour tous les utilisateurs
+  db.prepare(`
+    UPDATE scores SET total_score = quiz_score + COALESCE(culture_g_score, 0) + pronostics_score + defis_score
+  `).run();
+}
+
+// Fonction pour recalculer automatiquement les points culture G
+function recalculateCultureGPoints() {
+  // D'abord, remettre à zéro tous les points culture G
+  db.prepare('UPDATE scores SET culture_g_score = 0').run();
+
+  // Récupérer le classement par nombre de bonnes réponses
+  const rankings = db.prepare(`
+    SELECT u.id, u.pseudo, s.culture_g_correct
+    FROM users u
+    JOIN scores s ON u.id = s.user_id
+    WHERE u.is_admin = 0 AND s.culture_g_correct > 0
+    ORDER BY s.culture_g_correct DESC
+  `).all();
+
+  // Attribuer les points: 1er = 15pts, 2ème = 10pts, 3ème = 5pts
+  const pointsTable = [15, 10, 5];
+
+  rankings.forEach((player, index) => {
+    if (index < 3) {
+      const points = pointsTable[index];
+      db.prepare('UPDATE scores SET culture_g_score = ? WHERE user_id = ?').run(points, player.id);
+    }
+  });
+
+  // Recalculer les totaux
+  db.prepare(`
+    UPDATE scores SET total_score = quiz_score + COALESCE(culture_g_score, 0) + pronostics_score + defis_score
+  `).run();
+}
+
 // Récupérer la liste des joueurs pour la galerie (inclut tout le monde avec photos publiques)
 app.get('/api/costume/players', requireAuth, (req, res) => {
   // Retourne tous les joueurs, montre costume_photo que si public
@@ -1197,6 +1282,9 @@ app.post('/api/costume/vote', requireAuth, (req, res) => {
     db.prepare('INSERT INTO costume_votes (voter_id, voted_for) VALUES (?, ?)')
       .run(req.session.userId, votedForId);
   }
+
+  // Recalculer automatiquement les points costume
+  recalculateCostumePoints();
 
   res.json({ success: true, message: `Vote enregistré pour ${targetPlayer.pseudo} !` });
 });
