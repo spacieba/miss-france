@@ -177,8 +177,34 @@ body::after {
     .login-wrapper {
         grid-template-columns: 1fr;
         max-width: 500px;
+        gap: 20px;
     }
     .welcome-side {
+        padding: 20px 15px;
+    }
+    .welcome-side h1 {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+    .welcome-side .title-elegant {
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        letter-spacing: 1px;
+    }
+    .welcome-side p {
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+    }
+    .welcome-side .welcome-features {
+        display: none;
+    }
+    .welcome-side .crown-container {
+        margin-bottom: 10px;
+    }
+    .welcome-side .crown-main {
+        font-size: 3rem;
+    }
+    .welcome-side .gold-particles {
         display: none;
     }
 }
