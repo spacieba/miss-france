@@ -205,8 +205,8 @@ if (!existingResults) {
 
 // Créer les utilisateurs admin s'ils n'existent pas
 const adminUsers = [
-  { pseudo: 'Dam admin', password: 'brad' },
-  { pseudo: 'lucie admin', password: 'janet' }
+  { pseudo: 'dam', password: 'brad' },
+  { pseudo: 'lucie', password: 'janet' }
 ];
 
 adminUsers.forEach(admin => {
@@ -1443,14 +1443,14 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Le top 5 doit être validé avant le classement final' });
   }
 
-  const missFramce2026 = classementFinal[0];
+  const missFrance2026 = classementFinal[0];
 
   // Sauvegarder les résultats officiels
   db.prepare(`
     UPDATE official_results
     SET classement_final = ?, miss_france = ?, current_step = 3, updated_at = CURRENT_TIMESTAMP
     WHERE id = 1
-  `).run(JSON.stringify(classementFinal), missFramce2026);
+  `).run(JSON.stringify(classementFinal), missFrance2026);
 
   // Recalculer les scores pour tous les utilisateurs (top15 + top5 + final + prono d'or)
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
@@ -1509,7 +1509,7 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
     }
 
     // PRONO D'OR - Miss France 2026 - 80 pts
-    if (prono.prono_or && prono.prono_or === missFramce2026) {
+    if (prono.prono_or && prono.prono_or === missFrance2026) {
       pronosticsScore += 80;
       pronoOrWinners++;
     }
@@ -1526,11 +1526,11 @@ app.post('/api/admin/validate-final', requireAuth, requireAdmin, (req, res) => {
 
   res.json({
     success: true,
-    message: `Classement final validé ! ${missFramce2026} est Miss France 2026 ! ${pronoOrWinners} joueur(s) ont gagné le Prono d'Or !`,
+    message: `Classement final validé ! ${missFrance2026} est Miss France 2026 ! ${pronoOrWinners} joueur(s) ont gagné le Prono d'Or !`,
     usersUpdated,
     pronoOrWinners,
     currentStep: 3,
-    missFramce2026
+    missFrance2026
   });
 });
 
@@ -1617,7 +1617,7 @@ app.post('/api/admin/validate-results', requireAuth, requireAdmin, (req, res) =>
   const allPronostics = db.prepare('SELECT * FROM pronostics').all();
 
   // La Miss France est la première du classement final
-  const missFramce2026 = classementFinalReal && classementFinalReal[0] ? classementFinalReal[0] : null;
+  const missFrance2026 = classementFinalReal && classementFinalReal[0] ? classementFinalReal[0] : null;
 
   let usersUpdated = 0;
 
@@ -1642,7 +1642,7 @@ app.post('/api/admin/validate-results', requireAuth, requireAdmin, (req, res) =>
     }
 
     // PRONO D'OR - Miss France 2026 - 80 pts
-    if (prono.prono_or && missFramce2026 && prono.prono_or === missFramce2026) {
+    if (prono.prono_or && missFrance2026 && prono.prono_or === missFrance2026) {
       score += 80;
     }
 
