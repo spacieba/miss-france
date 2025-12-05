@@ -932,9 +932,10 @@ body::after {
 
 .candidates-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
     margin-bottom: 25px;
+    justify-items: center;
 }
 
 .candidate-checkbox {
@@ -966,27 +967,44 @@ body::after {
 
 /* Photos des candidates */
 .candidate-checkbox.with-photo {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 15px;
     gap: 10px;
 }
 
 .candidate-photo {
-    width: 50px;
-    height: 65px;
+    width: 120px;
+    height: 160px;
     object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid var(--gold-dark);
-    flex-shrink: 0;
+    border-radius: 12px;
+    border: 3px solid var(--gold-dark);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
 }
 
 .candidate-checkbox.with-photo:hover .candidate-photo {
     border-color: var(--gold);
-    transform: scale(1.05);
+    transform: scale(1.08);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+}
+
+.candidate-checkbox.with-photo input {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 22px;
+    height: 22px;
+}
+
+.candidate-checkbox.with-photo {
+    position: relative;
 }
 
 .candidate-checkbox.with-photo span {
-    flex: 1;
-    min-width: 120px;
+    font-weight: 600;
+    font-size: 0.95rem;
 }
 
 /* Photos admin */
@@ -1985,8 +2003,13 @@ body::after {
     }
 
     .candidates-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .candidate-photo {
+        width: 100px;
+        height: 130px;
     }
 
     .candidate-checkbox {
