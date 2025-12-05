@@ -1832,7 +1832,7 @@ app.post('/api/admin/reset-all-data', requireAuth, requireAdmin, (req, res) => {
       db.prepare(`DELETE FROM pronostics WHERE user_id IN (${nonAdminIds.join(',')})`).run();
       db.prepare(`DELETE FROM quiz_answers WHERE user_id IN (${nonAdminIds.join(',')})`).run();
       db.prepare(`DELETE FROM culture_g_answers WHERE user_id IN (${nonAdminIds.join(',')})`).run();
-      db.prepare(`DELETE FROM costume_votes WHERE user_id IN (${nonAdminIds.join(',')})`).run();
+      db.prepare(`DELETE FROM costume_votes WHERE voter_id IN (${nonAdminIds.join(',')})`).run();
       db.prepare(`DELETE FROM scores WHERE user_id IN (${nonAdminIds.join(',')})`).run();
       db.prepare(`DELETE FROM users WHERE is_admin = 0`).run();
     }
