@@ -592,36 +592,52 @@ function endQuiz() {
 
 async function loadDefisSection() {
     // Charger le défi classique
-    const response = await fetch('/api/defis');
-    const defi = await response.json();
+    try {
+        const response = await fetch('/api/defis');
+        const defi = await response.json();
 
-    const container = document.getElementById('defi-card');
+        const container = document.getElementById('defi-card');
 
-    if (!defi) {
-        container.innerHTML = `
-            <div class="no-defi">
-                <p>🎉 Tu as complété tous les défis disponibles !</p>
-            </div>
-        `;
-    } else {
-        container.innerHTML = `
-            <div class="defi-content">
-                <h3>${defi.title}</h3>
-                <p>${defi.description}</p>
-                <div class="defi-points">🌟 ${defi.points} points</div>
-                <button onclick="completeDefi(${defi.id})" class="btn-primary btn-large">✅ J'ai fait le défi !</button>
-            </div>
-        `;
+        if (!defi) {
+            container.innerHTML = `
+                <div class="no-defi">
+                    <p>🎉 Tu as complété tous les défis disponibles !</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="defi-content">
+                    <h3>${defi.title}</h3>
+                    <p>${defi.description}</p>
+                    <div class="defi-points">🌟 ${defi.points} points</div>
+                    <button onclick="completeDefi(${defi.id})" class="btn-primary btn-large">✅ J'ai fait le défi !</button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erreur chargement défis:', error);
     }
 
     // Charger ma photo de costume
-    await loadMyCostumePhoto();
+    try {
+        await loadMyCostumePhoto();
+    } catch (error) {
+        console.error('Erreur chargement photo costume:', error);
+    }
 
     // Charger la galerie des costumes
-    await loadCostumeGallery();
+    try {
+        await loadCostumeGallery();
+    } catch (error) {
+        console.error('Erreur chargement galerie:', error);
+    }
 
     // Charger le vote costume
-    await loadCostumeVoting();
+    try {
+        await loadCostumeVoting();
+    } catch (error) {
+        console.error('Erreur chargement vote costume:', error);
+    }
 
     // Initialiser l'input file pour l'upload
     initCostumePhotoUpload();
