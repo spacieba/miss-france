@@ -1696,94 +1696,598 @@ body::after {
 
 /* === RESPONSIVE === */
 
-@media (max-width: 768px) {
+/* ========== MOBILE FIRST IMPROVEMENTS ========== */
+
+/* Touch-friendly tap targets */
+@media (pointer: coarse) {
+    .nav-btn,
+    .btn-primary,
+    .btn-secondary,
+    .btn-submit,
+    .answer-btn,
+    .candidate-checkbox,
+    .bingo-cell {
+        min-height: 48px;
+    }
+
+    input, select, textarea {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+}
+
+/* Small phones (up to 480px) */
+@media (max-width: 480px) {
+    .app-container {
+        padding: 10px;
+    }
+
+    .app-header {
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+    }
+
     .header-content {
         flex-direction: column;
-        gap: 20px;
+        gap: 12px;
         text-align: center;
     }
 
+    .header-content h1 {
+        font-size: 1.2rem;
+    }
+
+    .user-info {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .user-info span {
+        font-size: 0.9rem;
+    }
+
+    .score {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+
+    .btn-logout {
+        padding: 8px 15px;
+        font-size: 0.8rem;
+    }
+
+    /* Navigation mobile - grille 2x2 puis scroll */
     .main-nav {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 15px;
+        padding-bottom: 0;
     }
 
     .nav-btn {
-        width: 100%;
+        padding: 12px 8px;
+        font-size: 0.75rem;
+        border-radius: 10px;
+        letter-spacing: 0;
+    }
+
+    /* Sections */
+    .section {
+        padding: 20px 15px;
+        border-radius: 15px;
+    }
+
+    .section h2 {
+        font-size: 1.6rem;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+    }
+
+    /* Welcome card */
+    .welcome-card {
+        padding: 25px 15px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+    }
+
+    .welcome-card h2 {
+        font-size: 1.5rem;
+        line-height: 1.3;
+    }
+
+    .welcome-card .welcome-subtitle {
+        font-size: 1rem;
     }
 
     .score-display {
         flex-direction: column;
-        gap: 20px;
+        gap: 15px;
     }
 
+    .score-item {
+        padding: 15px;
+        min-width: unset;
+        width: 100%;
+    }
+
+    .score-value {
+        font-size: 2.2rem;
+    }
+
+    /* Cards grid */
     .cards-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
 
-    .section {
-        padding: 25px;
+    .feature-card {
+        padding: 25px 20px;
+        border-radius: 15px;
     }
 
-    .welcome-card {
-        padding: 30px 20px;
+    .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
     }
 
-    .welcome-card h2 {
+    .feature-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .feature-card p {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    /* Pronostics */
+    .prono-section {
+        padding: 20px 15px;
+        border-radius: 12px;
+    }
+
+    .prono-section h3 {
+        font-size: 1.15rem;
+    }
+
+    .candidates-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .candidate-checkbox {
+        padding: 14px 12px;
+        font-size: 0.9rem;
+    }
+
+    .select-candidate {
+        padding: 14px;
+        font-size: 1rem;
+    }
+
+    .ranking-list {
+        max-width: 100%;
+    }
+
+    .rank-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .rank-number {
+        font-size: 1.4rem;
+        min-width: unset;
+    }
+
+    /* Quiz */
+    .quiz-intro {
+        padding: 30px 15px;
+    }
+
+    .quiz-intro p {
+        font-size: 1rem;
+    }
+
+    .quiz-stats {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .stat {
+        flex: 1 1 calc(50% - 10px);
+        min-width: 100px;
+        padding: 15px 10px;
+    }
+
+    .stat-number {
         font-size: 2rem;
     }
 
-    .bingo-grid {
-        grid-template-columns: repeat(5, 1fr);
-        gap: 6px;
+    .stat-label {
+        font-size: 0.75rem;
     }
 
-    .bingo-cell {
-        font-size: 0.65rem;
-        padding: 6px;
-        border-radius: 8px;
+    .question-card {
+        padding: 20px 15px;
+    }
+
+    .question-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .answers-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .answer-btn {
+        padding: 15px;
+        font-size: 0.95rem;
+    }
+
+    /* Culture G */
+    .culture-g-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .stat-box {
+        padding: 12px !important;
+    }
+
+    .stat-box .stat-number {
+        font-size: 1.5em !important;
+    }
+
+    .stat-box .stat-label {
+        font-size: 0.75rem !important;
+    }
+
+    /* Défis / Costumes */
+    .costume-upload-section,
+    .costume-gallery-section,
+    .costume-vote-section,
+    .defi-section {
+        padding: 20px 15px !important;
+        border-radius: 12px !important;
+    }
+
+    #costume-gallery {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    /* Leaderboard table */
+    .leaderboard-container {
+        border-radius: 12px;
+        margin: 0 -5px;
     }
 
     .leaderboard-table {
-        font-size: 0.85rem;
+        font-size: 0.7rem;
     }
 
     .leaderboard-table th,
     .leaderboard-table td {
-        padding: 12px 8px;
+        padding: 10px 5px;
     }
 
-    .quiz-stats {
-        flex-direction: column;
-        gap: 20px;
+    .leaderboard-table th {
+        font-size: 0.65rem;
     }
 
-    .stat {
-        width: 100%;
+    .rank {
+        font-size: 1.1rem;
     }
 
-    .login-container {
-        padding: 35px 25px;
+    .total-score {
+        font-size: 1rem;
+    }
+
+    /* Hide some columns on very small screens */
+    .leaderboard-table th:nth-child(4),
+    .leaderboard-table td:nth-child(4),
+    .leaderboard-table th:nth-child(6),
+    .leaderboard-table td:nth-child(6) {
+        display: none;
+    }
+
+    /* Buttons */
+    .btn-primary,
+    .btn-submit {
+        padding: 16px;
+        font-size: 1rem;
+    }
+
+    .btn-large {
+        padding: 18px;
+        font-size: 1.05rem;
+    }
+
+    /* Admin */
+    .admin-card {
+        padding: 20px 15px;
+        border-radius: 12px;
+    }
+
+    .admin-card h3 {
+        font-size: 1.1rem;
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .stat-item {
+        padding: 15px 10px;
+    }
+
+    .stat-item .stat-value {
+        font-size: 1.8rem;
     }
 
     .admin-candidates-grid {
         grid-template-columns: 1fr;
     }
 
-    .rank-item {
+    .steps-progress {
         flex-direction: column;
-        align-items: stretch;
+        gap: 8px;
     }
 
-    .rank-num {
+    .step-badge {
         text-align: center;
     }
 
-    .admin-prediction-input-group {
+    .btn-admin-step {
+        padding: 15px 20px;
+        font-size: 0.95rem;
+    }
+
+    /* Points section */
+    .points-card {
+        padding: 20px 15px !important;
+    }
+
+    .points-card h3 {
+        font-size: 1.1rem !important;
+    }
+
+    .points-card ul li {
+        font-size: 0.9rem;
+    }
+
+    /* Login page mobile */
+    .login-container {
+        padding: 30px 20px;
+        border-radius: 20px;
+    }
+
+    .logo h2 {
+        font-size: 1.5rem;
+    }
+
+    .form-tabs {
         flex-direction: column;
+        gap: 8px;
+    }
+
+    .tab-btn {
+        padding: 12px;
+        font-size: 0.85rem;
+    }
+
+    .input-group input {
+        padding: 14px 16px;
+    }
+
+    /* Message boxes */
+    .message,
+    .error-message,
+    .success-message {
+        padding: 12px 15px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Medium phones and small tablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .app-container {
+        padding: 15px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .header-content h1 {
+        font-size: 1.4rem;
+    }
+
+    /* Navigation - horizontal scroll */
+    .main-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .nav-btn {
+        flex: 0 0 auto;
+        padding: 12px 16px;
+        font-size: 0.8rem;
+    }
+
+    .section {
+        padding: 30px 25px;
+    }
+
+    .welcome-card h2 {
+        font-size: 1.8rem;
+    }
+
+    .score-display {
+        flex-direction: row;
+        justify-content: center;
+        gap: 30px;
+    }
+
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .candidates-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quiz-stats {
+        flex-direction: row;
+        gap: 30px;
+    }
+
+    .answers-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .culture-g-stats {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    #costume-gallery {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .leaderboard-table {
+        font-size: 0.8rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .admin-candidates-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Tablets (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .app-container {
+        padding: 20px;
+    }
+
+    .main-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-btn {
+        flex: 0 0 auto;
+    }
+
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .candidates-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    #costume-gallery {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    .admin-candidates-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+    .welcome-card {
+        padding: 20px;
+    }
+
+    .score-display {
+        flex-direction: row;
+        gap: 20px;
+    }
+
+    .quiz-stats {
+        flex-direction: row;
+    }
+
+    .main-nav {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .main-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-btn {
+        flex: 0 0 auto;
+    }
+}
+
+/* Safe area insets for notched phones */
+@supports (padding: max(0px)) {
+    .app-container {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Reduce animations on mobile for performance */
+@media (max-width: 768px) {
+    body::before,
+    body::after {
+        animation: none;
+        opacity: 0.3;
+    }
+
+    .crown-decoration {
+        animation: none;
+    }
+
+    @keyframes shimmerBorder {
+        0%, 100% { background-position: 0 0; }
+    }
+}
+
+/* Dark mode preference (if user has dark mode on device) */
+@media (prefers-color-scheme: dark) {
+    /* Already dark theme, no changes needed */
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .nav-btn,
+    .btn-primary,
+    .btn-secondary {
+        border-width: 3px;
+    }
+
+    .section,
+    .admin-card,
+    .feature-card {
+        border-width: 2px;
     }
 }
 
