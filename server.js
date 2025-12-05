@@ -156,6 +156,14 @@ try {
   // La colonne existe déjà, c'est OK
 }
 
+// Migration: Ajouter la colonne quiz_correct pour le nombre de bonnes réponses quiz
+try {
+  db.exec('ALTER TABLE scores ADD COLUMN quiz_correct INTEGER DEFAULT 0');
+  console.log('✅ Colonne quiz_correct ajoutée à la table scores');
+} catch (e) {
+  // La colonne existe déjà, c'est OK
+}
+
 // Migration: Ajouter la colonne costume_photo pour les photos de déguisement
 try {
   db.exec('ALTER TABLE users ADD COLUMN costume_photo TEXT');
@@ -582,23 +590,24 @@ app.post('/api/quiz/answer', requireAuth, (req, res) => {
   }
 
   const isCorrect = answer === question.correct;
-  const points = isCorrect ? question.points : 0;
 
   // Enregistrer la réponse
   db.prepare('INSERT INTO quiz_answers (user_id, question_id, answer, is_correct, points) VALUES (?, ?, ?, ?, ?)')
-    .run(req.session.userId, questionId, answer, isCorrect ? 1 : 0, points);
+    .run(req.session.userId, questionId, answer, isCorrect ? 1 : 0, isCorrect ? 1 : 0);
 
-  // Mettre à jour le score
-  const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
-  const newQuizScore = (currentScore.quiz_score || 0) + points;
-  const newTotalScore = newQuizScore + (currentScore.pronostics_score || 0) + (currentScore.defis_score || 0) + (currentScore.culture_g_score || 0);
+  // Mettre à jour le compteur de bonnes réponses
+  if (isCorrect) {
+    const currentScore = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
+    const newQuizCorrect = (currentScore.quiz_correct || 0) + 1;
+    db.prepare('UPDATE scores SET quiz_correct = ? WHERE user_id = ?')
+      .run(newQuizCorrect, req.session.userId);
+  }
 
-  db.prepare('UPDATE scores SET quiz_score = ?, total_score = ? WHERE user_id = ?')
-    .run(newQuizScore, newTotalScore, req.session.userId);
+  // Recalculer automatiquement les points quiz (classement 15/10/5)
+  recalculateQuizPoints();
 
   res.json({
     correct: isCorrect,
-    points: points,
     correctAnswer: question.answers[question.correct]
   });
 });
@@ -1052,6 +1061,36 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
 // ============================================
 // VOTE MEILLEUR COSTUME
 // ============================================
+
+// Fonction pour recalculer automatiquement les points quiz (15/10/5 pour les 3 premiers)
+function recalculateQuizPoints() {
+  // D'abord, remettre à zéro tous les points quiz
+  db.prepare('UPDATE scores SET quiz_score = 0').run();
+
+  // Récupérer le classement par nombre de bonnes réponses quiz
+  const rankings = db.prepare(`
+    SELECT u.id, u.pseudo, COALESCE(s.quiz_correct, 0) as quiz_correct
+    FROM users u
+    JOIN scores s ON u.id = s.user_id
+    WHERE u.is_admin = 0 AND COALESCE(s.quiz_correct, 0) > 0
+    ORDER BY s.quiz_correct DESC
+  `).all();
+
+  // Attribuer les points: 1er = 15pts, 2ème = 10pts, 3ème = 5pts
+  const pointsTable = [15, 10, 5];
+
+  rankings.forEach((player, index) => {
+    if (index < 3) {
+      const points = pointsTable[index];
+      db.prepare('UPDATE scores SET quiz_score = ? WHERE user_id = ?').run(points, player.id);
+    }
+  });
+
+  // Recalculer les totaux
+  db.prepare(`
+    UPDATE scores SET total_score = quiz_score + COALESCE(culture_g_score, 0) + pronostics_score + defis_score
+  `).run();
+}
 
 // Fonction pour recalculer automatiquement les points costume après chaque vote
 function recalculateCostumePoints() {
