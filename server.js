@@ -1792,6 +1792,100 @@ app.post('/api/admin/reset-step', requireAuth, requireAdmin, (req, res) => {
 });
 
 // ============================================
+// RESET COMPLET DES DONNÉES DE TEST
+// ============================================
+
+app.post('/api/admin/reset-all-data', requireAuth, requireAdmin, (req, res) => {
+  try {
+    // 1. Récupérer les IDs des admins à garder
+    const admins = db.prepare('SELECT id FROM users WHERE is_admin = 1').all();
+    const adminIds = admins.map(a => a.id);
+
+    if (adminIds.length === 0) {
+      return res.status(400).json({ error: 'Aucun admin trouvé - opération annulée' });
+    }
+
+    // 2. Supprimer les photos costume de tous les utilisateurs
+    const usersWithPhotos = db.prepare('SELECT id, costume_photo FROM users WHERE costume_photo IS NOT NULL').all();
+    let photosDeleted = 0;
+
+    usersWithPhotos.forEach(user => {
+      if (user.costume_photo) {
+        try {
+          const relativePath = user.costume_photo.replace('/uploads/', '');
+          const photoPath = path.join(uploadsBaseDir, relativePath);
+          if (fs.existsSync(photoPath)) {
+            fs.unlinkSync(photoPath);
+            photosDeleted++;
+          }
+        } catch (e) {
+          console.log(`Erreur suppression photo: ${e.message}`);
+        }
+      }
+    });
+
+    // 3. Supprimer les données liées aux utilisateurs non-admin
+    const nonAdminIds = db.prepare('SELECT id FROM users WHERE is_admin = 0').all().map(u => u.id);
+
+    if (nonAdminIds.length > 0) {
+      // Supprimer en cascade
+      db.prepare(`DELETE FROM pronostics WHERE user_id IN (${nonAdminIds.join(',')})`).run();
+      db.prepare(`DELETE FROM quiz_answers WHERE user_id IN (${nonAdminIds.join(',')})`).run();
+      db.prepare(`DELETE FROM culture_g_answers WHERE user_id IN (${nonAdminIds.join(',')})`).run();
+      db.prepare(`DELETE FROM costume_votes WHERE user_id IN (${nonAdminIds.join(',')})`).run();
+      db.prepare(`DELETE FROM scores WHERE user_id IN (${nonAdminIds.join(',')})`).run();
+      db.prepare(`DELETE FROM users WHERE is_admin = 0`).run();
+    }
+
+    // 4. Vider les tables de données même pour les admins
+    db.prepare('DELETE FROM pronostics').run();
+    db.prepare('DELETE FROM quiz_answers').run();
+    db.prepare('DELETE FROM culture_g_answers').run();
+    db.prepare('DELETE FROM costume_votes').run();
+
+    // 5. Réinitialiser les scores des admins
+    adminIds.forEach(adminId => {
+      db.prepare(`
+        UPDATE scores SET
+          quiz_score = 0,
+          culture_g_score = 0,
+          culture_g_correct = 0,
+          pronostics_score = 0,
+          predictions_score = 0,
+          bingo_score = 0,
+          defis_score = 0,
+          total_score = 0
+        WHERE user_id = ?
+      `).run(adminId);
+
+      // Réinitialiser les photos costume des admins
+      db.prepare('UPDATE users SET costume_photo = NULL, costume_photo_public = 0 WHERE id = ?').run(adminId);
+    });
+
+    // 6. Réinitialiser les résultats officiels
+    db.prepare(`
+      UPDATE official_results
+      SET top15 = NULL, bonus_top15 = NULL, top5 = NULL, bonus_top5 = NULL,
+          classement_final = NULL, miss_france = NULL, current_step = 0,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1
+    `).run();
+
+    res.json({
+      success: true,
+      message: `Reset complet effectué ! ${nonAdminIds.length} joueur(s) supprimé(s), ${photosDeleted} photo(s) supprimée(s). Les comptes admin sont vierges.`,
+      usersDeleted: nonAdminIds.length,
+      photosDeleted: photosDeleted,
+      adminsKept: adminIds.length
+    });
+
+  } catch (error) {
+    console.error('Erreur reset données:', error);
+    res.status(500).json({ error: 'Erreur lors du reset: ' + error.message });
+  }
+});
+
+// ============================================
 // VALIDATION CULTURE G - Attribution des points 15/10/5
 // ============================================
 

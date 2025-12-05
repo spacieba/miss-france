@@ -1711,6 +1711,67 @@ function resetValidationButtons() {
     }
 }
 
+// Reset complet de toutes les données de test
+async function adminResetAllData() {
+    const confirmation = confirm(
+        `⚠️ RESET COMPLET ⚠️\n\n` +
+        `Tu vas supprimer TOUTES les données de test :\n` +
+        `- Tous les joueurs (sauf admins)\n` +
+        `- Tous les scores et pronostics\n` +
+        `- Toutes les photos de costume\n` +
+        `- Les résultats officiels\n\n` +
+        `Les comptes admin seront conservés mais remis à zéro.\n\n` +
+        `Cette action est IRRÉVERSIBLE. Continuer ?`
+    );
+
+    if (!confirmation) return;
+
+    // Deuxième confirmation pour être sûr
+    const doubleConfirm = confirm(
+        `🔴 DERNIÈRE CONFIRMATION 🔴\n\n` +
+        `Es-tu vraiment sûr de vouloir tout supprimer ?\n\n` +
+        `Clique OK pour confirmer le reset complet.`
+    );
+
+    if (!doubleConfirm) return;
+
+    const messageDiv = document.getElementById('reset-all-message');
+
+    try {
+        messageDiv.innerHTML = '<p style="color: #f39c12;">⏳ Reset en cours...</p>';
+
+        const response = await fetch('/api/admin/reset-all-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            messageDiv.innerHTML = `<p style="color: #27ae60;">✅ ${data.message}</p>`;
+            alert(`✅ Reset effectué !\n\n${data.usersDeleted} joueur(s) supprimé(s)\n${data.photosDeleted} photo(s) supprimée(s)\n${data.adminsKept} compte(s) admin conservé(s)`);
+
+            // Recharger toutes les données
+            await loadOfficialResults();
+            await loadScore();
+            await loadLeaderboard();
+            await loadAdminStats();
+            updateAdminStepDisplay();
+            resetValidationButtons();
+
+            // Vider la liste des joueurs affichée
+            const usersList = document.getElementById('admin-users-list');
+            if (usersList) usersList.innerHTML = '';
+
+        } else {
+            messageDiv.innerHTML = `<p style="color: #e74c3c;">❌ Erreur: ${data.error}</p>`;
+        }
+    } catch (error) {
+        console.error('Erreur reset complet:', error);
+        messageDiv.innerHTML = '<p style="color: #e74c3c;">❌ Erreur lors du reset</p>';
+    }
+}
+
 // Mettre à jour la grille Top 5 admin (afficher seulement les candidates du Top 15 validé)
 function updateAdminTop5Grid() {
     const top5Grid = document.getElementById('admin-top5-grid');

@@ -751,6 +751,27 @@
                     <div id="admin-users-list"></div>
                 </div>
 
+                <!-- Reset Complet -->
+                <div class="admin-card" style="border: 2px solid #e74c3c; background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1));">
+                    <h3 style="color: #e74c3c;">⚠️ Reset Complet des Données</h3>
+                    <p style="color: #888; margin-bottom: 15px;">
+                        <strong>Attention :</strong> Cette action supprime TOUTES les données de test :
+                    </p>
+                    <ul style="color: #888; margin-bottom: 20px; padding-left: 20px;">
+                        <li>Tous les joueurs (sauf les admins)</li>
+                        <li>Tous les scores, pronostics, réponses quiz</li>
+                        <li>Toutes les photos de costume uploadées</li>
+                        <li>Les résultats officiels validés</li>
+                    </ul>
+                    <p style="color: #27ae60; margin-bottom: 15px;">
+                        ✅ <strong>Conservé :</strong> Les comptes admin (dam, lucie) et les photos des Miss France (URLs externes)
+                    </p>
+                    <button onclick="adminResetAllData()" class="btn-admin-step" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        🗑️ RÉINITIALISER TOUTES LES DONNÉES
+                    </button>
+                    <div id="reset-all-message" class="admin-step-message"></div>
+                </div>
+
                 <div id="admin-status" class="admin-status-message"></div>
             </section>
         </main>
