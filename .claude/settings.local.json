@@ -6,7 +6,9 @@
       "Bash(npm install:*)",
       "Bash(git add:*)",
       "Bash(git push)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:toutelatele.ouest-france.fr)",
+      "WebFetch(domain:www.ozap.com)"
     ],
     "deny": [],
     "ask": []
