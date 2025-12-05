@@ -848,15 +848,15 @@ app.get('/api/culture-g/leaderboard', requireAuth, (req, res) => {
 });
 
 // Routes Pronostics
+// Liste officielle des 30 candidates Miss France 2026
 const candidates = [
-  "Miss Guadeloupe", "Miss Martinique", "Miss Guyane", "Miss Réunion", "Miss Mayotte",
-  "Miss Île-de-France", "Miss Nord-Pas-de-Calais", "Miss Provence", "Miss Côte d'Azur",
-  "Miss Languedoc", "Miss Roussillon", "Miss Aquitaine", "Miss Midi-Pyrénées",
-  "Miss Limousin", "Miss Auvergne", "Miss Bourgogne", "Miss Franche-Comté",
-  "Miss Alsace", "Miss Lorraine", "Miss Champagne-Ardenne", "Miss Picardie",
-  "Miss Normandie", "Miss Bretagne", "Miss Pays de la Loire", "Miss Centre-Val de Loire",
-  "Miss Poitou-Charentes", "Miss Corse", "Miss Tahiti", "Miss Nouvelle-Calédonie",
-  "Miss Saint-Martin", "Miss Saint-Barthélemy"
+  "Miss Alsace", "Miss Aquitaine", "Miss Auvergne", "Miss Bourgogne", "Miss Bretagne",
+  "Miss Centre-Val de Loire", "Miss Champagne-Ardenne", "Miss Corse", "Miss Côte d'Azur",
+  "Miss Franche-Comté", "Miss Guadeloupe", "Miss Guyane", "Miss Île-de-France",
+  "Miss Languedoc", "Miss Limousin", "Miss Lorraine", "Miss Martinique", "Miss Mayotte",
+  "Miss Midi-Pyrénées", "Miss Nord-Pas-de-Calais", "Miss Normandie", "Miss Nouvelle-Calédonie",
+  "Miss Pays de la Loire", "Miss Picardie", "Miss Poitou-Charentes", "Miss Provence",
+  "Miss Réunion", "Miss Rhône-Alpes", "Miss Roussillon", "Miss Tahiti"
 ];
 
 app.get('/api/candidates', requireAuth, (req, res) => {
