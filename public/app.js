@@ -2363,3 +2363,172 @@ async function submitCultureGCategory() {
         alert('Erreur lors de la soumission');
     }
 }
+
+// ============================================
+// GESTION DES JOUEURS (Admin)
+// ============================================
+
+async function loadAdminUsers() {
+    const container = document.getElementById('admin-users-list');
+    container.innerHTML = '<p style="color: #888;">Chargement...</p>';
+
+    try {
+        const response = await fetch('/api/admin/users');
+        const users = await response.json();
+
+        if (users.length === 0) {
+            container.innerHTML = '<p style="color: #888;">Aucun joueur</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--noir-soft); position: sticky; top: 0;">
+                            <th style="padding: 10px; text-align: left; color: var(--gold);">Pseudo</th>
+                            <th style="padding: 10px; text-align: center; color: var(--gold);">Score</th>
+                            <th style="padding: 10px; text-align: center; color: var(--gold);">Photo</th>
+                            <th style="padding: 10px; text-align: center; color: var(--gold);">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr style="border-bottom: 1px solid var(--noir-soft);" id="user-row-${user.id}">
+                                <td style="padding: 10px;">
+                                    <span id="pseudo-display-${user.id}">${user.pseudo}</span>
+                                    ${user.is_admin ? '<span style="color: var(--gold); font-size: 0.8em;"> (admin)</span>' : ''}
+                                    <input type="text" id="pseudo-input-${user.id}" value="${user.pseudo}"
+                                           style="display: none; padding: 5px; border-radius: 5px; border: 1px solid var(--gold); background: var(--noir-medium); color: white; width: 120px;">
+                                </td>
+                                <td style="padding: 10px; text-align: center;">${user.total_score || 0} pts</td>
+                                <td style="padding: 10px; text-align: center;">
+                                    ${user.costume_photo
+                                        ? `<img src="${user.costume_photo}" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover;">`
+                                        : '<span style="color: #666;">-</span>'}
+                                </td>
+                                <td style="padding: 10px; text-align: center;">
+                                    ${!user.is_admin ? `
+                                        <button onclick="toggleEditUser(${user.id})" id="edit-btn-${user.id}"
+                                                style="background: #3498db; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 2px;">
+                                            ✏️
+                                        </button>
+                                        <button onclick="saveUserPseudo(${user.id})" id="save-btn-${user.id}"
+                                                style="display: none; background: #27ae60; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 2px;">
+                                            💾
+                                        </button>
+                                        ${user.costume_photo ? `
+                                            <button onclick="deleteUserPhoto(${user.id}, '${user.pseudo}')"
+                                                    style="background: #f39c12; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 2px;">
+                                                🖼️❌
+                                            </button>
+                                        ` : ''}
+                                        <button onclick="deleteUser(${user.id}, '${user.pseudo}')"
+                                                style="background: #e74c3c; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 2px;">
+                                            🗑️
+                                        </button>
+                                    ` : '<span style="color: #666;">-</span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <p style="color: #888; margin-top: 15px; font-size: 0.9em;">
+                Total: ${users.length} joueurs |
+                ✏️ Modifier pseudo | 🖼️❌ Supprimer photo | 🗑️ Supprimer joueur
+            </p>
+        `;
+    } catch (error) {
+        console.error('Erreur chargement users:', error);
+        container.innerHTML = '<p style="color: #e74c3c;">Erreur lors du chargement</p>';
+    }
+}
+
+function toggleEditUser(userId) {
+    const display = document.getElementById(`pseudo-display-${userId}`);
+    const input = document.getElementById(`pseudo-input-${userId}`);
+    const editBtn = document.getElementById(`edit-btn-${userId}`);
+    const saveBtn = document.getElementById(`save-btn-${userId}`);
+
+    display.style.display = 'none';
+    input.style.display = 'inline-block';
+    editBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    input.focus();
+}
+
+async function saveUserPseudo(userId) {
+    const input = document.getElementById(`pseudo-input-${userId}`);
+    const newPseudo = input.value.trim();
+
+    if (!newPseudo) {
+        alert('Le pseudo ne peut pas être vide');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pseudo: newPseudo })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(`✅ ${data.message}`);
+            loadAdminUsers(); // Recharger la liste
+        } else {
+            alert(`❌ ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Erreur modification pseudo:', error);
+        alert('Erreur lors de la modification');
+    }
+}
+
+async function deleteUserPhoto(userId, pseudo) {
+    if (!confirm(`Supprimer la photo costume de "${pseudo}" ?`)) return;
+
+    try {
+        const response = await fetch(`/api/admin/users/${userId}/photo`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(`✅ ${data.message}`);
+            loadAdminUsers(); // Recharger la liste
+        } else {
+            alert(`❌ ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Erreur suppression photo:', error);
+        alert('Erreur lors de la suppression');
+    }
+}
+
+async function deleteUser(userId, pseudo) {
+    if (!confirm(`⚠️ ATTENTION ⚠️\n\nSupprimer définitivement le joueur "${pseudo}" ?\n\nToutes ses données seront perdues (scores, pronostics, votes, etc.)`)) return;
+
+    try {
+        const response = await fetch(`/api/admin/users/${userId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(`✅ ${data.message}`);
+            loadAdminUsers(); // Recharger la liste
+            loadAdminStats(); // Mettre à jour les stats
+        } else {
+            alert(`❌ ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Erreur suppression joueur:', error);
+        alert('Erreur lors de la suppression');
+    }
+}

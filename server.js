@@ -1306,6 +1306,111 @@ app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
   });
 });
 
+// ============================================
+// GESTION DES JOUEURS (Admin)
+// ============================================
+
+// Liste tous les joueurs
+app.get('/api/admin/users', requireAuth, requireAdmin, (req, res) => {
+  const users = db.prepare(`
+    SELECT u.id, u.pseudo, u.is_admin, u.costume_photo, u.costume_photo_public,
+           s.total_score, s.quiz_score, s.pronostics_score, s.culture_g_score, s.defis_score
+    FROM users u
+    LEFT JOIN scores s ON u.id = s.user_id
+    ORDER BY u.pseudo
+  `).all();
+
+  res.json(users);
+});
+
+// Modifier le pseudo d'un joueur
+app.put('/api/admin/users/:id', requireAuth, requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const { pseudo } = req.body;
+
+  if (!pseudo || pseudo.trim().length === 0) {
+    return res.status(400).json({ error: 'Le pseudo ne peut pas être vide' });
+  }
+
+  // Vérifier que le joueur existe
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  if (!user) {
+    return res.status(404).json({ error: 'Joueur non trouvé' });
+  }
+
+  // Vérifier que le nouveau pseudo n'est pas déjà pris
+  const existingUser = db.prepare('SELECT id FROM users WHERE pseudo = ? AND id != ?').get(pseudo.trim(), id);
+  if (existingUser) {
+    return res.status(400).json({ error: 'Ce pseudo est déjà utilisé' });
+  }
+
+  db.prepare('UPDATE users SET pseudo = ? WHERE id = ?').run(pseudo.trim(), id);
+
+  res.json({ success: true, message: `Pseudo modifié en "${pseudo.trim()}"` });
+});
+
+// Supprimer un joueur
+app.delete('/api/admin/users/:id', requireAuth, requireAdmin, (req, res) => {
+  const { id } = req.params;
+
+  // Vérifier que le joueur existe
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  if (!user) {
+    return res.status(404).json({ error: 'Joueur non trouvé' });
+  }
+
+  // Ne pas permettre de supprimer un admin
+  if (user.is_admin) {
+    return res.status(403).json({ error: 'Impossible de supprimer un administrateur' });
+  }
+
+  // Supprimer la photo costume si elle existe
+  if (user.costume_photo) {
+    const relativePath = user.costume_photo.replace('/uploads/', '');
+    const photoPath = path.join(uploadsBaseDir, relativePath);
+    if (fs.existsSync(photoPath)) {
+      fs.unlinkSync(photoPath);
+    }
+  }
+
+  // Supprimer toutes les données liées
+  db.prepare('DELETE FROM scores WHERE user_id = ?').run(id);
+  db.prepare('DELETE FROM pronostics WHERE user_id = ?').run(id);
+  db.prepare('DELETE FROM quiz_answers WHERE user_id = ?').run(id);
+  db.prepare('DELETE FROM culture_g_answers WHERE user_id = ?').run(id);
+  db.prepare('DELETE FROM costume_votes WHERE voter_id = ?').run(id);
+  db.prepare('DELETE FROM costume_votes WHERE voted_for = ?').run(id);
+  db.prepare('DELETE FROM users WHERE id = ?').run(id);
+
+  res.json({ success: true, message: `Joueur "${user.pseudo}" supprimé` });
+});
+
+// Supprimer la photo costume d'un joueur
+app.delete('/api/admin/users/:id/photo', requireAuth, requireAdmin, (req, res) => {
+  const { id } = req.params;
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  if (!user) {
+    return res.status(404).json({ error: 'Joueur non trouvé' });
+  }
+
+  if (!user.costume_photo) {
+    return res.status(400).json({ error: 'Ce joueur n\'a pas de photo' });
+  }
+
+  // Supprimer le fichier
+  const relativePath = user.costume_photo.replace('/uploads/', '');
+  const photoPath = path.join(uploadsBaseDir, relativePath);
+  if (fs.existsSync(photoPath)) {
+    fs.unlinkSync(photoPath);
+  }
+
+  // Mettre à jour la base
+  db.prepare('UPDATE users SET costume_photo = NULL, costume_photo_public = 0 WHERE id = ?').run(id);
+
+  res.json({ success: true, message: 'Photo supprimée' });
+});
+
 // Route pour obtenir les résultats officiels validés (accessible à tous les utilisateurs)
 app.get('/api/official-results', requireAuth, (req, res) => {
   const results = db.prepare('SELECT * FROM official_results WHERE id = 1').get();
