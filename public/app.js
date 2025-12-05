@@ -247,6 +247,85 @@ async function loadPronosticsSection() {
             }
         });
     });
+
+    // === VERROUILLAGE APRÈS VALIDATION ADMIN ===
+
+    // Verrouiller Top 15 si l'admin a validé (current_step >= 1)
+    if (officialResults.current_step >= 1) {
+        // Désactiver tous les checkboxes Top 15
+        document.querySelectorAll('input[data-type="top15"]').forEach(cb => cb.disabled = true);
+        // Désactiver les selects bonus et prono d'or
+        const bonusTop15 = document.getElementById('bonus-top15');
+        const pronoOr = document.getElementById('prono-or-miss');
+        if (bonusTop15) bonusTop15.disabled = true;
+        if (pronoOr) pronoOr.disabled = true;
+        // Désactiver le bouton de validation
+        const btnTop15 = document.querySelector('button[onclick="saveTop15()"]');
+        if (btnTop15) {
+            btnTop15.disabled = true;
+            btnTop15.textContent = '🔒 Top 15 verrouillé (résultats officiels validés)';
+            btnTop15.style.background = '#666';
+            btnTop15.style.cursor = 'not-allowed';
+        }
+        // Afficher un message
+        const top15Section = document.getElementById('top15-selection');
+        if (top15Section && !document.getElementById('top15-locked-msg')) {
+            const msg = document.createElement('div');
+            msg.id = 'top15-locked-msg';
+            msg.style.cssText = 'background: rgba(231, 76, 60, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e74c3c; color: #e74c3c;';
+            msg.innerHTML = '🔒 <strong>Section verrouillée</strong> - Le Top 15 officiel a été validé par l\'admin.';
+            top15Section.parentNode.insertBefore(msg, top15Section);
+        }
+    }
+
+    // Verrouiller Top 5 si l'admin a validé (current_step >= 2)
+    if (officialResults.current_step >= 2) {
+        // Désactiver tous les checkboxes Top 5
+        document.querySelectorAll('input[data-type="top5"]').forEach(cb => cb.disabled = true);
+        // Désactiver le select bonus
+        const bonusTop5 = document.getElementById('bonus-top5');
+        if (bonusTop5) bonusTop5.disabled = true;
+        // Désactiver le bouton de validation
+        const btnTop5 = document.querySelector('button[onclick="saveTop5()"]');
+        if (btnTop5) {
+            btnTop5.disabled = true;
+            btnTop5.textContent = '🔒 Top 5 verrouillé (résultats officiels validés)';
+            btnTop5.style.background = '#666';
+            btnTop5.style.cursor = 'not-allowed';
+        }
+        // Afficher un message
+        const top5Section = document.getElementById('top5-selection');
+        if (top5Section && !document.getElementById('top5-locked-msg')) {
+            const msg = document.createElement('div');
+            msg.id = 'top5-locked-msg';
+            msg.style.cssText = 'background: rgba(231, 76, 60, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e74c3c; color: #e74c3c;';
+            msg.innerHTML = '🔒 <strong>Section verrouillée</strong> - Le Top 5 officiel a été validé par l\'admin.';
+            top5Section.parentNode.insertBefore(msg, top5Section);
+        }
+    }
+
+    // Verrouiller Classement Final si l'admin a validé (current_step >= 3)
+    if (officialResults.current_step >= 3) {
+        // Désactiver tous les selects de classement
+        document.querySelectorAll('.select-rank').forEach(select => select.disabled = true);
+        // Désactiver le bouton de validation
+        const btnFinal = document.querySelector('button[onclick="saveFinalRanking()"]');
+        if (btnFinal) {
+            btnFinal.disabled = true;
+            btnFinal.textContent = '🔒 Classement verrouillé (résultats officiels validés)';
+            btnFinal.style.background = '#666';
+            btnFinal.style.cursor = 'not-allowed';
+        }
+        // Afficher un message
+        const finalSection = document.getElementById('final-ranking-selects');
+        if (finalSection && !document.getElementById('final-locked-msg')) {
+            const msg = document.createElement('div');
+            msg.id = 'final-locked-msg';
+            msg.style.cssText = 'background: rgba(231, 76, 60, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e74c3c; color: #e74c3c;';
+            msg.innerHTML = '🔒 <strong>Section verrouillée</strong> - Le classement final officiel a été validé. Miss France 2026 est élue !';
+            finalSection.parentNode.insertBefore(msg, finalSection);
+        }
+    }
 }
 
 function fillCandidateSelects() {
@@ -345,9 +424,15 @@ async function saveTop15() {
         });
 
         const data = await response.json();
-
         const messageDiv = document.getElementById('top15-message');
         const statusBadge = document.getElementById('top15-status');
+
+        if (!response.ok) {
+            messageDiv.textContent = '❌ ' + (data.error || 'Erreur');
+            messageDiv.className = 'message error';
+            messageDiv.style.display = 'block';
+            return;
+        }
 
         messageDiv.textContent = '✅ ' + data.message;
         messageDiv.className = 'message success';
@@ -387,9 +472,15 @@ async function saveTop5() {
         });
 
         const data = await response.json();
-
         const messageDiv = document.getElementById('top5-message');
         const statusBadge = document.getElementById('top5-status');
+
+        if (!response.ok) {
+            messageDiv.textContent = '❌ ' + (data.error || 'Erreur');
+            messageDiv.className = 'message error';
+            messageDiv.style.display = 'block';
+            return;
+        }
 
         messageDiv.textContent = '✅ ' + data.message;
         messageDiv.className = 'message success';
@@ -428,9 +519,15 @@ async function saveFinalRanking() {
         });
 
         const data = await response.json();
-
         const messageDiv = document.getElementById('final-message');
         const statusBadge = document.getElementById('final-status');
+
+        if (!response.ok) {
+            messageDiv.textContent = '❌ ' + (data.error || 'Erreur');
+            messageDiv.className = 'message error';
+            messageDiv.style.display = 'block';
+            return;
+        }
 
         messageDiv.textContent = '✅ ' + data.message;
         messageDiv.className = 'message success';

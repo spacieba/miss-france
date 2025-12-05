@@ -866,6 +866,12 @@ app.get('/api/candidates', requireAuth, (req, res) => {
 app.post('/api/pronostics/top15', requireAuth, (req, res) => {
   const { top15, bonusTop15, pronoOr } = req.body;
 
+  // Vérifier si l'admin a déjà validé le Top 15
+  const officialResults = db.prepare('SELECT current_step FROM official_results WHERE id = 1').get();
+  if (officialResults && officialResults.current_step >= 1) {
+    return res.status(403).json({ error: 'Le Top 15 officiel a été validé, tu ne peux plus modifier tes pronostics.' });
+  }
+
   try {
     const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
 
@@ -889,6 +895,12 @@ app.post('/api/pronostics/top15', requireAuth, (req, res) => {
 app.post('/api/pronostics/top5', requireAuth, (req, res) => {
   const { top5, bonusTop5 } = req.body;
 
+  // Vérifier si l'admin a déjà validé le Top 5
+  const officialResults = db.prepare('SELECT current_step FROM official_results WHERE id = 1').get();
+  if (officialResults && officialResults.current_step >= 2) {
+    return res.status(403).json({ error: 'Le Top 5 officiel a été validé, tu ne peux plus modifier tes pronostics.' });
+  }
+
   try {
     const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
 
@@ -911,6 +923,12 @@ app.post('/api/pronostics/top5', requireAuth, (req, res) => {
 // Route pour sauvegarder le classement final uniquement
 app.post('/api/pronostics/final', requireAuth, (req, res) => {
   const { classementFinal } = req.body;
+
+  // Vérifier si l'admin a déjà validé le classement final
+  const officialResults = db.prepare('SELECT current_step FROM official_results WHERE id = 1').get();
+  if (officialResults && officialResults.current_step >= 3) {
+    return res.status(403).json({ error: 'Le classement final officiel a été validé, tu ne peux plus modifier tes pronostics.' });
+  }
 
   try {
     const existing = db.prepare('SELECT id FROM pronostics WHERE user_id = ?').get(req.session.userId);
