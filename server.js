@@ -839,7 +839,6 @@ app.get('/api/culture-g/leaderboard', requireAuth, (req, res) => {
     FROM users u
     LEFT JOIN culture_g_answers cga ON u.id = cga.user_id
     LEFT JOIN scores s ON u.id = s.user_id
-    WHERE u.is_admin = 0
     GROUP BY u.id
     ORDER BY raw_score DESC, u.pseudo ASC
   `).all();
@@ -994,12 +993,11 @@ app.post('/api/defis/complete', requireAuth, (req, res) => {
 
 // Récupérer la liste des joueurs pour la galerie (inclut tout le monde avec photos publiques)
 app.get('/api/costume/players', requireAuth, (req, res) => {
-  // Retourne tous les joueurs (sauf admin), montre costume_photo que si public
+  // Retourne tous les joueurs, montre costume_photo que si public
   const players = db.prepare(`
     SELECT id, pseudo,
            CASE WHEN costume_photo_public = 1 THEN costume_photo ELSE NULL END as costume_photo
     FROM users
-    WHERE is_admin = 0
     ORDER BY pseudo
   `).all();
 
@@ -1011,7 +1009,7 @@ app.get('/api/costume/players-for-vote', requireAuth, (req, res) => {
   const players = db.prepare(`
     SELECT id, pseudo
     FROM users
-    WHERE id != ? AND is_admin = 0
+    WHERE id != ?
     ORDER BY pseudo
   `).all(req.session.userId);
 
@@ -1168,7 +1166,6 @@ app.get('/api/costume/results', requireAuth, (req, res) => {
     SELECT u.id, u.pseudo, COUNT(cv.id) as votes
     FROM users u
     LEFT JOIN costume_votes cv ON u.id = cv.voted_for
-    WHERE u.is_admin = 0
     GROUP BY u.id
     ORDER BY votes DESC, u.pseudo ASC
   `).all();
@@ -1185,7 +1182,6 @@ app.post('/api/admin/costume-awards', requireAuth, requireAdmin, (req, res) => {
     SELECT u.id, u.pseudo, COUNT(cv.id) as votes
     FROM users u
     LEFT JOIN costume_votes cv ON u.id = cv.voted_for
-    WHERE u.is_admin = 0
     GROUP BY u.id
     HAVING votes > 0
     ORDER BY votes DESC
