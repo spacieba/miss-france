@@ -130,11 +130,12 @@ async function loadPronosticsSection() {
     candidates.forEach((candidate, index) => {
         const label = document.createElement('label');
         const inputId = `top15-${index}`;
-        label.className = 'candidate-checkbox';
+        label.className = 'candidate-checkbox with-photo';
         label.setAttribute('for', inputId);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidate}" data-type="top15">
-            <span>${candidate}</span>
+            <input type="checkbox" id="${inputId}" value="${candidate.name}" data-type="top15">
+            <img src="${candidate.photo}" alt="${candidate.name}" class="candidate-photo">
+            <span>${candidate.name}</span>
         `;
         top15Container.appendChild(label);
     });
@@ -156,13 +157,19 @@ async function loadPronosticsSection() {
     }
 
     candidatesForTop5.forEach((candidate, index) => {
+        // candidate peut être un string (du top15 officiel) ou un objet (du tableau candidates)
+        const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
+        const candidateObj = candidates.find(c => c.name === candidateName);
+        const candidatePhoto = candidateObj ? candidateObj.photo : '';
+
         const label = document.createElement('label');
         const inputId = `top5-${index}`;
-        label.className = 'candidate-checkbox';
+        label.className = 'candidate-checkbox with-photo';
         label.setAttribute('for', inputId);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidate}" data-type="top5">
-            <span>${candidate}</span>
+            <input type="checkbox" id="${inputId}" value="${candidateName}" data-type="top5">
+            ${candidatePhoto ? `<img src="${candidatePhoto}" alt="${candidateName}" class="candidate-photo">` : ''}
+            <span>${candidateName}</span>
         `;
         top5Container.appendChild(label);
     });
@@ -337,8 +344,8 @@ function fillCandidateSelects() {
         bonusTop15Select.innerHTML = '<option value="">-- Choisis une candidate --</option>';
         candidates.forEach(candidate => {
             const option = document.createElement('option');
-            option.value = candidate;
-            option.textContent = candidate;
+            option.value = candidate.name;
+            option.textContent = candidate.name;
             bonusTop15Select.appendChild(option);
         });
     }
@@ -347,8 +354,8 @@ function fillCandidateSelects() {
         pronoOrSelect.innerHTML = '<option value="">-- Choisis ta future Miss France --</option>';
         candidates.forEach(candidate => {
             const option = document.createElement('option');
-            option.value = candidate;
-            option.textContent = candidate;
+            option.value = candidate.name;
+            option.textContent = candidate.name;
             pronoOrSelect.appendChild(option);
         });
     }
@@ -362,9 +369,10 @@ function fillCandidateSelects() {
     if (bonusTop5Select) {
         bonusTop5Select.innerHTML = '<option value="">-- Choisis une candidate --</option>';
         candidatesForBonusTop5.forEach(candidate => {
+            const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
             const option = document.createElement('option');
-            option.value = candidate;
-            option.textContent = candidate;
+            option.value = candidateName;
+            option.textContent = candidateName;
             bonusTop5Select.appendChild(option);
         });
     }
@@ -379,9 +387,10 @@ function fillCandidateSelects() {
     document.querySelectorAll('.select-rank').forEach((select, idx) => {
         select.innerHTML = `<option value="">${defaultLabels[idx]}</option>`;
         candidatesForFinal.forEach(candidate => {
+            const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
             const option = document.createElement('option');
-            option.value = candidate;
-            option.textContent = candidate;
+            option.value = candidateName;
+            option.textContent = candidateName;
             select.appendChild(option);
         });
     });
@@ -1334,8 +1343,9 @@ async function loadAdminInterface() {
         const inputId15 = `admin-top15-${index}`;
         label15.setAttribute('for', inputId15);
         label15.innerHTML = `
-            <input type="checkbox" id="${inputId15}" value="${candidate}" data-admin-type="top15">
-            ${candidate}
+            <input type="checkbox" id="${inputId15}" value="${candidate.name}" data-admin-type="top15">
+            <img src="${candidate.photo}" alt="${candidate.name}" class="admin-candidate-photo">
+            ${candidate.name}
         `;
         top15Grid.appendChild(label15);
     });
@@ -1716,13 +1726,18 @@ function updateAdminTop5Grid() {
     const isDisabled = officialResults.current_step >= 2;
 
     candidatesToShow.forEach((candidate, index) => {
+        const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
+        const candidateObj = candidates.find(c => c.name === candidateName);
+        const candidatePhoto = candidateObj ? candidateObj.photo : '';
+
         const label = document.createElement('label');
         const inputId = `admin-top5-${index}`;
         label.setAttribute('for', inputId);
-        const isChecked = officialResults.top5 && officialResults.top5.includes(candidate);
+        const isChecked = officialResults.top5 && officialResults.top5.includes(candidateName);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidate}" data-admin-type="top5" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
-            ${candidate}
+            <input type="checkbox" id="${inputId}" value="${candidateName}" data-admin-type="top5" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
+            ${candidatePhoto ? `<img src="${candidatePhoto}" alt="${candidateName}" class="admin-candidate-photo">` : ''}
+            ${candidateName}
         `;
         top5Grid.appendChild(label);
     });
@@ -1756,9 +1771,10 @@ function updateAdminFinalSelects() {
         const defaultLabels = ['-- Miss France 2026 --', '-- 1ère Dauphine --', '-- 2ème Dauphine --', '-- 3ème Dauphine --', '-- 4ème Dauphine --'];
         select.innerHTML = `<option value="">${defaultLabels[idx]}</option>`;
         candidatesToShow.forEach(candidate => {
+            const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
             const option = document.createElement('option');
-            option.value = candidate;
-            option.textContent = candidate;
+            option.value = candidateName;
+            option.textContent = candidateName;
             select.appendChild(option);
         });
 

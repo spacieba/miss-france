@@ -849,13 +849,36 @@ app.get('/api/culture-g/leaderboard', requireAuth, (req, res) => {
 // Routes Pronostics
 // Liste officielle des 30 candidates Miss France 2026
 const candidates = [
-  "Miss Alsace", "Miss Aquitaine", "Miss Auvergne", "Miss Bourgogne", "Miss Bretagne",
-  "Miss Centre-Val de Loire", "Miss Champagne-Ardenne", "Miss Corse", "Miss Côte d'Azur",
-  "Miss Franche-Comté", "Miss Guadeloupe", "Miss Guyane", "Miss Île-de-France",
-  "Miss Languedoc", "Miss Limousin", "Miss Lorraine", "Miss Martinique", "Miss Mayotte",
-  "Miss Midi-Pyrénées", "Miss Nord-Pas-de-Calais", "Miss Normandie", "Miss Nouvelle-Calédonie",
-  "Miss Pays de la Loire", "Miss Picardie", "Miss Poitou-Charentes", "Miss Provence",
-  "Miss Réunion", "Miss Rhône-Alpes", "Miss Roussillon", "Miss Tahiti"
+  { name: "Miss Alsace", photo: "https://static1.ozap.com/uploads/88/cd/b7/4d/3a34f79dc36fe685-580x0-1.jpg" },
+  { name: "Miss Aquitaine", photo: "https://static1.ozap.com/uploads/ff/1d/38/4d/e9aa0ed96bb45744-580x0-1.jpg" },
+  { name: "Miss Auvergne", photo: "https://static1.ozap.com/uploads/d7/b1/a0/3c/3cec9bde4007cbde-580x0-1.jpg" },
+  { name: "Miss Bourgogne", photo: "https://static1.ozap.com/uploads/fc/31/c8/4d/9dbe1a9ee654cb4b-580x0-1.jpg" },
+  { name: "Miss Bretagne", photo: "https://static1.ozap.com/uploads/f9/1a/9c/df/adb0498a3b101a3f-580x0-1.jpg" },
+  { name: "Miss Centre-Val de Loire", photo: "https://static1.ozap.com/uploads/a4/66/a2/db/256b58f8eec55754-580x0-1.jpg" },
+  { name: "Miss Champagne-Ardenne", photo: "https://static1.ozap.com/uploads/61/2c/7a/7d/40d325a12c1bb62f-580x0-1.jpg" },
+  { name: "Miss Corse", photo: "https://static1.ozap.com/uploads/b1/1a/bd/72/e022cd248dc9512b-580x0-1.jpg" },
+  { name: "Miss Côte d'Azur", photo: "https://static1.ozap.com/uploads/0b/e0/dd/18/beeb41ce3bb2b170-580x0-1.jpg" },
+  { name: "Miss Franche-Comté", photo: "https://static1.ozap.com/uploads/ca/34/aa/fe/b3fc296b86a7ce8a-580x0-1.jpg" },
+  { name: "Miss Guadeloupe", photo: "https://static1.ozap.com/uploads/c8/68/e0/17/ec73db76130db930-580x0-1.jpg" },
+  { name: "Miss Guyane", photo: "https://static1.ozap.com/uploads/6e/23/1d/27/383ea806a5afa234-580x0-1.jpg" },
+  { name: "Miss Île-de-France", photo: "https://static1.ozap.com/uploads/83/5e/5d/97/03d20ed6afddde97-580x0-1.jpg" },
+  { name: "Miss Languedoc", photo: "https://static1.ozap.com/uploads/f7/33/95/3c/edc1386320d296da-580x0-1.jpg" },
+  { name: "Miss Limousin", photo: "https://static1.ozap.com/uploads/27/24/01/d5/f98072b7b1801a28-580x0-1.jpg" },
+  { name: "Miss Lorraine", photo: "https://static1.ozap.com/uploads/3a/51/74/7d/27a706dc5a78f3fb-580x0-1.jpg" },
+  { name: "Miss Martinique", photo: "https://static1.ozap.com/uploads/19/74/64/db/03c74a199f36f444-580x0-1.jpg" },
+  { name: "Miss Mayotte", photo: "https://static1.ozap.com/uploads/a4/c7/93/b9/e87f9bfdba6959c0-580x0-1.jpg" },
+  { name: "Miss Midi-Pyrénées", photo: "https://static1.ozap.com/uploads/9c/d2/a9/99/332e59ad579eea3d-580x0-1.jpg" },
+  { name: "Miss Nord-Pas-de-Calais", photo: "https://static1.ozap.com/uploads/64/f2/40/a9/ff734bc93e09920d-580x0-1.jpg" },
+  { name: "Miss Normandie", photo: "https://static1.ozap.com/uploads/ab/ef/57/91/803462c8858650e2-580x0-1.jpg" },
+  { name: "Miss Nouvelle-Calédonie", photo: "https://static1.ozap.com/uploads/4f/2d/df/c8/315aa2a50e78e49f-580x0-1.jpg" },
+  { name: "Miss Pays de la Loire", photo: "https://static1.ozap.com/uploads/5b/ff/0f/90/740bfbd13d61377d-580x0-1.jpg" },
+  { name: "Miss Picardie", photo: "https://static1.ozap.com/uploads/0a/a9/01/6d/e2c81e65643da15c-580x0-1.jpg" },
+  { name: "Miss Poitou-Charentes", photo: "https://static1.ozap.com/uploads/ec/63/15/16/a402f7cd72263539-580x0-1.jpg" },
+  { name: "Miss Provence", photo: "https://static1.ozap.com/uploads/fa/1c/94/77/a2df2bbd6f9ebbf2-580x0-1.jpg" },
+  { name: "Miss Réunion", photo: "https://static1.ozap.com/uploads/fb/08/fc/65/6d2882dd8239da8c-580x0-1.jpg" },
+  { name: "Miss Rhône-Alpes", photo: "https://static1.ozap.com/uploads/61/32/5d/a7/d5f782f0f3d60398-580x0-1.jpg" },
+  { name: "Miss Roussillon", photo: "https://static1.ozap.com/uploads/c8/f1/60/50/e67272af466218fe-580x0-1.jpg" },
+  { name: "Miss Tahiti", photo: "https://static1.ozap.com/uploads/f9/bc/3f/d4/507c07cbb6265781-580x0-1.jpg" }
 ];
 
 app.get('/api/candidates', requireAuth, (req, res) => {
