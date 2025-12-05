@@ -1010,9 +1010,7 @@ app.get('/api/pronostics', requireAuth, (req, res) => {
 });
 
 // Routes Défis
-const defis = [
-  { id: 1, title: "Couronne improvisée", description: "Fabrique une couronne avec ce que tu trouves", points: 15 }
-];
+const defis = [];
 
 app.get('/api/defis', requireAuth, (req, res) => {
   const completed = db.prepare('SELECT defi_id FROM defis WHERE user_id = ?').all(req.session.userId);
