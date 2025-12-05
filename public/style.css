@@ -1694,6 +1694,75 @@ body::after {
     flex: 1;
 }
 
+/* === LEADERBOARD TABS === */
+
+.leaderboard-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.leaderboard-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.leaderboard-tabs::-webkit-scrollbar-track {
+    background: var(--noir-soft);
+    border-radius: 2px;
+}
+
+.leaderboard-tabs::-webkit-scrollbar-thumb {
+    background: var(--gold-dark);
+    border-radius: 2px;
+}
+
+.leaderboard-tab {
+    background: linear-gradient(145deg, var(--noir-card) 0%, var(--noir-soft) 100%);
+    border: 2px solid var(--gold-dark);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+    color: var(--blanc-perle);
+    font-family: 'Montserrat', sans-serif;
+}
+
+.leaderboard-tab:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    color: var(--gold);
+}
+
+.leaderboard-tab.active {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    color: var(--noir-profond);
+    border-color: var(--gold);
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.5);
+}
+
+.leaderboard-panel {
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.leaderboard-panel.active {
+    display: block;
+}
+
+.leaderboard-info {
+    font-size: 0.95rem;
+}
+
+.leaderboard-info strong {
+    font-size: 1.1rem;
+}
+
 /* === RESPONSIVE === */
 
 /* ========== MOBILE FIRST IMPROVEMENTS ========== */
@@ -1962,6 +2031,31 @@ body::after {
     #costume-gallery {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;
+    }
+
+    /* Leaderboard tabs mobile */
+    .leaderboard-tabs {
+        gap: 6px;
+        margin-bottom: 15px;
+    }
+
+    .leaderboard-tab {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .leaderboard-info {
+        padding: 12px !important;
+        font-size: 0.85rem;
+    }
+
+    .leaderboard-info strong {
+        font-size: 1rem;
+    }
+
+    .leaderboard-info p {
+        font-size: 0.8rem !important;
     }
 
     /* Leaderboard table */

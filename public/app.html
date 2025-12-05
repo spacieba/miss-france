@@ -375,23 +375,128 @@
 
             <!-- Section Classement -->
             <section id="leaderboard" class="section">
-                <h2>Classement Général</h2>
+                <h2>Classements</h2>
+                <p class="subtitle">Classement général et par catégorie</p>
 
-                <div class="leaderboard-container">
-                    <table class="leaderboard-table">
-                        <thead>
-                            <tr>
-                                <th>Rang</th>
-                                <th>Joueur</th>
-                                <th>Quiz</th>
-                                <th>Culture G</th>
-                                <th>Pronostics</th>
-                                <th>Défis</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboard-body"></tbody>
-                    </table>
+                <!-- Onglets de classement -->
+                <div class="leaderboard-tabs">
+                    <button class="leaderboard-tab active" onclick="showLeaderboardTab('general')" data-tab="general">
+                        🏆 Général
+                    </button>
+                    <button class="leaderboard-tab" onclick="showLeaderboardTab('pronostics')" data-tab="pronostics">
+                        🎯 Pronostics
+                    </button>
+                    <button class="leaderboard-tab" onclick="showLeaderboardTab('quiz')" data-tab="quiz">
+                        📚 Quiz
+                    </button>
+                    <button class="leaderboard-tab" onclick="showLeaderboardTab('culture-g')" data-tab="culture-g">
+                        🎓 Culture G
+                    </button>
+                    <button class="leaderboard-tab" onclick="showLeaderboardTab('costume')" data-tab="costume">
+                        👗 Costume
+                    </button>
+                </div>
+
+                <!-- Classement Général -->
+                <div id="leaderboard-general" class="leaderboard-panel active">
+                    <div class="leaderboard-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Quiz</th>
+                                    <th>Culture G</th>
+                                    <th>Pronostics</th>
+                                    <th>Défis</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Classement Pronostics -->
+                <div id="leaderboard-pronostics" class="leaderboard-panel">
+                    <div class="leaderboard-info" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--noir-profond); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <strong>🎯 Le classement le plus important !</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Points gagnés grâce aux pronostics Top 15, Top 5, Classement Final et Prono d'Or</p>
+                    </div>
+                    <div class="leaderboard-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Points Pronostics</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-pronostics-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Classement Quiz -->
+                <div id="leaderboard-quiz" class="leaderboard-panel">
+                    <div class="leaderboard-info" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <strong>📚 Quiz Miss France</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">30 questions sur l'univers Miss France (1-3 pts par question)</p>
+                    </div>
+                    <div class="leaderboard-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Points Quiz</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-quiz-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Classement Culture G -->
+                <div id="leaderboard-culture-g" class="leaderboard-panel">
+                    <div class="leaderboard-info" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <strong>🎓 Questionnaire Culture Générale Officiel</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Le vrai test passé par les Miss ! Points attribués aux 3 meilleurs (15/10/5 pts)</p>
+                    </div>
+                    <div class="leaderboard-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Score brut</th>
+                                    <th>Points gagnés</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-culture-g-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Classement Costume -->
+                <div id="leaderboard-costume" class="leaderboard-panel">
+                    <div class="leaderboard-info" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                        <strong>👗 Concours du Plus Beau Costume</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Vote des participants ! 🥇 30 pts | 🥈 20 pts | 🥉 10 pts</p>
+                    </div>
+                    <div class="leaderboard-container">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Votes reçus</th>
+                                    <th>Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-costume-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 

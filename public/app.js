@@ -982,21 +982,52 @@ async function loadCostumeResults() {
 
 // === CLASSEMENT ===
 
+let leaderboardData = [];
+
 async function loadLeaderboard() {
     const response = await fetch('/api/leaderboard');
-    const leaderboard = await response.json();
+    leaderboardData = await response.json();
 
+    // Charger le classement général
+    renderGeneralLeaderboard();
+
+    // Charger les autres classements
+    renderPronosticsLeaderboard();
+    renderQuizLeaderboard();
+    await renderCultureGLeaderboard();
+    await renderCostumeLeaderboard();
+
+    // Mettre à jour le rang de l'utilisateur
+    if (currentUser) {
+        const userRank = leaderboardData.findIndex(p => p.user_id === currentUser.id) + 1;
+        document.getElementById('user-rank').textContent = `#${userRank}`;
+    }
+}
+
+// Afficher un onglet de classement
+function showLeaderboardTab(tabName) {
+    // Désactiver tous les onglets
+    document.querySelectorAll('.leaderboard-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.leaderboard-panel').forEach(panel => panel.classList.remove('active'));
+
+    // Activer l'onglet sélectionné
+    document.querySelector(`.leaderboard-tab[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`leaderboard-${tabName}`).classList.add('active');
+}
+
+// Classement Général
+function renderGeneralLeaderboard() {
     const tbody = document.getElementById('leaderboard-body');
     tbody.innerHTML = '';
 
-    leaderboard.forEach((player, index) => {
+    leaderboardData.forEach((player, index) => {
         const row = document.createElement('tr');
         if (currentUser && player.user_id === currentUser.id) {
             row.className = 'current-user';
         }
 
         row.innerHTML = `
-            <td class="rank">${index + 1}</td>
+            <td class="rank">${getRankEmoji(index + 1)}</td>
             <td class="player-name">${player.pseudo}</td>
             <td>${player.quiz_score}</td>
             <td>${player.culture_g_score || 0}</td>
@@ -1007,12 +1038,123 @@ async function loadLeaderboard() {
 
         tbody.appendChild(row);
     });
+}
 
-    // Mettre à jour le rang de l'utilisateur
-    if (currentUser) {
-        const userRank = leaderboard.findIndex(p => p.user_id === currentUser.id) + 1;
-        document.getElementById('user-rank').textContent = `#${userRank}`;
+// Classement Pronostics
+function renderPronosticsLeaderboard() {
+    const sorted = [...leaderboardData].sort((a, b) => b.pronostics_score - a.pronostics_score);
+    const tbody = document.getElementById('leaderboard-pronostics-body');
+    tbody.innerHTML = '';
+
+    sorted.forEach((player, index) => {
+        const row = document.createElement('tr');
+        if (currentUser && player.user_id === currentUser.id) {
+            row.className = 'current-user';
+        }
+
+        row.innerHTML = `
+            <td class="rank">${getRankEmoji(index + 1)}</td>
+            <td class="player-name">${player.pseudo}</td>
+            <td class="total-score">${player.pronostics_score} pts</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// Classement Quiz
+function renderQuizLeaderboard() {
+    const sorted = [...leaderboardData].sort((a, b) => b.quiz_score - a.quiz_score);
+    const tbody = document.getElementById('leaderboard-quiz-body');
+    tbody.innerHTML = '';
+
+    sorted.forEach((player, index) => {
+        const row = document.createElement('tr');
+        if (currentUser && player.user_id === currentUser.id) {
+            row.className = 'current-user';
+        }
+
+        row.innerHTML = `
+            <td class="rank">${getRankEmoji(index + 1)}</td>
+            <td class="player-name">${player.pseudo}</td>
+            <td class="total-score">${player.quiz_score} pts</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+// Classement Culture G (avec score brut)
+async function renderCultureGLeaderboard() {
+    try {
+        const response = await fetch('/api/culture-g/leaderboard');
+        const ranking = await response.json();
+
+        const tbody = document.getElementById('leaderboard-culture-g-body');
+        tbody.innerHTML = '';
+
+        ranking.forEach((player, index) => {
+            const row = document.createElement('tr');
+            if (currentUser && player.id === currentUser.id) {
+                row.className = 'current-user';
+            }
+
+            row.innerHTML = `
+                <td class="rank">${getRankEmoji(index + 1)}</td>
+                <td class="player-name">${player.pseudo}</td>
+                <td>${player.raw_score} / ~80</td>
+                <td class="total-score">${player.awarded_points || 0} pts</td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Erreur chargement classement Culture G:', error);
     }
+}
+
+// Classement Costume
+async function renderCostumeLeaderboard() {
+    try {
+        const response = await fetch('/api/costume/results');
+        const { results, totalVotes } = await response.json();
+
+        const tbody = document.getElementById('leaderboard-costume-body');
+        tbody.innerHTML = '';
+
+        // Filtrer ceux qui ont des votes et ajouter les points potentiels
+        results.forEach((player, index) => {
+            const row = document.createElement('tr');
+            if (currentUser && player.id === currentUser.id) {
+                row.className = 'current-user';
+            }
+
+            // Points attribués selon le rang
+            let points = 0;
+            if (index === 0 && player.votes > 0) points = 30;
+            else if (index === 1 && player.votes > 0) points = 20;
+            else if (index === 2 && player.votes > 0) points = 10;
+
+            row.innerHTML = `
+                <td class="rank">${getRankEmoji(index + 1)}</td>
+                <td class="player-name">${player.pseudo}</td>
+                <td>${player.votes} vote${player.votes > 1 ? 's' : ''}</td>
+                <td class="total-score">${points > 0 ? points + ' pts' : '-'}</td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Erreur chargement classement Costume:', error);
+    }
+}
+
+// Helper pour les emojis de rang
+function getRankEmoji(rank) {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return rank;
 }
 
 // === ADMIN FUNCTIONS ===

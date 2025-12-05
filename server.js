@@ -830,6 +830,23 @@ app.post('/api/culture-g/submit-category', requireAuth, (req, res) => {
   });
 });
 
+// Classement Culture G avec scores bruts (pour le leaderboard)
+app.get('/api/culture-g/leaderboard', requireAuth, (req, res) => {
+  const ranking = db.prepare(`
+    SELECT u.id, u.pseudo,
+           COALESCE(SUM(cga.points), 0) as raw_score,
+           s.culture_g_score as awarded_points
+    FROM users u
+    LEFT JOIN culture_g_answers cga ON u.id = cga.user_id
+    LEFT JOIN scores s ON u.id = s.user_id
+    WHERE u.is_admin = 0
+    GROUP BY u.id
+    ORDER BY raw_score DESC, u.pseudo ASC
+  `).all();
+
+  res.json(ranking);
+});
+
 // Routes Pronostics
 const candidates = [
   "Miss Guadeloupe", "Miss Martinique", "Miss Guyane", "Miss Réunion", "Miss Mayotte",
