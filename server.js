@@ -380,10 +380,24 @@ app.get('/api/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT id, pseudo, is_admin FROM users WHERE id = ?').get(req.session.userId);
   const score = db.prepare('SELECT * FROM scores WHERE user_id = ?').get(req.session.userId);
 
+  // Chercher un avatar pour ce pseudo
+  let avatarUrl = null;
+  const avatarExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+  const pseudoLower = user.pseudo.toLowerCase();
+
+  for (const ext of avatarExtensions) {
+    const avatarPath = path.join(__dirname, 'public', 'avatars', `${pseudoLower}.${ext}`);
+    if (fs.existsSync(avatarPath)) {
+      avatarUrl = `/avatars/${pseudoLower}.${ext}`;
+      break;
+    }
+  }
+
   res.json({
     user: {
       ...user,
-      isAdmin: user.is_admin === 1
+      isAdmin: user.is_admin === 1,
+      avatar: avatarUrl
     },
     score
   });

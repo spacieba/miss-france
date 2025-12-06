@@ -33,6 +33,16 @@ async function loadUserData() {
         document.getElementById('user-pseudo').textContent = currentUser.pseudo;
         document.getElementById('welcome-pseudo').textContent = currentUser.pseudo;
 
+        // Afficher l'avatar personnalisé si disponible
+        if (currentUser.avatar) {
+            const avatarContainer = document.getElementById('user-avatar-container');
+            const avatarImg = document.getElementById('user-avatar');
+            if (avatarContainer && avatarImg) {
+                avatarImg.src = currentUser.avatar;
+                avatarContainer.style.display = 'block';
+            }
+        }
+
         updateScoreDisplay(data.score);
 
         // Afficher le bouton admin si nécessaire
