@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comité Parallèle - Miss France 2026</title>
+    <title>Comité Parallèle - Miss France 2027</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <h1>👑 Comité Parallèle 2026</h1>
+                <h1>👑 Comité Parallèle <span class="edition-year">2027</span></h1>
                 <div class="user-info">
                     <span id="user-pseudo"></span>
                     <span class="score" id="user-score">0 pts</span>
@@ -58,7 +58,7 @@
                         <img id="user-avatar" src="" alt="Mon avatar Miss France" style="max-width: 250px; max-height: 300px; border-radius: 15px; border: 4px solid var(--gold); box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);">
                     </div>
                     <h2>Bienvenue dans le Comité Parallèle</h2>
-                    <p class="welcome-subtitle">d'élection de Miss France 2026, <span id="welcome-pseudo"></span> !</p>
+                    <p class="welcome-subtitle">d'élection de Miss France <span class="edition-year">2027</span>, <span id="welcome-pseudo"></span> !</p>
                     <div class="score-display">
                         <div class="score-item">
                             <span class="score-label">Score Total</span>
@@ -129,7 +129,7 @@
                         <option value="">-- Choisis une candidate --</option>
                     </select>
 
-                    <h4 style="margin-top: 25px; color: var(--gold);">👑 PRONO D'OR - Miss France 2026 (80 pts)</h4>
+                    <h4 style="margin-top: 25px; color: var(--gold);">👑 PRONO D'OR - Miss France <span class="edition-year">2027</span> (80 pts)</h4>
                     <p class="hint">Qui sera élue Miss France ? Si tu as raison, tu gagnes 80 points bonus !</p>
                     <select id="prono-or-miss" class="select-candidate" style="border-color: var(--gold);">
                         <option value="">-- Choisis ta future Miss France --</option>
@@ -171,7 +171,7 @@
                         <div class="rank-item">
                             <span class="rank-number">1️⃣</span>
                             <select class="select-candidate select-rank" data-rank="1">
-                                <option value="">-- Miss France 2026 --</option>
+                                <option value="">-- Miss France 2027 --</option>
                             </select>
                         </div>
                         <div class="rank-item">
@@ -212,7 +212,7 @@
                 <h2>Quiz Miss France</h2>
                 
                 <div id="quiz-intro" class="quiz-intro">
-                    <p>Teste ta culture Miss France avec 30 questions !</p>
+                    <p>Teste ta culture Miss France avec <span class="quiz-count">34</span> questions !</p>
                     <div class="quiz-stats">
                         <div class="stat">
                             <span class="stat-number" id="quiz-answered">0</span>
@@ -246,12 +246,12 @@
             <!-- Section Culture G Officiel -->
             <section id="culture-g" class="section">
                 <h2>🎓 Questionnaire Culture Générale Officiel</h2>
-                <p class="subtitle">Le vrai test passé par les Miss France 2026 !</p>
+                <p class="subtitle culture-g-label">Le vrai test de culture générale des candidates Miss France !</p>
 
                 <div class="culture-g-intro">
                     <div class="culture-g-header" style="background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; color: white;">
                         <h3 style="margin: 0 0 10px 0;">📋 À propos de ce questionnaire</h3>
-                        <p style="margin: 0; opacity: 0.9;">Ce questionnaire est le test officiel de culture générale passé par les candidates Miss France il y a quelques semaines. 9 catégories, ~80 questions, ~80 points possibles.</p>
+                        <p style="margin: 0; opacity: 0.9;">Ce questionnaire est le test officiel de culture générale passé par les candidates Miss France. <span class="culture-g-count"></span> questions, <span class="culture-g-max"></span> points possibles.</p>
                     </div>
 
                     <div class="culture-g-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
@@ -440,7 +440,7 @@
                 <div id="leaderboard-quiz" class="leaderboard-panel">
                     <div class="leaderboard-info" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                         <strong>📚 Quiz Miss France</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">30 questions sur l'univers Miss France (1-3 pts par question)</p>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;"><span class="quiz-count">34</span> questions sur l'univers Miss France (1-3 pts par question)</p>
                     </div>
                     <div class="leaderboard-container">
                         <table class="leaderboard-table">
@@ -509,7 +509,7 @@
                     <!-- Quiz Miss France -->
                     <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #3498db;">
                         <h3 style="color: #3498db; margin: 0 0 15px 0;">📚 Quiz Miss France</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">30 questions sur l'univers Miss France. Points attribués selon classement.</p>
+                        <p style="color: var(--gris-elegant); margin-bottom: 15px;"><span class="quiz-count">34</span> questions sur l'univers Miss France. Points attribués selon classement.</p>
                         <ul style="list-style: none; padding: 0; margin: 0;">
                             <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥇 1er meilleur score : <strong style="color: var(--gold);">15 pts</strong></li>
                             <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥈 2ème meilleur score : <strong style="color: var(--gold);">10 pts</strong></li>
@@ -544,7 +544,7 @@
                             <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Top 5 : <strong style="color: var(--gold);">10 pts</strong> par bonne candidate (5 × 10 = 50 pts max)</li>
                             <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Bonus Top 5 (celle qui passe pas) : <strong style="color: var(--gold);">20 pts</strong></li>
                             <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Classement final (1-5) : <strong style="color: var(--gold);">20 pts</strong> par position exacte (5 × 20 = 100 pts max)</li>
-                            <li style="padding: 8px 0;">• 👑 <strong>PRONO D'OR</strong> (Miss France 2026) : <strong style="color: var(--gold);">80 pts</strong></li>
+                            <li style="padding: 8px 0;">• 👑 <strong>PRONO D'OR</strong> (Miss France <span class="edition-year">2027</span>) : <strong style="color: var(--gold);">80 pts</strong></li>
                         </ul>
                         <div style="margin-top: 15px; padding: 10px; background: rgba(212, 175, 55, 0.2); border-radius: 8px;">
                             <strong style="color: var(--gold);">Maximum possible : 335 pts</strong>
@@ -666,7 +666,7 @@
                         <div class="rank-item">
                             <span class="rank-num">1️⃣</span>
                             <select class="admin-final-rank admin-select" data-rank="1">
-                                <option value="">-- Miss France 2026 --</option>
+                                <option value="">-- Miss France 2027 --</option>
                             </select>
                         </div>
                         <div class="rank-item">

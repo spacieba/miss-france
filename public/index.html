@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comité Parallèle - Miss France 2026</title>
+    <title>Comité Parallèle - Miss France 2027</title>
     <link rel="stylesheet" href="style.css">
     <style>
         /* Animation de la couronne */
@@ -141,7 +141,7 @@
             </div>
 
             <h1>COMITÉ PARALLÈLE</h1>
-            <p class="title-elegant">Bienvenue dans ce comité parallèle iséro-corrézien pour cette élection de Miss France 2026</p>
+            <p class="title-elegant">Bienvenue dans ce comité parallèle iséro-corrézien pour cette élection de Miss France <span class="edition-year">2027</span></p>
             <p>Rejoins le jury le plus glamour de la soirée !</p>
             <ul class="welcome-features">
                 <li>Fais tes pronostics pendant l'émission</li>
@@ -174,12 +174,12 @@
 
                 <div class="input-group">
                     <label for="pseudo">Pseudo</label>
-                    <input type="text" id="pseudo" placeholder="Ton pseudo" maxlength="20" autofocus>
+                    <input type="text" id="pseudo" placeholder="Ton pseudo" maxlength="24" autocomplete="username" autofocus>
                 </div>
 
                 <div class="input-group">
                     <label for="password">Mot de passe</label>
-                    <input type="password" id="password" placeholder="Ton mot de passe" minlength="4">
+                    <input type="password" id="password" placeholder="Ton mot de passe" minlength="6" autocomplete="current-password">
                 </div>
 
                 <button onclick="handleSubmit()" class="btn-submit" id="submit-btn">
@@ -283,14 +283,13 @@
                 return;
             }
 
-            if (!password || password.length < 4) {
-                errorDiv.textContent = '⚠️ Le mot de passe doit faire au moins 4 caractères !';
+            if (!password || password.length < 6) {
+                errorDiv.textContent = '⚠️ Le mot de passe doit faire au moins 6 caractères !';
                 errorDiv.style.display = 'block';
                 return;
             }
 
-            const reservedPseudos = ['admin', 'dam', 'lucie'];
-            if (reservedPseudos.includes(pseudo.toLowerCase())) {
+            if (/^admin/i.test(pseudo)) {
                 errorDiv.textContent = '⚠️ Ce pseudo est réservé';
                 errorDiv.style.display = 'block';
                 return;

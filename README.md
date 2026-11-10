@@ -1,4 +1,6 @@
-# 👑 Miss France 2025 - Application de Pronostics et Quiz
+# 👑 Miss France 2027 - Application de Pronostics et Quiz
+
+> Élection du **12 décembre 2026** au Futuroscope (31 candidates).
 
 Application interactive pour organiser une soirée Miss France entre amis avec système de points, quiz, pronostics et jeux en direct !
 
@@ -67,7 +69,7 @@ Application interactive pour organiser une soirée Miss France entre amis avec s
 
 ## 💻 Développement local
 
-### Installation
+### Installation (Node.js 22+)
 ```bash
 npm install
 ```
@@ -92,54 +94,39 @@ L'application sera accessible sur http://localhost:3000
 
 ### 🔐 Pour l'organisateur - Interface Admin
 
-L'application dispose d'une **interface d'administration** pour saisir les résultats en temps réel !
+Les comptes admin se connectent normalement (page d'accueil) et voient l'onglet **Admin**.
 
-#### Accéder à l'interface admin
-1. Aller sur `https://VOTRE-APP.up.railway.app/admin.html`
-2. Entrer le mot de passe admin : `missfranceadmin2025`
-   - ⚠️ **IMPORTANT** : Changez ce mot de passe en production via la variable d'environnement `ADMIN_PASSWORD` dans Railway
+#### Variables d'environnement (Railway → Variables)
 
-#### Fonctionnalités de l'admin
-✅ **Saisie du Top 15** : Cochez les 15 candidates sélectionnées + la candidate bonus
-✅ **Saisie du Top 5** : Cochez les 5 finalistes + la candidate bonus
-✅ **Classement final** : Entrez le classement de 1 à 5 (Miss France + dauphines)
-✅ **Validation des prédictions live** : Validez chaque prédiction individuellement pendant la soirée
-✅ **Statistiques en temps réel** : Nombre d'utilisateurs, pronostics soumis, etc.
-✅ **Calcul automatique** : Les scores sont recalculés automatiquement pour tous les joueurs
+| Variable | Rôle |
+|---|---|
+| `ADMIN_USERS` | **Obligatoire en prod.** Comptes admin : `pseudo1:motdepasse1,pseudo2:motdepasse2`. Les mots de passe sont resynchronisés à chaque démarrage. |
+| `SESSION_SECRET` | Recommandé. Longue chaîne aléatoire. Sinon un secret est généré et stocké dans le volume `/data`. |
+| `EDITION` | Optionnel. Édition à charger (`2027` par défaut → `editions/2027.js`). |
+
+Sans `ADMIN_USERS`, un compte `admin-comite` avec un mot de passe aléatoire est créé et affiché **une seule fois** dans les logs.
 
 #### Pendant la soirée
-1. **Prédictions live** : Validez chaque prédiction au fur et à mesure (couleur de robe, nombre de "magnifique", etc.)
-2. **Top 15** : Saisissez les résultats dès l'annonce du top 15
-3. **Top 5** : Saisissez les résultats dès l'annonce du top 5
-4. **Classement final** : Saisissez le podium et cliquez sur "Valider tous les résultats"
-5. Les scores de tous les joueurs sont **recalculés instantanément** !
+1. **Top 15** : cochez les 15 candidates puis validez
+2. **Top 5** : cochez les 5 finalistes puis validez
+3. **Classement final** : saisissez le podium et validez
+4. Les scores sont **recalculés instantanément** ; une étape peut être annulée.
+Les points Quiz / Culture G (15/10/5) et Costume (30/20/10) sont recalculés automatiquement (les ex-aequo partagent le même rang).
 
-#### Changer le mot de passe admin
-Sur Railway, dans les variables d'environnement :
-```
-ADMIN_PASSWORD=votre_mot_de_passe_securise
-```
+## 🎨 Personnalisation / nouvelle édition
 
-## 🎨 Personnalisation
-
-### Modifier les candidates
-Éditez le tableau `candidates` dans `server.js` (ligne ~120)
-
-### Ajouter des questions au quiz
-Éditez le tableau `quizQuestions` dans `server.js` (ligne ~150)
-
-### Modifier les items du bingo
-Éditez le tableau `bingoItems` dans `server.js` (ligne ~400)
-
-### Changer les couleurs
-Modifiez les variables CSS dans `public/style.css` (`:root`)
+Tout le contenu de l'édition est dans `editions/2027.js` : candidates (nom, prénom, photo), quiz, questionnaire Culture G, année.
+- **Photos des candidates** : remplacez `PLACEHOLDER` par l'URL de la photo officielle.
+- **Questionnaire Culture G 2027** : à remplacer dès sa publication (c'est celui de 2026 en attendant).
+- **Édition suivante** : copiez `editions/2027.js` en `editions/2028.js`, mettez-le à jour et définissez `EDITION=2028`.
+  Chaque édition a sa propre base (`miss-france-<edition>.db`) : l'historique est conservé, tout le monde recrée son compte.
 
 ## 🛠️ Technologies utilisées
 
 - **Backend** : Node.js + Express
 - **Base de données** : SQLite (better-sqlite3)
 - **Frontend** : HTML, CSS, JavaScript vanilla
-- **Authentification** : Sessions Express
+- **Authentification** : Sessions Express stockées en SQLite, bcrypt
 - **Déploiement** : Railway
 
 ## 📝 Notes importantes
@@ -151,7 +138,7 @@ Modifiez les variables CSS dans `public/style.css` (`:root`)
 
 ## 🎉 Amusez-vous bien !
 
-Créé avec ❤️ pour votre soirée Miss France 2025
+Créé avec ❤️ pour votre soirée Miss France 2027
 
 ## 📞 Support
 

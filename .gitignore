@@ -1,9 +1,12 @@
 node_modules/
-data/*.db
 .env
+.env.*
+!.env.example
+.vercel/
 *.log
 .DS_Store
-public/uploads/costumes/*.jpg
-public/uploads/costumes/*.jpeg
-public/uploads/costumes/*.png
-!public/uploads/costumes/.gitkeep
+# Anciennes données SQLite / uploads locaux (version Railway)
+data/
+public/uploads/
+public/avatars/
+nixpacks.toml

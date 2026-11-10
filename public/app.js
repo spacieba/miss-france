@@ -1,3 +1,25 @@
+// Échappe le HTML pour toute donnée affichée via innerHTML (pseudos, messages...)
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"'`]/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;'
+    }[c]));
+}
+
+// Infos de l'édition en cours (année, nombre de questions...)
+let editionInfo = { year: 2027 };
+async function loadEditionInfo() {
+    try {
+        const response = await fetch('/api/edition');
+        if (response.ok) editionInfo = await response.json();
+    } catch (e) { /* valeurs par défaut */ }
+    document.querySelectorAll('.edition-year').forEach(el => { el.textContent = editionInfo.year; });
+    document.querySelectorAll('.quiz-count').forEach(el => { el.textContent = editionInfo.quizCount; });
+    document.querySelectorAll('.culture-g-max').forEach(el => { el.textContent = editionInfo.cultureGMaxPoints; });
+    document.querySelectorAll('.culture-g-count').forEach(el => { el.textContent = editionInfo.cultureGCount; });
+    document.querySelectorAll('.culture-g-label').forEach(el => { el.textContent = editionInfo.cultureGLabel; });
+    if (editionInfo.year) document.title = `Comité Parallèle - Miss France ${editionInfo.year}`;
+}
+
 // Variables globales
 let currentUser = null;
 let candidates = [];
@@ -7,6 +29,7 @@ let isAdmin = false;
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', async () => {
+    await loadEditionInfo();
     await loadUserData();
     await loadCandidates();
     loadScore();
@@ -120,6 +143,28 @@ function showSection(sectionName) {
 
 // === PRONOSTICS ===
 
+// Libellé affiché : « Miss Alsace — Chiara Blazevic »
+function candidateLabel(name) {
+    const c = candidates.find(x => x.name === name);
+    return c && c.person ? `${name} — ${c.person}` : name;
+}
+
+// Réduit la photo dans le navigateur (1600 px, JPEG) avant l'envoi : l'hébergement limite les envois à 4,5 Mo
+async function shrinkImage(file) {
+    try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+        return blob || file;
+    } catch (e) {
+        return file; // format non décodable par le navigateur (ex. HEIC) : envoi tel quel
+    }
+}
+
 async function loadCandidates() {
     const response = await fetch('/api/candidates');
     candidates = await response.json();
@@ -143,9 +188,9 @@ async function loadPronosticsSection() {
         label.className = 'candidate-checkbox with-photo';
         label.setAttribute('for', inputId);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidate.name}" data-type="top15">
-            <img src="${candidate.photo}" alt="${candidate.name}" class="candidate-photo">
-            <span>${candidate.name}</span>
+            <input type="checkbox" id="${inputId}" value="${escapeHtml(candidate.name)}" data-type="top15">
+            <img src="${escapeHtml(candidate.photo)}" alt="${escapeHtml(candidate.name)}" class="candidate-photo">
+            <span>${escapeHtml(candidate.name)}${candidate.person ? `<br><small>${escapeHtml(candidate.person)}</small>` : ''}</span>
         `;
         top15Container.appendChild(label);
     });
@@ -177,9 +222,9 @@ async function loadPronosticsSection() {
         label.className = 'candidate-checkbox with-photo';
         label.setAttribute('for', inputId);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidateName}" data-type="top5">
-            ${candidatePhoto ? `<img src="${candidatePhoto}" alt="${candidateName}" class="candidate-photo">` : ''}
-            <span>${candidateName}</span>
+            <input type="checkbox" id="${inputId}" value="${escapeHtml(candidateName)}" data-type="top5">
+            ${candidatePhoto ? `<img src="${escapeHtml(candidatePhoto)}" alt="${escapeHtml(candidateName)}" class="candidate-photo">` : ''}
+            <span>${escapeHtml(candidateName)}</span>
         `;
         top5Container.appendChild(label);
     });
@@ -339,7 +384,7 @@ async function loadPronosticsSection() {
             const msg = document.createElement('div');
             msg.id = 'final-locked-msg';
             msg.style.cssText = 'background: rgba(231, 76, 60, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e74c3c; color: #e74c3c;';
-            msg.innerHTML = '🔒 <strong>Section verrouillée</strong> - Le classement final officiel a été validé. Miss France 2026 est élue !';
+            msg.innerHTML = `🔒 <strong>Section verrouillée</strong> - Le classement final officiel a été validé. Miss France ${editionInfo.year} est élue !`;
             finalSection.parentNode.insertBefore(msg, finalSection);
         }
     }
@@ -355,7 +400,7 @@ function fillCandidateSelects() {
         candidates.forEach(candidate => {
             const option = document.createElement('option');
             option.value = candidate.name;
-            option.textContent = candidate.name;
+            option.textContent = candidateLabel(candidate.name);
             bonusTop15Select.appendChild(option);
         });
     }
@@ -365,7 +410,7 @@ function fillCandidateSelects() {
         candidates.forEach(candidate => {
             const option = document.createElement('option');
             option.value = candidate.name;
-            option.textContent = candidate.name;
+            option.textContent = candidateLabel(candidate.name);
             pronoOrSelect.appendChild(option);
         });
     }
@@ -382,7 +427,7 @@ function fillCandidateSelects() {
             const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
             const option = document.createElement('option');
             option.value = candidateName;
-            option.textContent = candidateName;
+            option.textContent = candidateLabel(candidateName);
             bonusTop5Select.appendChild(option);
         });
     }
@@ -392,7 +437,7 @@ function fillCandidateSelects() {
         ? officialResults.top5
         : candidates;
 
-    const defaultLabels = ['-- Miss France 2026 --', '-- 1ère Dauphine --', '-- 2ème Dauphine --', '-- 3ème Dauphine --', '-- 4ème Dauphine --'];
+    const defaultLabels = [`-- Miss France ${editionInfo.year} --`, '-- 1ère Dauphine --', '-- 2ème Dauphine --', '-- 3ème Dauphine --', '-- 4ème Dauphine --'];
 
     document.querySelectorAll('.select-rank').forEach((select, idx) => {
         select.innerHTML = `<option value="">${defaultLabels[idx]}</option>`;
@@ -400,7 +445,7 @@ function fillCandidateSelects() {
             const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
             const option = document.createElement('option');
             option.value = candidateName;
-            option.textContent = candidateName;
+            option.textContent = candidateLabel(candidateName);
             select.appendChild(option);
         });
     });
@@ -670,14 +715,14 @@ async function answerQuestion(answerIndex) {
     if (result.correct) {
         feedback.innerHTML = `
             <div class="feedback-correct">
-                ✅ Bonne réponse ! +${result.points} points
+                ✅ Bonne réponse !
             </div>
         `;
     } else {
         feedback.innerHTML = `
             <div class="feedback-wrong">
                 ❌ Mauvaise réponse !<br>
-                La bonne réponse était : ${result.correctAnswer}
+                La bonne réponse était : ${escapeHtml(result.correctAnswer)}
             </div>
         `;
     }
@@ -840,7 +885,7 @@ async function toggleCostumePublic() {
         const messageDiv = document.getElementById('costume-upload-message');
 
         if (response.ok) {
-            messageDiv.innerHTML = `<span style="color: #2ecc71;">✅ ${data.message}</span>`;
+            messageDiv.innerHTML = `<span style="color: #2ecc71;">✅ ${escapeHtml(data.message)}</span>`;
             messageDiv.style.display = 'block';
             await loadMyCostumePhoto();
             await loadCostumeGallery();
@@ -849,7 +894,7 @@ async function toggleCostumePublic() {
                 messageDiv.style.display = 'none';
             }, 3000);
         } else {
-            messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${data.error}</span>`;
+            messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${escapeHtml(data.error)}</span>`;
             messageDiv.style.display = 'block';
         }
     } catch (error) {
@@ -876,9 +921,9 @@ function initCostumePhotoUpload() {
             return;
         }
 
-        // Vérifier la taille (10MB max)
-        if (file.size > 10 * 1024 * 1024) {
-            alert('La photo est trop grande (max 10MB)');
+        // Vérifier la taille (25MB max avant redimensionnement)
+        if (file.size > 25 * 1024 * 1024) {
+            alert('La photo est trop grande (max 25 Mo)');
             return;
         }
 
@@ -888,7 +933,12 @@ function initCostumePhotoUpload() {
 
         try {
             const formData = new FormData();
-            formData.append('photo', file);
+            const toSend = await shrinkImage(file);
+            if (toSend.size > 4 * 1024 * 1024) {
+                messageDiv.innerHTML = '<span style="color: #e74c3c;">❌ Photo trop lourde, essaie avec une autre</span>';
+                return;
+            }
+            formData.append('photo', toSend, 'photo.jpg');
 
             const response = await fetch('/api/costume/upload-photo', {
                 method: 'POST',
@@ -898,11 +948,11 @@ function initCostumePhotoUpload() {
             const data = await response.json();
 
             if (response.ok) {
-                messageDiv.innerHTML = `<span style="color: #2ecc71;">✅ ${data.message}</span>`;
+                messageDiv.innerHTML = `<span style="color: #2ecc71;">✅ ${escapeHtml(data.message)}</span>`;
                 await loadMyCostumePhoto();
                 await loadCostumeGallery();
             } else {
-                messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${data.error}</span>`;
+                messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${escapeHtml(data.error)}</span>`;
             }
         } catch (error) {
             console.error('Erreur upload:', error);
@@ -936,7 +986,7 @@ async function deleteCostumePhoto() {
             await loadMyCostumePhoto();
             await loadCostumeGallery();
         } else {
-            messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${data.error}</span>`;
+            messageDiv.innerHTML = `<span style="color: #e74c3c;">❌ ${escapeHtml(data.error)}</span>`;
             messageDiv.style.display = 'block';
         }
 
@@ -971,10 +1021,10 @@ async function loadCostumeGallery() {
         }
 
         gallery.innerHTML = playersWithPhotos.map(player => `
-            <div class="costume-gallery-item" style="background: var(--noir-soft); border-radius: 10px; overflow: hidden; cursor: pointer;" onclick="openCostumeModal('${player.costume_photo}', '${player.pseudo}')">
-                <img src="${player.costume_photo}" alt="Costume de ${player.pseudo}" style="width: 100%; height: 150px; object-fit: cover;">
+            <div class="costume-gallery-item" style="background: var(--noir-soft); border-radius: 10px; overflow: hidden; cursor: pointer;" data-photo="${escapeHtml(player.costume_photo)}" data-pseudo="${escapeHtml(player.pseudo)}" onclick="openCostumeModal(this.dataset.photo, this.dataset.pseudo)">
+                <img src="${escapeHtml(player.costume_photo)}" alt="Costume de ${escapeHtml(player.pseudo)}" style="width: 100%; height: 150px; object-fit: cover;">
                 <div style="padding: 10px; text-align: center;">
-                    <strong style="color: var(--gold);">${player.pseudo}</strong>
+                    <strong style="color: var(--gold);">${escapeHtml(player.pseudo)}</strong>
                 </div>
             </div>
         `).join('');
@@ -1004,8 +1054,8 @@ function openCostumeModal(photoUrl, pseudo) {
     modal.onclick = () => modal.remove();
 
     modal.innerHTML = `
-        <img src="${photoUrl}" alt="Costume de ${pseudo}" style="max-width: 90%; max-height: 80%; border-radius: 10px; box-shadow: 0 5px 30px rgba(0,0,0,0.5);">
-        <p style="color: white; margin-top: 20px; font-size: 1.2em;"><strong style="color: var(--gold);">${pseudo}</strong></p>
+        <img src="${escapeHtml(photoUrl)}" alt="Costume de ${escapeHtml(pseudo)}" style="max-width: 90%; max-height: 80%; border-radius: 10px; box-shadow: 0 5px 30px rgba(0,0,0,0.5);">
+        <p style="color: white; margin-top: 20px; font-size: 1.2em;"><strong style="color: var(--gold);">${escapeHtml(pseudo)}</strong></p>
         <p style="color: #888; margin-top: 10px;">Clique n'importe où pour fermer</p>
     `;
 
@@ -1038,7 +1088,7 @@ async function loadCostumeVoting() {
     if (myVote) {
         statusDiv.innerHTML = `
             <div style="background: rgba(39, 174, 96, 0.2); padding: 12px; border-radius: 8px; border: 1px solid #27ae60;">
-                ✅ Tu as voté pour <strong>${myVote.voted_for_pseudo}</strong>
+                ✅ Tu as voté pour <strong>${escapeHtml(myVote.voted_for_pseudo)}</strong>
                 <br><small style="color: var(--gris-elegant);">Tu peux changer ton vote si tu veux</small>
             </div>
         `;
@@ -1070,7 +1120,7 @@ async function submitCostumeVote() {
     const messageDiv = document.getElementById('costume-vote-message');
 
     if (response.ok) {
-        messageDiv.innerHTML = `<div style="color: #27ae60;">✅ ${data.message}</div>`;
+        messageDiv.innerHTML = `<div style="color: #27ae60;">✅ ${escapeHtml(data.message)}</div>`;
         messageDiv.style.display = 'block';
 
         // Recharger
@@ -1080,7 +1130,7 @@ async function submitCostumeVote() {
             messageDiv.style.display = 'none';
         }, 3000);
     } else {
-        messageDiv.innerHTML = `<div style="color: #e74c3c;">❌ ${data.error}</div>`;
+        messageDiv.innerHTML = `<div style="color: #e74c3c;">❌ ${escapeHtml(data.error)}</div>`;
         messageDiv.style.display = 'block';
     }
 }
@@ -1104,7 +1154,7 @@ async function loadCostumeResults() {
         .filter(r => r.votes > 0)
         .map((player, index) => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: ${index < 3 ? 'rgba(212, 175, 55, 0.1)' : 'transparent'}; border-radius: 8px; margin-bottom: 5px;">
-                <span>${medals[index] || '  '} <strong>${player.pseudo}</strong></span>
+                <span>${medals[index] || '  '} <strong>${escapeHtml(player.pseudo)}</strong></span>
                 <span style="color: var(--gold);">${player.votes} vote${player.votes > 1 ? 's' : ''}</span>
             </div>
         `).join('');
@@ -1160,7 +1210,7 @@ function renderGeneralLeaderboard() {
 
         row.innerHTML = `
             <td class="rank">${getRankEmoji(index + 1)}</td>
-            <td class="player-name">${player.pseudo}</td>
+            <td class="player-name">${escapeHtml(player.pseudo)}</td>
             <td>${player.quiz_score}</td>
             <td>${player.culture_g_score || 0}</td>
             <td>${player.pronostics_score}</td>
@@ -1186,7 +1236,7 @@ function renderPronosticsLeaderboard() {
 
         row.innerHTML = `
             <td class="rank">${getRankEmoji(index + 1)}</td>
-            <td class="player-name">${player.pseudo}</td>
+            <td class="player-name">${escapeHtml(player.pseudo)}</td>
             <td class="total-score">${player.pronostics_score} pts</td>
         `;
 
@@ -1208,7 +1258,7 @@ function renderQuizLeaderboard() {
 
         row.innerHTML = `
             <td class="rank">${getRankEmoji(index + 1)}</td>
-            <td class="player-name">${player.pseudo}</td>
+            <td class="player-name">${escapeHtml(player.pseudo)}</td>
             <td class="total-score">${player.quiz_score} pts</td>
         `;
 
@@ -1233,8 +1283,8 @@ async function renderCultureGLeaderboard() {
 
             row.innerHTML = `
                 <td class="rank">${getRankEmoji(index + 1)}</td>
-                <td class="player-name">${player.pseudo}</td>
-                <td>${player.raw_score} / ~80</td>
+                <td class="player-name">${escapeHtml(player.pseudo)}</td>
+                <td>${player.raw_score} / ${player.max_score ?? editionInfo.cultureGMaxPoints}</td>
                 <td class="total-score">${player.awarded_points || 0} pts</td>
             `;
 
@@ -1269,7 +1319,7 @@ async function renderCostumeLeaderboard() {
 
             row.innerHTML = `
                 <td class="rank">${getRankEmoji(index + 1)}</td>
-                <td class="player-name">${player.pseudo}</td>
+                <td class="player-name">${escapeHtml(player.pseudo)}</td>
                 <td>${player.votes} vote${player.votes > 1 ? 's' : ''}</td>
                 <td class="total-score">${points > 0 ? points + ' pts' : '-'}</td>
             `;
@@ -1353,9 +1403,9 @@ async function loadAdminInterface() {
         const inputId15 = `admin-top15-${index}`;
         label15.setAttribute('for', inputId15);
         label15.innerHTML = `
-            <input type="checkbox" id="${inputId15}" value="${candidate.name}" data-admin-type="top15">
-            <img src="${candidate.photo}" alt="${candidate.name}" class="admin-candidate-photo">
-            ${candidate.name}
+            <input type="checkbox" id="${inputId15}" value="${escapeHtml(candidate.name)}" data-admin-type="top15">
+            <img src="${escapeHtml(candidate.photo)}" alt="${escapeHtml(candidate.name)}" class="admin-candidate-photo">
+            ${escapeHtml(candidate.name)}
         `;
         top15Grid.appendChild(label15);
     });
@@ -1421,7 +1471,7 @@ async function loadAdminCostumePreview() {
                 <p style="margin-bottom: 10px;">Classement actuel (${totalVotes} votes):</p>
                 ${results.filter(r => r.votes > 0).slice(0, 5).map((player, index) => `
                     <div style="display: flex; justify-content: space-between; padding: 8px; background: ${index < 3 ? 'rgba(212, 175, 55, 0.15)' : 'transparent'}; border-radius: 5px; margin-bottom: 5px;">
-                        <span>${medals[index] || '  '} ${player.pseudo}</span>
+                        <span>${medals[index] || '  '} ${escapeHtml(player.pseudo)}</span>
                         <span>${player.votes} vote${player.votes > 1 ? 's' : ''} ${index < 3 ? `→ <strong>${points[index]} pts</strong>` : ''}</span>
                     </div>
                 `).join('')}
@@ -1455,8 +1505,8 @@ async function adminAwardCostumePoints() {
         const messageDiv = document.getElementById('costume-award-message');
 
         if (response.ok) {
-            const awardedList = data.awarded.map(a => `${a.pseudo}: ${a.votes} votes → +${a.points} pts`).join('\n');
-            messageDiv.innerHTML = `✅ Points attribués !<br>${data.awarded.map(a => `<strong>${a.pseudo}</strong>: +${a.points} pts`).join('<br>')}`;
+            const awardedList = data.awarded.map(a => `${escapeHtml(a.pseudo)}: ${a.votes} votes → +${a.points} pts`).join('\n');
+            messageDiv.innerHTML = `✅ Points attribués !<br>${data.awarded.map(a => `<strong>${escapeHtml(a.pseudo)}</strong>: +${a.points} pts`).join('<br>')}`;
             messageDiv.style.color = '#27ae60';
 
             // Recharger
@@ -1465,7 +1515,7 @@ async function adminAwardCostumePoints() {
             await loadScore();
             await loadAdminCostumePreview();
         } else {
-            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.textContent = `❌ ${escapeHtml(data.error)}`;
             messageDiv.style.color = '#e74c3c';
         }
     } catch (error) {
@@ -1758,7 +1808,7 @@ async function adminResetAllData() {
         const data = await response.json();
 
         if (data.success) {
-            messageDiv.innerHTML = `<p style="color: #27ae60;">✅ ${data.message}</p>`;
+            messageDiv.innerHTML = `<p style="color: #27ae60;">✅ ${escapeHtml(data.message)}</p>`;
             alert(`✅ Reset effectué !\n\n${data.usersDeleted} joueur(s) supprimé(s)\n${data.photosDeleted} photo(s) supprimée(s)\n${data.adminsKept} compte(s) admin conservé(s)`);
 
             // Recharger toutes les données
@@ -1774,7 +1824,7 @@ async function adminResetAllData() {
             if (usersList) usersList.innerHTML = '';
 
         } else {
-            messageDiv.innerHTML = `<p style="color: #e74c3c;">❌ Erreur: ${data.error}</p>`;
+            messageDiv.innerHTML = `<p style="color: #e74c3c;">❌ Erreur: ${escapeHtml(data.error)}</p>`;
         }
     } catch (error) {
         console.error('Erreur reset complet:', error);
@@ -1806,9 +1856,9 @@ function updateAdminTop5Grid() {
         label.setAttribute('for', inputId);
         const isChecked = officialResults.top5 && officialResults.top5.includes(candidateName);
         label.innerHTML = `
-            <input type="checkbox" id="${inputId}" value="${candidateName}" data-admin-type="top5" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
-            ${candidatePhoto ? `<img src="${candidatePhoto}" alt="${candidateName}" class="admin-candidate-photo">` : ''}
-            ${candidateName}
+            <input type="checkbox" id="${inputId}" value="${escapeHtml(candidateName)}" data-admin-type="top5" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
+            ${candidatePhoto ? `<img src="${escapeHtml(candidatePhoto)}" alt="${escapeHtml(candidateName)}" class="admin-candidate-photo">` : ''}
+            ${escapeHtml(candidateName)}
         `;
         top5Grid.appendChild(label);
     });
@@ -1839,13 +1889,13 @@ function updateAdminFinalSelects() {
     const isDisabled = officialResults.current_step >= 3;
 
     selects.forEach((select, idx) => {
-        const defaultLabels = ['-- Miss France 2026 --', '-- 1ère Dauphine --', '-- 2ème Dauphine --', '-- 3ème Dauphine --', '-- 4ème Dauphine --'];
+        const defaultLabels = [`-- Miss France ${editionInfo.year} --`, '-- 1ère Dauphine --', '-- 2ème Dauphine --', '-- 3ème Dauphine --', '-- 4ème Dauphine --'];
         select.innerHTML = `<option value="">${defaultLabels[idx]}</option>`;
         candidatesToShow.forEach(candidate => {
             const candidateName = typeof candidate === 'string' ? candidate : candidate.name;
             const option = document.createElement('option');
             option.value = candidateName;
-            option.textContent = candidateName;
+            option.textContent = candidateLabel(candidateName);
             select.appendChild(option);
         });
 
@@ -1887,7 +1937,7 @@ async function adminValidateTop15() {
         const messageDiv = document.getElementById('step1-message');
 
         if (data.success) {
-            messageDiv.textContent = `✅ ${data.message} - ${data.usersUpdated} joueurs mis à jour`;
+            messageDiv.textContent = `✅ ${escapeHtml(data.message)} - ${data.usersUpdated} joueurs mis à jour`;
             messageDiv.style.color = '#27ae60';
 
             // Recharger les résultats officiels et mettre à jour l'interface
@@ -1901,7 +1951,7 @@ async function adminValidateTop15() {
             await loadLeaderboard();
             await loadScore();
         } else {
-            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.textContent = `❌ ${escapeHtml(data.error)}`;
             messageDiv.style.color = '#e74c3c';
         }
     } catch (error) {
@@ -1945,7 +1995,7 @@ async function adminValidateTop5() {
         const messageDiv = document.getElementById('step2-message');
 
         if (data.success) {
-            messageDiv.textContent = `✅ ${data.message} - ${data.usersUpdated} joueurs mis à jour`;
+            messageDiv.textContent = `✅ ${escapeHtml(data.message)} - ${data.usersUpdated} joueurs mis à jour`;
             messageDiv.style.color = '#27ae60';
 
             // Recharger les résultats officiels et mettre à jour l'interface
@@ -1958,7 +2008,7 @@ async function adminValidateTop5() {
             await loadLeaderboard();
             await loadScore();
         } else {
-            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.textContent = `❌ ${escapeHtml(data.error)}`;
             messageDiv.style.color = '#e74c3c';
         }
     } catch (error) {
@@ -1987,7 +2037,7 @@ async function adminValidateFinal() {
 
     const confirmation = confirm(
         `👑 VALIDATION CLASSEMENT FINAL 👑\n\n` +
-        `🥇 Miss France 2026: ${classementFinal[0]}\n` +
+        `🥇 Miss France ${editionInfo.year}: ${classementFinal[0]}\n` +
         `🥈 1ère Dauphine: ${classementFinal[1]}\n` +
         `🥉 2ème Dauphine: ${classementFinal[2]}\n` +
         `4️⃣ 3ème Dauphine: ${classementFinal[3]}\n` +
@@ -2009,7 +2059,7 @@ async function adminValidateFinal() {
         const messageDiv = document.getElementById('step3-message');
 
         if (data.success) {
-            messageDiv.innerHTML = `🎉 ${data.message}<br>👑 ${data.missFramce2026} est Miss France 2026 !<br>${data.usersUpdated} joueurs mis à jour`;
+            messageDiv.innerHTML = `🎉 ${escapeHtml(data.message)}<br>👑 ${escapeHtml(data.missFrance)} est Miss France ${editionInfo.year} !<br>${data.usersUpdated} joueurs mis à jour`;
             messageDiv.style.color = '#27ae60';
 
             // Recharger les résultats officiels et mettre à jour l'interface
@@ -2022,9 +2072,9 @@ async function adminValidateFinal() {
             await loadScore();
 
             // Message de victoire
-            alert(`🎉 FÉLICITATIONS ! 🎉\n\n${data.missFramce2026} est Miss France 2026 !\n\nTous les scores ont été calculés, y compris le Prono d'Or !`);
+            alert(`🎉 FÉLICITATIONS ! 🎉\n\n${data.missFrance} est Miss France ${editionInfo.year} !\n\nTous les scores ont été calculés, y compris le Prono d'Or !`);
         } else {
-            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.textContent = `❌ ${escapeHtml(data.error)}`;
             messageDiv.style.color = '#e74c3c';
         }
     } catch (error) {
@@ -2114,7 +2164,7 @@ function renderCultureGCategories(categoryProgress) {
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h3 style="margin: 0 0 5px 0; color: ${isCompleted ? 'white' : 'var(--gold)'};">
-                        ${emoji} ${category.name}
+                        ${emoji} ${escapeHtml(category.name)}
                     </h3>
                     <p style="margin: 0; color: ${isCompleted ? 'rgba(255,255,255,0.8)' : 'var(--gris-elegant)'}; font-size: 0.9em;">
                         ${category.questions.length} questions • ${category.totalPoints} points max
@@ -2147,7 +2197,7 @@ function openCultureGCategory(categoryKey) {
     document.getElementById('culture-g-categories').style.display = 'none';
     document.querySelector('.culture-g-intro').style.display = 'none';
     document.getElementById('culture-g-quiz-area').style.display = 'block';
-    document.getElementById('culture-g-category-name').textContent = `${categoryEmojis[categoryKey] || '📚'} ${category.name}`;
+    document.getElementById('culture-g-category-name').textContent = `${categoryEmojis[categoryKey] || '📚'} ${escapeHtml(category.name)}`;
     document.getElementById('culture-g-results').style.display = 'none';
     document.getElementById('culture-g-submit-btn').style.display = 'block';
 
@@ -2195,7 +2245,7 @@ function openCultureGCategory(categoryKey) {
         if (question.bonus) {
             bonusHTML = `
                 <div style="margin-top: 15px; padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 10px; border: 1px dashed var(--gold);">
-                    <label style="color: var(--gold); font-weight: bold;">⭐ BONUS (+${question.bonus.points} pt): ${question.bonus.question}</label>
+                    <label style="color: var(--gold); font-weight: bold;">⭐ BONUS (+${question.bonus.points} pt): ${escapeHtml(question.bonus.question)}</label>
                     <input type="text" id="bonus-${question.id}" placeholder="Réponse bonus..." style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid var(--gold); background: var(--noir-medium); color: white;">
                 </div>
             `;
@@ -2208,8 +2258,8 @@ function openCultureGCategory(categoryKey) {
                 </span>
                 <span style="color: var(--gold); font-size: 0.9em;">${question.points} pt${question.points > 1 ? 's' : ''}</span>
             </div>
-            <h4 style="margin: 0 0 15px 0; color: var(--blanc-perle); line-height: 1.4;">${question.question}</h4>
-            ${question.info ? `<p style="color: var(--gris-elegant); font-size: 0.85em; margin-bottom: 15px; font-style: italic;">💡 ${question.info}</p>` : ''}
+            <h4 style="margin: 0 0 15px 0; color: var(--blanc-perle); line-height: 1.4;">${escapeHtml(question.question)}</h4>
+            ${question.info ? `<p style="color: var(--gris-elegant); font-size: 0.85em; margin-bottom: 15px; font-style: italic;">💡 ${escapeHtml(question.info)}</p>` : ''}
             <div class="answers-area">${answersHTML}</div>
             ${bonusHTML}
         `;
@@ -2283,7 +2333,7 @@ async function loadAdminCultureGRanking() {
             ${data.rankings.map((player, index) => `
                 <div style="display: flex; justify-content: space-between; padding: 10px; background: ${index < 3 ? 'rgba(155, 89, 182, 0.2)' : 'var(--noir-medium)'}; border-radius: 8px; margin-bottom: 8px;">
                     <span>
-                        ${medals[index] || `${index + 1}.`} <strong>${player.pseudo}</strong>
+                        ${medals[index] || `${index + 1}.`} <strong>${escapeHtml(player.pseudo)}</strong>
                         <span style="color: var(--gris-elegant); font-size: 0.85em;">(${player.total_answered} questions)</span>
                     </span>
                     <span>
@@ -2321,7 +2371,7 @@ async function adminValidateCultureG() {
         const messageDiv = document.getElementById('culture-g-award-message');
 
         if (response.ok) {
-            messageDiv.innerHTML = `✅ Points Culture G attribués !<br>${data.awarded.map(a => `<strong>${a.pseudo}</strong>: +${a.points} pts`).join('<br>')}`;
+            messageDiv.innerHTML = `✅ Points Culture G attribués !<br>${data.awarded.map(a => `<strong>${escapeHtml(a.pseudo)}</strong>: +${a.points} pts`).join('<br>')}`;
             messageDiv.style.color = '#27ae60';
 
             // Recharger les données
@@ -2330,7 +2380,7 @@ async function adminValidateCultureG() {
             await loadLeaderboard();
             await loadScore();
         } else {
-            messageDiv.textContent = `❌ ${data.error}`;
+            messageDiv.textContent = `❌ ${escapeHtml(data.error)}`;
             messageDiv.style.color = '#e74c3c';
         }
     } catch (error) {
@@ -2414,7 +2464,7 @@ async function submitCultureGCategory() {
                                 ${r.isCorrect ? '✅' : '❌'} ${r.questionId}
                             </span>
                             <span style="color: var(--gris-elegant); font-size: 0.9em;">
-                                ${!r.isCorrect ? `Réponse: ${r.correctAnswer}` : `+${r.points} pt${r.points > 1 ? 's' : ''}`}
+                                ${!r.isCorrect ? `Réponse: ${escapeHtml(r.correctAnswer)}` : `+${r.points} pt${r.points > 1 ? 's' : ''}`}
                             </span>
                         </div>
                     `).join('')}
@@ -2467,15 +2517,15 @@ async function loadAdminUsers() {
                         ${users.map(user => `
                             <tr style="border-bottom: 1px solid var(--noir-soft);" id="user-row-${user.id}">
                                 <td style="padding: 10px;">
-                                    <span id="pseudo-display-${user.id}">${user.pseudo}</span>
+                                    <span id="pseudo-display-${user.id}">${escapeHtml(user.pseudo)}</span>
                                     ${user.is_admin ? '<span style="color: var(--gold); font-size: 0.8em;"> (admin)</span>' : ''}
-                                    <input type="text" id="pseudo-input-${user.id}" value="${user.pseudo}"
+                                    <input type="text" id="pseudo-input-${user.id}" value="${escapeHtml(user.pseudo)}"
                                            style="display: none; padding: 5px; border-radius: 5px; border: 1px solid var(--gold); background: var(--noir-medium); color: white; width: 120px;">
                                 </td>
                                 <td style="padding: 10px; text-align: center;">${user.total_score || 0} pts</td>
                                 <td style="padding: 10px; text-align: center;">
                                     ${user.costume_photo
-                                        ? `<img src="${user.costume_photo}" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover;">`
+                                        ? `<img src="${escapeHtml(user.costume_photo)}" style="width: 40px; height: 40px; border-radius: 5px; object-fit: cover;">`
                                         : '<span style="color: #666;">-</span>'}
                                 </td>
                                 <td style="padding: 10px; text-align: center;">
@@ -2489,12 +2539,12 @@ async function loadAdminUsers() {
                                             💾
                                         </button>
                                         ${user.costume_photo ? `
-                                            <button onclick="deleteUserPhoto(${user.id}, '${user.pseudo}')"
+                                            <button data-pseudo="${escapeHtml(user.pseudo)}" onclick="deleteUserPhoto(${user.id}, this.dataset.pseudo)"
                                                     style="background: #f39c12; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 2px;">
                                                 🖼️❌
                                             </button>
                                         ` : ''}
-                                        <button onclick="deleteUser(${user.id}, '${user.pseudo}')"
+                                        <button data-pseudo="${escapeHtml(user.pseudo)}" onclick="deleteUser(${user.id}, this.dataset.pseudo)"
                                                 style="background: #e74c3c; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin: 2px;">
                                             🗑️
                                         </button>
