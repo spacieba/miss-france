@@ -35,48 +35,26 @@ Application interactive pour organiser une soirée Miss France entre amis avec s
 - Classement général actualisé automatiquement
 - Détail des points par catégorie
 
-## 🚀 Déploiement sur Railway
+## 🚀 Déploiement (Vercel + Supabase)
 
-### Prérequis
-- Un compte GitHub
-- Un compte Railway (gratuit)
+L'application tourne sur **Vercel** (fichiers statiques de `public/` + API Express en fonction serverless `api/index.js`, région `fra1`) avec une base **Postgres Supabase** (projet `miss-france`, eu-central-1).
 
-### Étapes de déploiement
-
-1. **Créer un repository GitHub**
-   ```bash
-   cd miss-france-app
-   git init
-   git add .
-   git commit -m "Initial commit - Miss France App"
-   git branch -M main
-   git remote add origin https://github.com/VOTRE-USERNAME/miss-france-app.git
-   git push -u origin main
-   ```
-
-2. **Déployer sur Railway**
-   - Aller sur https://railway.app
-   - Cliquer sur "New Project"
-   - Sélectionner "Deploy from GitHub repo"
-   - Choisir votre repository `miss-france-app`
-   - Railway détectera automatiquement Node.js grâce au nixpacks.toml
-   - Cliquer sur "Deploy"
-
-3. **Obtenir l'URL de l'application**
-   - Une fois déployé, aller dans "Settings"
-   - Cliquer sur "Generate Domain"
-   - Votre app sera accessible à l'adresse : `https://VOTRE-APP.up.railway.app`
+1. **Base Supabase** : les tables (`users`, `pronostics`, `scores`, `quiz_answers`, `culture_g_answers`, `costume_photos`, `costume_votes`, `official_results`, `sessions`, `rate_limits`) existent déjà dans le projet Supabase.
+2. **Projet Vercel** : *Add New → Project*, importer le dépôt GitHub `spacieba/miss-france` (preset « Other », aucune commande de build : `vercel.json` s'occupe de tout).
+3. **Variables d'environnement** (Vercel → Settings → Environment Variables) : voir le tableau ci-dessous.
+4. Chaque `git push` sur `main` redéploie automatiquement en production.
 
 ## 💻 Développement local
 
 ### Installation (Node.js 22+)
 ```bash
 npm install
+cp .env.example .env   # puis remplir DATABASE_URL, SESSION_SECRET, ADMIN_USERS
 ```
 
 ### Lancer le serveur
 ```bash
-npm start
+npm run dev
 ```
 
 L'application sera accessible sur http://localhost:3000
@@ -96,15 +74,16 @@ L'application sera accessible sur http://localhost:3000
 
 Les comptes admin se connectent normalement (page d'accueil) et voient l'onglet **Admin**.
 
-#### Variables d'environnement (Railway → Variables)
+#### Variables d'environnement (Vercel → Settings → Environment Variables)
 
 | Variable | Rôle |
 |---|---|
+| `DATABASE_URL` | **Obligatoire.** URL Supabase « Transaction pooler » (port 6543) avec le mot de passe de la base. |
 | `ADMIN_USERS` | **Obligatoire en prod.** Comptes admin : `pseudo1:motdepasse1,pseudo2:motdepasse2`. Les mots de passe sont resynchronisés à chaque démarrage. |
-| `SESSION_SECRET` | Recommandé. Longue chaîne aléatoire. Sinon un secret est généré et stocké dans le volume `/data`. |
+| `SESSION_SECRET` | **Obligatoire en prod.** Chaîne aléatoire d'au moins 32 caractères. |
 | `EDITION` | Optionnel. Édition à charger (`2027` par défaut → `editions/2027.js`). |
 
-Sans `ADMIN_USERS`, un compte `admin-comite` avec un mot de passe aléatoire est créé et affiché **une seule fois** dans les logs.
+Sans `ADMIN_USERS`, aucun compte admin n'est créé (un avertissement apparaît dans les logs).
 
 #### Pendant la soirée
 1. **Top 15** : cochez les 15 candidates puis validez
@@ -118,20 +97,20 @@ Les points Quiz / Culture G (15/10/5) et Costume (30/20/10) sont recalculés aut
 Tout le contenu de l'édition est dans `editions/2027.js` : candidates (nom, prénom, photo), quiz, questionnaire Culture G, année.
 - **Photos des candidates** : remplacez `PLACEHOLDER` par l'URL de la photo officielle.
 - **Questionnaire Culture G 2027** : à remplacer dès sa publication (c'est celui de 2026 en attendant).
-- **Édition suivante** : copiez `editions/2027.js` en `editions/2028.js`, mettez-le à jour et définissez `EDITION=2028`.
-  Chaque édition a sa propre base (`miss-france-<edition>.db`) : l'historique est conservé, tout le monde recrée son compte.
+- **Édition suivante** : copiez `editions/2027.js` en `editions/2028.js`, mettez-le à jour, ajoutez-le dans la table `EDITIONS` de `src/app.js` et définissez `EDITION=2028`.
+  Toutes les éditions partagent la même base Supabase : pour repartir de zéro, utilisez le bouton de réinitialisation complète de l'onglet Admin (ou créez un nouveau projet Supabase pour garder l'historique).
 
 ## 🛠️ Technologies utilisées
 
 - **Backend** : Node.js + Express
-- **Base de données** : SQLite (better-sqlite3)
+- **Base de données** : Postgres Supabase (librairie `postgres`)
 - **Frontend** : HTML, CSS, JavaScript vanilla
-- **Authentification** : Sessions Express stockées en SQLite, bcrypt
-- **Déploiement** : Railway
+- **Authentification** : Sessions Express stockées en Postgres, bcrypt, protection CSRF
+- **Déploiement** : Vercel (serverless)
 
 ## 📝 Notes importantes
 
-- La base de données SQLite est persistante sur Railway
+- Les données sont stockées dans Supabase (persistantes entre les déploiements)
 - Tous les joueurs doivent se connecter avec leur pseudo
 - Les pronostics peuvent être modifiés jusqu'à ce que vous validiez les résultats
 - Le classement se met à jour automatiquement
@@ -144,8 +123,8 @@ Créé avec ❤️ pour votre soirée Miss France 2027
 
 Si vous avez des questions ou des problèmes, vérifiez :
 1. Que tous les fichiers sont bien commités
-2. Que Railway a bien détecté Node.js
-3. Que le domaine est bien généré
-4. Les logs de Railway en cas d'erreur
+2. Que les variables d'environnement sont bien définies sur Vercel
+3. Que le projet Supabase n'est pas en pause (projets gratuits mis en pause après inactivité)
+4. Les logs Vercel (Deployments → Functions) en cas d'erreur
 
 Bon jeu ! 👑✨
