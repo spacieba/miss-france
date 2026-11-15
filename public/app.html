@@ -84,13 +84,13 @@
                 <div class="page-head-row">
                     <div>
                         <p class="kicker">Les pronostics</p>
-                        <h1 class="headline" id="pronos-title">Top <em id="prono-step-title">15</em></h1>
+                        <h1 class="headline" id="pronos-title">Top <em id="prono-step-title" class="semi-n">12</em></h1>
                     </div>
-                    <div class="big-count" id="prono-count">00<small id="prono-count-label">sur 15</small></div>
+                    <div class="big-count" id="prono-count">00<small id="prono-count-label">sur <span class="semi-n">12</span></small></div>
                 </div>
             </div>
             <div class="seg" role="tablist" aria-label="Étapes des pronostics">
-                <button type="button" class="seg-btn active" role="tab" data-panel="p-top15">1 · Top 15<span class="done" id="done-top15"></span></button>
+                <button type="button" class="seg-btn active" role="tab" data-panel="p-top15">1 · Top <span class="semi-n">12</span><span class="done" id="done-top15"></span></button>
                 <button type="button" class="seg-btn" role="tab" data-panel="p-top5">2 · Top 5<span class="done" id="done-top5"></span></button>
                 <button type="button" class="seg-btn" role="tab" data-panel="p-final">3 · Podium<span class="done" id="done-final"></span></button>
             </div>
@@ -114,7 +114,7 @@
                 <p class="hint">Celle qui, selon toi, ne passera pas le premier tour. 10 points si tu as raison.</p>
                 <div class="pick-row">
                     <img id="bonus15-photo" src="/img/candidate-placeholder.svg" alt="">
-                    <select class="select" id="bonus-top15" aria-label="Candidate qui ne sera pas dans le Top 15"></select>
+                    <select class="select" id="bonus-top15" aria-label="Candidate qui ne sera pas qualifiée au premier tour"></select>
                 </div>
             </div>
 
@@ -138,7 +138,7 @@
 
             <div class="sticky-bar" id="prono-bar" hidden>
                 <div class="sticky-bar-inner">
-                    <span class="count" id="bar-count">0<small>/15</small></span>
+                    <span class="count" id="bar-count">0<small>/<span class="semi-n">12</span></small></span>
                     <button type="button" class="btn btn-blue btn-between" id="bar-save">
                         <span id="bar-label">Valider</span>
                         <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
@@ -255,8 +255,8 @@
             </div>
             <h2 class="subhead">Pronostics</h2>
             <ul class="rules">
-                <li><span>Top 15 : par candidate bien placée</span><strong>5 pts</strong></li>
-                <li><span>La recalée (pas dans le Top 15)</span><strong>10 pts</strong></li>
+                <li><span>Top <span class="semi-n">12</span> : par candidate bien placée</span><strong>5 pts</strong></li>
+                <li><span>La recalée (pas dans le Top <span class="semi-n">12</span>)</span><strong>10 pts</strong></li>
                 <li><span>Top 5 : par finaliste trouvée</span><strong>8 pts</strong></li>
                 <li><span>La déception (pas dans le Top 5)</span><strong>20 pts</strong></li>
                 <li><span>Podium : par place exacte</span><strong>8 pts</strong></li>
@@ -268,7 +268,7 @@
                 <li><span>Culture G (3 meilleurs scores)</span><strong>15 · 10 · 5</strong></li>
                 <li><span>Meilleur costume (3 plus votés)</span><strong>30 · 20 · 10</strong></li>
             </ul>
-            <div class="rules-total"><span class="kicker">Maximum possible</span><span class="serif">325 pts</span></div>
+            <div class="rules-total"><span class="kicker">Maximum possible</span><span class="serif"><span class="rules-max">310</span> pts</span></div>
             <p class="hint">Les pronostics se verrouillent étape par étape, au moment où les résultats officiels tombent pendant l'émission. Les ex-æquo partagent la même place.</p>
         </section>
 
@@ -279,7 +279,7 @@
                 <h1 class="headline" id="admin-title">Les <em>résultats</em><br>officiels</h1>
             </div>
             <ol class="steps" id="admin-steps">
-                <li data-step="1">1 · Top 15</li>
+                <li data-step="1">1 · Top <span class="semi-n">12</span></li>
                 <li data-step="2">2 · Top 5</li>
                 <li data-step="3">3 · Podium</li>
             </ol>

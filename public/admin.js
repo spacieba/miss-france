@@ -18,7 +18,7 @@ const statusTag = (text, cls) => `<span class="status ${cls}">${escapeHtml(text)
 function renderAdmin() {
     const o = App.official;
     const s = o.current_step || 0;
-    $('admin-step-label').textContent = ['En attente du Top 15', 'Top 15 publié', 'Top 5 publié', 'Miss France élue'][s];
+    $('admin-step-label').textContent = [`En attente du Top ${SEMI()}`, `Top ${SEMI()} publié`, 'Top 5 publié', 'Miss France élue'][s];
     document.querySelectorAll('#admin-steps li').forEach(li => {
         const n = Number(li.dataset.step);
         li.className = n <= s ? 'done' : n === s + 1 ? 'current' : '';
@@ -29,13 +29,13 @@ function renderAdmin() {
     // Étape 1 : Top 15
     $('admin-step1').innerHTML = `
         ${statusTag(s >= 1 ? 'Publié' : 'À publier', s >= 1 ? 'ok' : 'wait')}
-        <h3>Le <em>Top 15</em></h3>
-        <p class="hint">Coche les 15 qualifiées, puis publie : tous les téléphones affichent la révélation. Bonus automatique de 10 pts pour « la recalée ».</p>
+        <h3>Le <em>Top ${SEMI()}</em></h3>
+        <p class="hint">Coche les ${SEMI()} qualifiées, puis publie : tous les téléphones affichent la révélation. Bonus automatique de 10 pts pour « la recalée ».</p>
         <p class="kicker" id="count-top15"></p>
         ${adminCheckList(all, 'top15', o.top15 || [], s >= 1)}
         <div class="admin-actions">
-            ${s >= 1 ? '' : `<button type="button" class="btn btn-blue btn-block btn-between" data-act="top15"><span>Publier le Top 15</span>${ARROW}</button>`}
-            ${s >= 1 ? '<button type="button" class="btn btn-ghost btn-block" data-reset="0">Annuler le Top 15</button>' : ''}
+            ${s >= 1 ? '' : `<button type="button" class="btn btn-blue btn-block btn-between" data-act="top15"><span>Publier le Top ${SEMI()}</span>${ARROW}</button>`}
+            ${s >= 1 ? `<button type="button" class="btn btn-ghost btn-block" data-reset="0">Annuler le Top ${SEMI()}</button>` : ''}
         </div>`;
 
     // Étape 2 : Top 5
@@ -43,7 +43,7 @@ function renderAdmin() {
     $('admin-step2').innerHTML = `
         ${statusTag(s >= 2 ? 'Publié' : s >= 1 ? 'À publier' : 'Bloqué', s >= 2 ? 'ok' : s >= 1 ? 'wait' : '')}
         <h3>Le <em>Top 5</em></h3>
-        ${s < 1 ? '<p class="hint">Publie d\'abord le Top 15.</p>' : `
+        ${s < 1 ? `<p class="hint">Publie d'abord le Top ${SEMI()}.</p>` : `
             <p class="hint">Coche les 5 finalistes parmi les qualifiées. Bonus automatique de 20 pts pour « la déception ».</p>
             <p class="kicker" id="count-top5"></p>
             ${adminCheckList(pool5, 'top5', o.top5 || [], s >= 2)}
@@ -79,7 +79,7 @@ function renderAdmin() {
 function updateAdminCounts() {
     const c15 = document.querySelectorAll('input[data-admin="top15"]:checked').length;
     const c5 = document.querySelectorAll('input[data-admin="top5"]:checked').length;
-    if ($('count-top15')) $('count-top15').textContent = `${c15} / 15 cochées`;
+    if ($('count-top15')) $('count-top15').textContent = `${c15} / ${SEMI()} cochées`;
     if ($('count-top5')) $('count-top5').textContent = `${c5} / 5 cochées`;
 }
 
@@ -117,8 +117,8 @@ async function adminAct(act) {
     try {
         if (act === 'top15') {
             const top15 = [...document.querySelectorAll('input[data-admin="top15"]:checked')].map(i => i.value);
-            if (top15.length !== 15) return toast(`Coche exactement 15 candidates (${top15.length} pour l'instant).`, 'error');
-            if (!confirm(`Publier le Top 15 ?\n\n${top15.map(regionOf).join(', ')}\n\nLes scores de tous les joueurs seront mis à jour et la révélation s'affichera sur leurs téléphones.`)) return;
+            if (top15.length !== SEMI()) return toast(`Coche exactement ${SEMI()} candidates (${top15.length} pour l'instant).`, 'error');
+            if (!confirm(`Publier le Top ${SEMI()} ?\n\n${top15.map(regionOf).join(', ')}\n\nLes scores de tous les joueurs seront mis à jour et la révélation s'affichera sur leurs téléphones.`)) return;
             const data = await api('/api/admin/validate-top15', { method: 'POST', body: { top15 } });
             toast(data.message, 'success');
         } else if (act === 'top5') {
@@ -139,7 +139,7 @@ async function adminAct(act) {
 }
 
 async function adminReset(targetStep) {
-    const what = ['le Top 15 (retour au début)', 'le Top 5', 'le podium'][targetStep];
+    const what = [`le Top ${SEMI()} (retour au début)`, 'le Top 5', 'le podium'][targetStep];
     if (!confirm(`Annuler ${what} ? Les scores de tous les joueurs seront recalculés.`)) return;
     try {
         const data = await api('/api/admin/reset-step', { method: 'POST', body: { targetStep } });
@@ -204,7 +204,7 @@ document.addEventListener('app:ready', () => {
     section.addEventListener('change', (e) => {
         const box = e.target.closest('input[data-admin]');
         if (!box) return;
-        const max = box.dataset.admin === 'top15' ? 15 : 5;
+        const max = box.dataset.admin === 'top15' ? SEMI() : 5;
         const checked = document.querySelectorAll(`input[data-admin="${box.dataset.admin}"]:checked`).length;
         if (checked > max) { box.checked = false; toast(`Maximum ${max} candidates.`, 'error'); }
         updateAdminCounts();

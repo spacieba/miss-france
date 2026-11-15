@@ -69,7 +69,7 @@ function renderTop15() {
     const locked = lockedPanel('p-top15');
     renderGrid('top15-grid', App.candidates.map(c => c.name), Prono.top15, App.official.top15, locked);
     $('top15-banner').innerHTML = locked
-        ? `<div class="banner success"><span>Le Top 15 officiel est tombé : tu en avais trouvé <strong>${Prono.top15.filter(n => App.official.top15.includes(n)).length}</strong> sur ${Prono.top15.length || 15}. Les qualifiées sont en couleur.</span></div>`
+        ? `<div class="banner success"><span>Le Top ${SEMI()} officiel est tombé : tu en avais trouvé <strong>${Prono.top15.filter(n => App.official.top15.includes(n)).length}</strong> sur ${Prono.top15.length || SEMI()}. Les qualifiées sont en couleur.</span></div>`
         : '';
     const all = App.candidates.map(c => c.name);
     fillCandidateSelect($('prono-or'), all, 'Choisir ma future Miss France');
@@ -91,7 +91,7 @@ function renderTop5() {
     if (locked) {
         banner = `<div class="banner success"><span>Le Top 5 officiel est tombé : <strong>${Prono.top5.filter(n => App.official.top5.includes(n)).length}</strong> finaliste(s) trouvée(s).</span></div>`;
     } else if (step() >= 1) {
-        banner = '<div class="banner blue"><span>Le Top 15 est connu : choisis tes 5 finalistes parmi les qualifiées.</span></div>';
+        banner = `<div class="banner blue"><span>Le Top ${SEMI()} est connu : choisis tes 5 finalistes parmi les qualifiées.</span></div>`;
     }
     $('top5-banner').innerHTML = banner;
     fillCandidateSelect($('bonus-top5'), names, 'Choisir une candidate');
@@ -137,14 +137,14 @@ function renderFinal() {
 
 function updateHeader() {
     const panel = Prono.panel;
-    const titles = { 'p-top15': '15', 'p-top5': '5', 'p-final': '' };
+    const titles = { 'p-top15': String(SEMI()), 'p-top5': '5', 'p-final': '' };
     $('pronos-title').innerHTML = panel === 'p-final' ? 'Le <em>podium</em>' : `Top <em>${titles[panel]}</em>`;
     let n, max;
-    if (panel === 'p-top15') { n = Prono.top15.length; max = 15; }
+    if (panel === 'p-top15') { n = Prono.top15.length; max = SEMI(); }
     else if (panel === 'p-top5') { n = Prono.top5.length; max = 5; }
     else { n = Prono.final.filter(Boolean).length; max = 5; }
     $('prono-count').innerHTML = `${String(n).padStart(2, '0')}<small>sur ${max}</small>`;
-    $('done-top15').textContent = Prono.top15.length === 15 ? '✓' : '';
+    $('done-top15').textContent = Prono.top15.length === SEMI() ? '✓' : '';
     $('done-top5').textContent = Prono.top5.length === 5 ? '✓' : '';
     $('done-final').textContent = Prono.final.every(Boolean) ? '✓' : '';
 
@@ -235,7 +235,7 @@ function bindGrid(gridId, listKey, max, panel) {
                 action: {
                     disabled: locked,
                     isSelected: () => Prono[listKey].includes(name),
-                    label: (sel) => locked ? (sel ? 'Dans ma sélection' : 'Sélection verrouillée') : (sel ? `Retirer de mon ${panel === 'p-top15' ? 'Top 15' : 'Top 5'}` : `Ajouter à mon ${panel === 'p-top15' ? 'Top 15' : 'Top 5'}`),
+                    label: (sel) => locked ? (sel ? 'Dans ma sélection' : 'Sélection verrouillée') : (sel ? `Retirer de mon ${panel === 'p-top15' ? `Top ${SEMI()}` : 'Top 5'}` : `Ajouter à mon ${panel === 'p-top15' ? `Top ${SEMI()}` : 'Top 5'}`),
                     toggle: () => { if (toggleIn(listKey, name, max, panel)) refreshCard(gridId, listKey, name); }
                 }
             });
@@ -287,7 +287,7 @@ async function loadPronostics() {
 App.loaders.pronostics = loadPronostics;
 
 document.addEventListener('app:ready', () => {
-    bindGrid('top15-grid', 'top15', 15, 'p-top15');
+    bindGrid('top15-grid', 'top15', SEMI(), 'p-top15');
     bindGrid('top5-grid', 'top5', 5, 'p-top5');
     document.querySelectorAll('#pronostics .seg-btn').forEach(b => b.addEventListener('click', () => { showPanel(b.dataset.panel); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
     $('prono-or').addEventListener('change', (e) => {

@@ -80,7 +80,7 @@ function buildRevealStats(data) {
     const lines = [];
     if (!s.players) return '';
     if (data.step === 1 || data.step === 2) {
-        const size = data.step === 1 ? 15 : 5;
+        const size = data.step === 1 ? SEMI() : 5;
         const fav = (s.favorites || [])[0];
         if (fav) {
             lines.push(statLine(`${fav.pct}%`, `d'entre vous avaient choisi <strong>${escapeHtml(nameShort(fav.name))}</strong>, la favorite du comité : ${fav.qualified ? 'elle passe !' : '<strong>elle est éliminée</strong>.'}`));

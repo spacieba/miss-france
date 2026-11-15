@@ -24,6 +24,7 @@ if (!edition) throw new Error(`Édition inconnue : ${EDITION_ID}`);
 
 const { candidates, quizQuestions, cultureGQuestions } = edition;
 const YEAR = edition.year;
+const SEMI = Number(edition.semiFinalists) || 15; // nombre de qualifiées au premier tour
 const candidateNames = new Set(candidates.map(c => c.name));
 
 const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
@@ -311,6 +312,7 @@ const recalculateCostumePoints = () => sql.begin(async tx => awardByRank(tx, awa
 app.get('/api/edition', (req, res) => {
   res.json({
     year: YEAR,
+    semiFinalists: SEMI,
     electionDate: edition.electionDate,
     venue: edition.venue,
     cultureGLabel: edition.cultureGLabel,
@@ -597,16 +599,16 @@ async function upsertProno(userId, fields) {
 app.post('/api/pronostics/top15', requireAuth, wrap(async (req, res) => {
   const official = await getOfficial();
   if (official.current_step >= 1) {
-    return res.status(403).json({ error: 'Le Top 15 officiel a été validé, tu ne peux plus modifier tes pronostics.' });
+    return res.status(403).json({ error: `Le Top ${SEMI} officiel a été validé, tu ne peux plus modifier tes pronostics.` });
   }
-  const top15 = validateCandidateList(req.body.top15, 15);
+  const top15 = validateCandidateList(req.body.top15, SEMI);
   const bonusTop15 = validCandidateOrNull(req.body.bonusTop15);
   const pronoOr = validCandidateOrNull(req.body.pronoOr);
   if (!top15 || bonusTop15 === undefined || pronoOr === undefined) {
-    return res.status(400).json({ error: 'Sélection invalide (15 candidates maximum, sans doublon).' });
+    return res.status(400).json({ error: `Sélection invalide (${SEMI} candidates maximum, sans doublon).` });
   }
   await upsertProno(req.user.id, { top15: sql.json(top15), bonus_top15: bonusTop15, prono_or: pronoOr });
-  res.json({ success: true, message: 'Top 15 et Prono d\'Or enregistrés !' });
+  res.json({ success: true, message: `Top ${SEMI} et Prono d'Or enregistrés !` });
 }));
 
 app.post('/api/pronostics/top5', requireAuth, wrap(async (req, res) => {
@@ -934,19 +936,19 @@ admin.post('/costume-awards', wrap(async (req, res) => {
 }));
 
 admin.post('/validate-top15', wrap(async (req, res) => {
-  const top15 = validateCandidateList(req.body.top15, 15, { exact: true });
-  if (!top15) return res.status(400).json({ error: 'Le top 15 doit contenir exactement 15 candidates différentes' });
+  const top15 = validateCandidateList(req.body.top15, SEMI, { exact: true });
+  if (!top15) return res.status(400).json({ error: `Le top ${SEMI} doit contenir exactement ${SEMI} candidates différentes` });
   await sql`update official_results set top15 = ${sql.json(top15)}, top5 = null, classement_final = null,
     miss_france = null, current_step = 1, updated_at = now() where id = 1`;
   const c = await recomputePronostics();
-  res.json({ success: true, message: `Top 15 validé ! ${c.bonusTop15} joueur(s) ont gagné le bonus "pas dans le top 15".`, usersUpdated: c.usersUpdated, bonusWinners: c.bonusTop15, currentStep: 1 });
+  res.json({ success: true, message: `Top ${SEMI} validé ! ${c.bonusTop15} joueur(s) ont gagné le bonus "pas dans le top ${SEMI}".`, usersUpdated: c.usersUpdated, bonusWinners: c.bonusTop15, currentStep: 1 });
 }));
 
 admin.post('/validate-top5', wrap(async (req, res) => {
   const official = await getOfficial();
-  if (official.current_step < 1) return res.status(400).json({ error: 'Le top 15 doit être validé avant le top 5' });
+  if (official.current_step < 1) return res.status(400).json({ error: `Le top ${SEMI} doit être validé avant le top 5` });
   const top5 = validateCandidateList(req.body.top5, 5, { exact: true, allowed: new Set(official.top15 || []) });
-  if (!top5) return res.status(400).json({ error: 'Le top 5 doit contenir exactement 5 candidates différentes issues du top 15' });
+  if (!top5) return res.status(400).json({ error: `Le top 5 doit contenir exactement 5 candidates différentes issues du top ${SEMI}` });
   await sql`update official_results set top5 = ${sql.json(top5)}, classement_final = null, miss_france = null,
     current_step = 2, updated_at = now() where id = 1`;
   const c = await recomputePronostics();
@@ -978,7 +980,7 @@ admin.post('/reset-step', wrap(async (req, res) => {
   if (targetStep === 1) await sql`update official_results set top5 = null, classement_final = null, miss_france = null, current_step = 1, updated_at = now() where id = 1`;
   if (targetStep === 2) await sql`update official_results set classement_final = null, miss_france = null, current_step = 2, updated_at = now() where id = 1`;
   const c = await recomputePronostics();
-  const stepNames = ['Aucune validation', 'Top 15 validé', 'Top 5 validé'];
+  const stepNames = ['Aucune validation', `Top ${SEMI} validé`, 'Top 5 validé'];
   res.json({ success: true, message: `Retour effectué ! État actuel : ${stepNames[targetStep]}`, currentStep: targetStep, usersUpdated: c.usersUpdated });
 }));
 

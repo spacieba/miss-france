@@ -219,6 +219,7 @@ const cultureGQuestions = {
 module.exports = {
   year: 2027,                          // Titre décerné : Miss France 2027
   electionDate: '2026-12-12',          // Date de la soirée
+  semiFinalists: 12,                   // Qualifiées au premier tour (12 en 2026, 15 certaines années) : à fixer AVANT l'ouverture des pronostics
   venue: 'Futuroscope Arena (Vienne)',
   cultureGLabel: 'Le vrai test passé par les candidates Miss France 2026 (le questionnaire 2027 arrive bientôt !)',
   candidates,

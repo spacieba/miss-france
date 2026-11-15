@@ -189,6 +189,7 @@ window.addEventListener('popstate', () => go((location.hash || '#une').slice(1),
 // ---------- Score, rang, en-tête ----------
 
 const plural = (n, word) => `${n} ${word}${Math.abs(n) > 1 ? 's' : ''}`;
+const SEMI = () => Number(App.edition.semiFinalists) || 15;
 const ordinal = (n) => (n === 1 ? '1er' : `${n}e`);
 
 async function refreshScore() {
@@ -252,7 +253,7 @@ async function loadUne() {
         ? `Mon pronostic d'or : Miss ${regionOf(or)}`
         : `${App.candidates.length} candidates, une seule couronne`;
     const step = App.official.current_step;
-    $('une-cover-tag').textContent = ['Le jeu du comité', 'Top 15 dévoilé', 'Top 5 dévoilé', 'Miss France est élue'][step] || 'Le jeu du comité';
+    $('une-cover-tag').textContent = ['Le jeu du comité', `Top ${SEMI()} dévoilé`, 'Top 5 dévoilé', 'Miss France est élue'][step] || 'Le jeu du comité';
     if (step >= 3 && App.official.classement_final[0]) {
         const winner = candByName(App.official.classement_final[0]);
         if (winner) $('une-cover-photo').src = winner.photo;
@@ -263,7 +264,7 @@ async function loadUne() {
 
     const top15Count = pronos?.top15?.length || 0;
     const items = [
-        { go: 'pronostics', title: 'Les pronostics', sub: step >= 1 ? 'Résultats en cours' : (top15Count ? `Top 15 : ${top15Count}/15${pronos.prono_or ? ' · prono d\'or choisi' : ''}` : 'Pas encore commencé'), pts: s.pronostics_score },
+        { go: 'pronostics', title: 'Les pronostics', sub: step >= 1 ? 'Résultats en cours' : (top15Count ? `Top ${SEMI()} : ${top15Count}/${SEMI()}${pronos.prono_or ? ' · prono d\'or choisi' : ''}` : 'Pas encore commencé'), pts: s.pronostics_score },
         { go: 'quiz', title: 'Le quiz Miss France', sub: quiz.totalAnswers ? `${quiz.totalAnswers}/${App.edition.quizCount} réponses · ${quiz.correctAnswers} justes` : `${App.edition.quizCount} questions`, pts: s.quiz_score },
         { go: 'culture-g', title: 'La Culture G', sub: cg.totalAnswers ? `${cg.totalAnswers}/${cg.totalQuestions} réponses` : 'Le vrai test des candidates', pts: s.culture_g_score },
         { go: 'costume', title: 'Le meilleur costume', sub: myPhoto.photo ? (myPhoto.isPublic ? 'Mon look est en ligne' : 'Mon look est privé') : 'Poster mon look', pts: s.defis_score },
@@ -349,6 +350,9 @@ async function loadEdition() {
     try { App.edition = await api('/api/edition'); } catch { /* valeurs par défaut */ }
     const e = App.edition;
     document.querySelectorAll('.edition-year').forEach(el => { el.textContent = e.year; });
+    const semi = Number(e.semiFinalists) || 15;
+    document.querySelectorAll('.semi-n').forEach(el => { el.textContent = semi; });
+    document.querySelectorAll('.rules-max').forEach(el => { el.textContent = semi * 5 + 250; });
     document.querySelectorAll('.quiz-count').forEach(el => { el.textContent = e.quizCount; });
     document.querySelectorAll('.culture-g-label').forEach(el => { el.textContent = e.cultureGLabel; });
     if (e.electionDate) {
