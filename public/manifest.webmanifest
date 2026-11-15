@@ -1,0 +1,17 @@
+{
+  "name": "Miss France 2027 — Comité parallèle",
+  "short_name": "Miss France",
+  "description": "Pronostics, quiz et costumes entre amis pour l'élection de Miss France 2027.",
+  "lang": "fr",
+  "start_url": "/app.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F2EE",
+  "theme_color": "#F7F2EE",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

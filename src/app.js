@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
 const sharp = require('sharp');
+const QRCode = require('qrcode');
 const sql = require('./db');
 
 // ============================================
@@ -770,6 +771,100 @@ app.get('/api/official-results', requireAuth, wrap(async (req, res) => {
     top15: r.top15 || [], top5: r.top5 || [], classement_final: r.classement_final || [],
     miss_france: r.miss_france, current_step: r.current_step, updated_at: r.updated_at
   });
+}));
+
+// ============================================
+// RÉVÉLATIONS EN DIRECT : ce que chaque joueur a gagné à l'étape validée
+// + statistiques des pronostics du groupe (uniquement pour les étapes déjà validées)
+// ============================================
+
+const pct = (n, total) => (total ? Math.round((n / total) * 100) : 0);
+
+app.get('/api/reveal', requireAuth, wrap(async (req, res) => {
+  const official = await getOfficial();
+  const step = official.current_step || 0;
+  const base = {
+    step, year: YEAR, updated_at: official.updated_at,
+    official: { top15: official.top15 || [], top5: official.top5 || [], classement_final: official.classement_final || [] }
+  };
+  if (step === 0) return res.json(base);
+
+  const pronos = await sql`select p.* from pronostics p join users u on u.id = p.user_id where not u.is_admin`;
+  const mine = (await sql`select * from pronostics where user_id = ${req.user.id}`)[0] || null;
+  const at = (s) => ({ ...official, current_step: s });
+
+  // Ce que j'ai gagné à cette étape
+  let me = { hasProno: Boolean(mine), gained: 0, total: 0 };
+  if (mine) {
+    const now = computePronoScore(mine, at(step)).score;
+    const before = computePronoScore(mine, at(step - 1)).score;
+    me = { hasProno: true, gained: now - before, total: now };
+    if (step === 1) {
+      const picks = mine.top15 || [];
+      me.correct = picks.filter(c => base.official.top15.includes(c));
+      me.picks = picks.length;
+      me.bonus = mine.bonus_top15 ? { name: mine.bonus_top15, won: !base.official.top15.includes(mine.bonus_top15) } : null;
+    } else if (step === 2) {
+      const picks = mine.top5 || [];
+      me.correct = picks.filter(c => base.official.top5.includes(c));
+      me.picks = picks.length;
+      me.bonus = mine.bonus_top5 ? { name: mine.bonus_top5, won: !base.official.top5.includes(mine.bonus_top5) } : null;
+    } else {
+      const picks = mine.classement_final || [];
+      me.correct = picks.filter((c, i) => base.official.classement_final[i] === c);
+      me.picks = picks.length;
+      me.pronoOr = mine.prono_or ? { name: mine.prono_or, won: mine.prono_or === base.official.classement_final[0] } : null;
+    }
+  }
+
+  // Statistiques du groupe
+  const count = (list) => {
+    const m = new Map();
+    list.forEach(n => { if (n) m.set(n, (m.get(n) || 0) + 1); });
+    return m;
+  };
+  let stats;
+  if (step === 1 || step === 2) {
+    const key = step === 1 ? 'top15' : 'top5';
+    const officialList = base.official[key];
+    const players = pronos.filter(p => (p[key] || []).length > 0);
+    const counts = count(players.flatMap(p => p[key] || []));
+    const scores = players.map(p => (p[key] || []).filter(c => officialList.includes(c)).length);
+    stats = {
+      players: players.length,
+      qualified: officialList.map(name => ({ name, pct: pct(counts.get(name) || 0, players.length) }))
+        .sort((a, b) => a.pct - b.pct),
+      favorites: [...counts.entries()].map(([name, n]) => ({ name, pct: pct(n, players.length), qualified: officialList.includes(name) }))
+        .sort((a, b) => b.pct - a.pct).slice(0, 5),
+      best: scores.length ? Math.max(...scores) : 0,
+      bestCount: scores.length ? scores.filter(s => s === Math.max(...scores)).length : 0,
+      average: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0
+    };
+  } else {
+    const winner = base.official.classement_final[0];
+    const withOr = pronos.filter(p => p.prono_or);
+    const orCounts = count(withOr.map(p => p.prono_or));
+    const withFinal = pronos.filter(p => (p.classement_final || []).length === 5);
+    stats = {
+      players: withOr.length,
+      winner,
+      winnerPct: pct(orCounts.get(winner) || 0, withOr.length),
+      pronoOrWinners: orCounts.get(winner) || 0,
+      favorites: [...orCounts.entries()].map(([name, n]) => ({ name, pct: pct(n, withOr.length) }))
+        .sort((a, b) => b.pct - a.pct).slice(0, 3),
+      exactPodium: withFinal.filter(p => p.classement_final.every((c, i) => c === base.official.classement_final[i])).length
+    };
+  }
+  res.json({ ...base, me, stats });
+}));
+
+// QR code d'invitation (adresse publique de l'appli)
+app.get('/api/invite-qr.svg', wrap(async (req, res) => {
+  const url = `${req.protocol}://${req.get('host')}/`;
+  const svg = await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#14121A', light: '#F7F2EE' } });
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(svg);
 }));
 
 // ============================================

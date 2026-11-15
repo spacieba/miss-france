@@ -2,337 +2,129 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comité Parallèle - Miss France 2027</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Miss France 2027 — Comité parallèle</title>
+    <meta name="description" content="Pronostics, quiz et jeux entre amis pour l'élection de Miss France 2027.">
+    <meta name="theme-color" content="#F7F2EE">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Miss France">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Animation de la couronne */
-        .crown-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        .crown-main {
-            font-size: 5rem;
-            display: block;
-            animation: crownFloat 3s ease-in-out infinite, crownGlow 2s ease-in-out infinite alternate;
-            filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.8));
-        }
-
-        @keyframes crownFloat {
-            0%, 100% { transform: translateY(0) rotate(-3deg); }
-            50% { transform: translateY(-15px) rotate(3deg); }
-        }
-
-        @keyframes crownGlow {
-            0% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.6)); }
-            100% { filter: drop-shadow(0 0 35px rgba(255, 215, 0, 1)); }
-        }
-
-        /* Étoiles scintillantes autour de la couronne */
-        .sparkle {
-            position: absolute;
-            font-size: 1.2rem;
-            animation: sparkleAnim 1.5s ease-in-out infinite;
-            opacity: 0;
-        }
-
-        .sparkle:nth-child(2) { top: 10%; left: 0; animation-delay: 0s; }
-        .sparkle:nth-child(3) { top: 0; right: 10%; animation-delay: 0.3s; }
-        .sparkle:nth-child(4) { top: 30%; right: -10%; animation-delay: 0.6s; }
-        .sparkle:nth-child(5) { bottom: 20%; right: 5%; animation-delay: 0.9s; }
-        .sparkle:nth-child(6) { bottom: 10%; left: 10%; animation-delay: 1.2s; }
-        .sparkle:nth-child(7) { top: 20%; left: -10%; animation-delay: 0.4s; }
-        .sparkle:nth-child(8) { top: -10%; left: 30%; animation-delay: 0.7s; }
-        .sparkle:nth-child(9) { bottom: 0; left: 40%; animation-delay: 1s; }
-
-        @keyframes sparkleAnim {
-            0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
-            50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
-        }
-
-        /* Rayons de lumière */
-        .crown-rays {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 200px;
-            height: 200px;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, transparent 70%);
-            animation: raysRotate 10s linear infinite;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        @keyframes raysRotate {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* Particules dorées tombantes */
-        .gold-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            background: linear-gradient(135deg, #FFD700, #D4AF37);
-            border-radius: 50%;
-            animation: particleFall 4s linear infinite;
-            opacity: 0;
-        }
-
-        .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
-        .particle:nth-child(2) { left: 30%; animation-delay: 0.5s; }
-        .particle:nth-child(3) { left: 50%; animation-delay: 1s; }
-        .particle:nth-child(4) { left: 70%; animation-delay: 1.5s; }
-        .particle:nth-child(5) { left: 90%; animation-delay: 2s; }
-        .particle:nth-child(6) { left: 20%; animation-delay: 2.5s; }
-        .particle:nth-child(7) { left: 60%; animation-delay: 3s; }
-        .particle:nth-child(8) { left: 80%; animation-delay: 3.5s; }
-
-        @keyframes particleFall {
-            0% { top: -10%; opacity: 0; transform: rotate(0deg); }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 110%; opacity: 0; transform: rotate(720deg); }
-        }
-    </style>
 </head>
-<body class="login-page">
-    <div class="login-wrapper">
-        <!-- Welcome Side -->
-        <div class="welcome-side">
-            <!-- Particules dorées en arrière-plan -->
-            <div class="gold-particles">
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-            </div>
-
-            <!-- Couronne animée avec effets -->
-            <div class="crown-container">
-                <div class="crown-rays"></div>
-                <span class="crown-main">👑</span>
-                <span class="sparkle">✨</span>
-                <span class="sparkle">⭐</span>
-                <span class="sparkle">✨</span>
-                <span class="sparkle">💫</span>
-                <span class="sparkle">⭐</span>
-                <span class="sparkle">✨</span>
-                <span class="sparkle">💫</span>
-                <span class="sparkle">⭐</span>
-            </div>
-
-            <h1>COMITÉ PARALLÈLE</h1>
-            <p class="title-elegant">Bienvenue dans ce comité parallèle iséro-corrézien pour cette élection de Miss France <span class="edition-year">2027</span></p>
-            <p>Rejoins le jury le plus glamour de la soirée !</p>
-            <ul class="welcome-features">
-                <li>Fais tes pronostics pendant l'émission</li>
-                <li>Teste ta culture Miss France</li>
-                <li>Vote en direct pendant le show</li>
-                <li>Deviens le meilleur juré de la soirée</li>
-            </ul>
+<body>
+    <main class="login">
+        <div class="login-cover">
+            <img id="cover-a" src="/img/candidates/picardie-1.jpg" alt="">
+            <img id="cover-b" src="/img/candidates/martinique-1.jpg" alt="" style="opacity: 0">
+            <div class="cover-top"><span>Édition spéciale</span><span id="cover-date">Déc. 2026</span></div>
+            <h1 class="cover-masthead">Miss<br>France</h1>
+            <p class="cover-line"><span id="cand-count">31</span> candidates, une seule couronne</p>
+            <span class="cover-tag">Le jeu du comité · <span class="edition-year">2027</span></span>
         </div>
 
-        <!-- Login Side -->
-        <div class="login-container">
-            <div class="logo">
-                <h2>Bienvenue au Comité</h2>
-                <p>Entre tes identifiants pour rejoindre le jury</p>
+        <form class="login-body" id="login-form" novalidate>
+            <p class="login-pitch" id="pitch">Faites vos <em>pronostics</em> avant le grand soir.</p>
+
+            <div class="login-fields">
+                <label class="field">Pseudo
+                    <input type="text" id="pseudo" placeholder="Votre pseudo" maxlength="24" autocomplete="username" autocapitalize="off" required>
+                </label>
+                <label class="field">Mot de passe
+                    <input type="password" id="password" placeholder="••••••" minlength="6" autocomplete="current-password" required>
+                </label>
             </div>
-            <div class="elegant-divider"><span>✦</span></div>
 
-            <div class="login-form">
-                <div class="form-tabs">
-                    <button class="tab-btn active" onclick="switchTab('login')" id="tab-login">
-                        Se connecter
-                    </button>
-                    <button class="tab-btn" onclick="switchTab('register')" id="tab-register">
-                        Nouveau compte
-                    </button>
-                </div>
+            <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
 
-                <div id="error-message" class="error-message"></div>
-                <div id="success-message" class="success-message"></div>
-
-                <div class="input-group">
-                    <label for="pseudo">Pseudo</label>
-                    <input type="text" id="pseudo" placeholder="Ton pseudo" maxlength="24" autocomplete="username" autofocus>
-                </div>
-
-                <div class="input-group">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" placeholder="Ton mot de passe" minlength="6" autocomplete="current-password">
-                </div>
-
-                <button onclick="handleSubmit()" class="btn-submit" id="submit-btn">
-                    Se connecter
-                </button>
-            </div>
-        </div>
-    </div>
+            <button type="submit" class="btn btn-block btn-between" id="submit-btn">
+                <span id="submit-label">Entrer</span>
+                <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
+            </button>
+            <button type="button" class="btn-link login-switch" id="switch-btn">Pas encore de compte ? S'inscrire</button>
+        </form>
+    </main>
 
     <script>
-        let currentMode = 'login';
+        let mode = 'login';
+        const $ = (id) => document.getElementById(id);
 
-        function switchTab(mode) {
-            currentMode = mode;
-            const loginTab = document.getElementById('tab-login');
-            const registerTab = document.getElementById('tab-register');
-            const submitBtn = document.getElementById('submit-btn');
-            const errorDiv = document.getElementById('error-message');
-            const successDiv = document.getElementById('success-message');
+        // Couverture : les photos des candidates défilent en fondu
+        const covers = ['picardie', 'martinique', 'normandie', 'guyane', 'tahiti', 'rhone-alpes', 'bretagne', 'corse', 'aquitaine', 'reunion']
+            .map(s => `/img/candidates/${s}-1.jpg`);
+        let coverIndex = 1, front = 'cover-a';
+        setInterval(() => {
+            coverIndex = (coverIndex + 1) % covers.length;
+            const back = front === 'cover-a' ? 'cover-b' : 'cover-a';
+            const img = $(back);
+            img.onload = () => { img.style.opacity = 1; $(front).style.opacity = 0; front = back; };
+            img.src = covers[coverIndex];
+        }, 4500);
 
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
+        fetch('/api/edition').then(r => r.ok ? r.json() : null).then(info => {
+            if (!info) return;
+            document.querySelectorAll('.edition-year').forEach(el => { el.textContent = info.year; });
+            $('cand-count').textContent = info.candidatesCount;
+            document.title = `Miss France ${info.year} — Comité parallèle`;
+        }).catch(() => {});
 
-            if (mode === 'login') {
-                loginTab.classList.add('active');
-                registerTab.classList.remove('active');
-                submitBtn.textContent = 'Se connecter';
-            } else {
-                loginTab.classList.remove('active');
-                registerTab.classList.add('active');
-                submitBtn.textContent = 'Créer mon compte';
-            }
+        // Déjà connecté : direction l'appli
+        fetch('/api/me').then(r => { if (r.ok) location.replace('/app.html'); }).catch(() => {});
+
+        function setMode(next) {
+            mode = next;
+            $('submit-label').textContent = mode === 'login' ? 'Entrer' : 'Créer mon compte';
+            $('switch-btn').textContent = mode === 'login' ? "Pas encore de compte ? S'inscrire" : 'Déjà inscrit ? Se connecter';
+            $('pitch').innerHTML = mode === 'login'
+                ? 'Faites vos <em>pronostics</em> avant le grand soir.'
+                : 'Rejoignez le <em>jury</em> du comité.';
+            $('password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+            showMsg('');
         }
 
-        async function handleSubmit() {
-            if (currentMode === 'login') {
-                await login();
-            } else {
-                await register();
-            }
+        function showMsg(text, type = 'error') {
+            const el = $('form-msg');
+            el.textContent = text;
+            el.className = `form-msg ${text ? type : ''}`;
         }
 
-        async function login() {
-            const pseudo = document.getElementById('pseudo').value.trim();
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error-message');
-            const successDiv = document.getElementById('success-message');
+        $('switch-btn').addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
 
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
+        $('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pseudo = $('pseudo').value.trim();
+            const password = $('password').value;
+            if (!pseudo) return showMsg('Entre ton pseudo.');
+            if (!password) return showMsg('Entre ton mot de passe.');
+            if (mode === 'register' && password.length < 6) return showMsg('Le mot de passe doit faire au moins 6 caractères.');
 
-            if (!pseudo) {
-                errorDiv.textContent = '⚠️ Entre un pseudo !';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            if (!password) {
-                errorDiv.textContent = '⚠️ Entre un mot de passe !';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
+            $('submit-btn').disabled = true;
             try {
-                const response = await fetch('/api/login', {
+                const response = await fetch(mode === 'login' ? '/api/login' : '/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pseudo, password })
                 });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    successDiv.textContent = '✅ Connexion réussie ! Redirection...';
-                    successDiv.style.display = 'block';
-                    setTimeout(() => {
-                        window.location.href = '/app.html';
-                    }, 500);
-                } else {
-                    errorDiv.textContent = '⚠️ ' + data.error;
-                    errorDiv.style.display = 'block';
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    showMsg(data.error || 'Une erreur est survenue.');
+                    $('submit-btn').disabled = false;
+                    return;
                 }
-            } catch (error) {
-                errorDiv.textContent = '⚠️ Erreur de connexion au serveur';
-                errorDiv.style.display = 'block';
+                showMsg(mode === 'login' ? 'Bienvenue !' : 'Compte créé, bienvenue !', 'success');
+                location.href = '/app.html';
+            } catch {
+                showMsg('Impossible de joindre le serveur.');
+                $('submit-btn').disabled = false;
             }
-        }
-
-        async function register() {
-            const pseudo = document.getElementById('pseudo').value.trim();
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error-message');
-            const successDiv = document.getElementById('success-message');
-
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
-
-            if (!pseudo) {
-                errorDiv.textContent = '⚠️ Entre un pseudo !';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            if (!password || password.length < 6) {
-                errorDiv.textContent = '⚠️ Le mot de passe doit faire au moins 6 caractères !';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            if (/^admin/i.test(pseudo)) {
-                errorDiv.textContent = '⚠️ Ce pseudo est réservé';
-                errorDiv.style.display = 'block';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    successDiv.textContent = '✅ Compte créé ! Redirection...';
-                    successDiv.style.display = 'block';
-                    setTimeout(() => {
-                        window.location.href = '/app.html';
-                    }, 500);
-                } else {
-                    errorDiv.textContent = '⚠️ ' + data.error;
-                    errorDiv.style.display = 'block';
-                }
-            } catch (error) {
-                errorDiv.textContent = '⚠️ Erreur de connexion au serveur';
-                errorDiv.style.display = 'block';
-            }
-        }
-
-        // Connexion avec Enter
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('pseudo').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    document.getElementById('password').focus();
-                }
-            });
-            document.getElementById('password').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    handleSubmit();
-                }
-            });
         });
+
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     </script>
 </body>
 </html>

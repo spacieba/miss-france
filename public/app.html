@@ -2,745 +2,335 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comité Parallèle - Miss France 2027</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Miss France 2027 — Comité parallèle</title>
+    <meta name="theme-color" content="#F7F2EE">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Miss France">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-content">
-                <h1>👑 Comité Parallèle <span class="edition-year">2027</span></h1>
-                <div class="user-info">
-                    <span id="user-pseudo"></span>
-                    <span class="score" id="user-score">0 pts</span>
-                    <button onclick="logout()" class="btn-logout">Déconnexion</button>
+    <header class="app-header">
+        <div class="app-header-inner">
+            <button type="button" class="masthead-mini" data-go="une" aria-label="Retour à la Une">Miss France <em class="edition-year">2027</em></button>
+            <div class="header-right">
+                <button type="button" class="admin-pill" id="admin-btn" data-go="admin" hidden>Admin</button>
+                <button type="button" class="score-pill" data-go="leaderboard" aria-label="Mon score et mon rang">
+                    <span id="header-score">0 pt</span><span class="rank" id="header-rank"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main" id="main">
+        <!-- LA UNE -->
+        <section id="une" class="section active" aria-labelledby="une-title">
+            <div class="cover">
+                <img class="cover-photo" id="une-cover-photo" src="/img/candidates/picardie-1.jpg" alt="">
+                <div class="cover-top"><span>Édition spéciale</span><span id="une-date">12 déc. 2026</span></div>
+                <h1 class="cover-masthead" id="une-title">Miss<br>France</h1>
+                <p class="cover-line" id="une-cover-line">31 candidates, une seule couronne</p>
+                <span class="cover-tag" id="une-cover-tag">Le jeu du comité</span>
+            </div>
+
+            <p class="une-hello">Bonsoir <em id="une-pseudo"></em>.</p>
+
+            <div class="stat-row">
+                <div class="stat-cell"><span class="v" id="une-score">0</span><span class="l">Points</span></div>
+                <div class="stat-cell"><span class="v" id="une-rank">–</span><span class="l">Rang</span></div>
+                <div class="stat-cell"><span class="v" id="une-countdown">–</span><span class="l" id="une-countdown-label">Jours</span></div>
+            </div>
+
+            <button type="button" class="btn btn-blue btn-block btn-between" id="replay-reveal" hidden style="margin-bottom: 22px;"><span>Revoir le dernier résultat</span><svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg></button>
+
+            <p class="kicker">Au sommaire</p>
+            <ul class="toc" id="une-toc"></ul>
+
+            <div class="feature-grid">
+                <button type="button" class="feature blue" id="open-cover">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="3" width="14" height="18"/><path d="M8 7h8M8 17h5"/></svg>
+                    <span><span class="serif">Ma couverture</span><br><span class="small muted">Ta une perso à partager</span></span>
+                </button>
+                <button type="button" class="feature" id="open-invite">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>
+                    <span><span class="serif">Inviter</span><br><span class="small muted">QR code &amp; lien</span></span>
+                </button>
+                <button type="button" class="feature" id="open-install" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="1"/><path d="M12 7v7M9 11l3 3 3-3"/></svg>
+                    <span><span class="serif">Installer</span><br><span class="small muted">L'appli sur ton écran d'accueil</span></span>
+                </button>
+                <button type="button" class="feature" data-go="rules">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 3h10l4 4v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
+                    <span><span class="serif">Le règlement</span><br><span class="small muted">Tous les points à gagner</span></span>
+                </button>
+            </div>
+
+            <div class="une-footer">
+                <button type="button" class="btn-link" id="sound-toggle">Son &amp; vibrations : activés</button>
+                <button type="button" class="btn-link" id="logout-btn">Se déconnecter</button>
+            </div>
+        </section>
+
+        <!-- PRONOSTICS -->
+        <section id="pronostics" class="section" aria-labelledby="pronos-title">
+            <div class="page-head">
+                <div class="page-head-row">
+                    <div>
+                        <p class="kicker">Les pronostics</p>
+                        <h1 class="headline" id="pronos-title">Top <em id="prono-step-title">15</em></h1>
+                    </div>
+                    <div class="big-count" id="prono-count">00<small id="prono-count-label">sur 15</small></div>
                 </div>
             </div>
-        </header>
+            <div class="seg" role="tablist" aria-label="Étapes des pronostics">
+                <button type="button" class="seg-btn active" role="tab" data-panel="p-top15">1 · Top 15<span class="done" id="done-top15"></span></button>
+                <button type="button" class="seg-btn" role="tab" data-panel="p-top5">2 · Top 5<span class="done" id="done-top5"></span></button>
+                <button type="button" class="seg-btn" role="tab" data-panel="p-final">3 · Podium<span class="done" id="done-final"></span></button>
+            </div>
 
-        <!-- Navigation -->
-        <nav class="main-nav">
-            <button class="nav-btn active" onclick="showSection('home')" data-section="home">
-                Accueil
-            </button>
-            <button class="nav-btn" onclick="showSection('pronostics')" data-section="pronostics">
-                Pronostics
-            </button>
-            <button class="nav-btn" onclick="showSection('quiz')" data-section="quiz">
-                Quiz
-            </button>
-            <button class="nav-btn" onclick="showSection('culture-g')" data-section="culture-g">
-                Culture G
-            </button>
-            <button class="nav-btn" onclick="showSection('defis')" data-section="defis">
-                Costume
-            </button>
-            <button class="nav-btn" onclick="showSection('leaderboard')" data-section="leaderboard">
-                Classement
-            </button>
-            <button class="nav-btn" onclick="showSection('points')" data-section="points" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">
-                Points
-            </button>
-            <button class="nav-btn" onclick="showSection('admin')" data-section="admin" id="admin-nav-btn" style="display: none; background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%);">
-                Admin
-            </button>
-        </nav>
+            <div class="panel active" id="p-top15">
+                <div id="top15-banner"></div>
+                <p class="hint">Touche une candidate pour la sélectionner : elle passe en couleur. 5 points par bonne réponse.</p>
+                <div class="cand-grid" id="top15-grid"></div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Section Accueil -->
-            <section id="home" class="section active">
-                <div class="welcome-card">
-                    <!-- Avatar personnalisé -->
-                    <div id="user-avatar-container" style="display: none; margin-bottom: 20px;">
-                        <img id="user-avatar" src="" alt="Mon avatar Miss France" style="max-width: 250px; max-height: 300px; border-radius: 15px; border: 4px solid var(--gold); box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);">
-                    </div>
-                    <h2>Bienvenue dans le Comité Parallèle</h2>
-                    <p class="welcome-subtitle">d'élection de Miss France <span class="edition-year">2027</span>, <span id="welcome-pseudo"></span> !</p>
-                    <div class="score-display">
-                        <div class="score-item">
-                            <span class="score-label">Score Total</span>
-                            <span class="score-value" id="total-score">0</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">Classement</span>
-                            <span class="score-value" id="user-rank">#-</span>
-                        </div>
+                <h2 class="subhead">Le <em>Prono d'or</em></h2>
+                <p class="hint">Qui sera élue Miss France ? 80 points si tu as raison.</p>
+                <div class="or-card">
+                    <img id="or-photo" src="/img/candidate-placeholder.svg" alt="">
+                    <div style="flex: 1 1 auto; min-width: 0;">
+                        <p class="kicker">Ma future Miss France</p>
+                        <select class="select" id="prono-or" aria-label="Prono d'or"></select>
                     </div>
                 </div>
 
-                <div class="cards-grid">
-                    <div class="feature-card" onclick="showSection('pronostics')">
-                        <div class="card-icon">🏆</div>
-                        <h3>Pronostics</h3>
-                        <p>Choisis tes favorites avant l'émission</p>
-                        <span class="card-points" id="pronostics-score">0 pts</span>
-                    </div>
-
-                    <div class="feature-card" onclick="showSection('quiz')">
-                        <div class="card-icon">📚</div>
-                        <h3>Quiz</h3>
-                        <p>Teste ta culture Miss France</p>
-                        <span class="card-points" id="quiz-score">0 pts</span>
-                    </div>
-
-                    <div class="feature-card" onclick="showSection('culture-g')" style="background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);">
-                        <div class="card-icon">🎓</div>
-                        <h3>Culture G Officiel</h3>
-                        <p>Le vrai test des Miss !</p>
-                        <span class="card-points" id="culture-g-score">0 pts</span>
-                    </div>
-
-                    <div class="feature-card" onclick="showSection('defis')">
-                        <div class="card-icon">👗</div>
-                        <h3>Meilleur Costume</h3>
-                        <p>Vote pour le plus beau costume !</p>
-                        <span class="card-points" id="defis-score">0 pts</span>
-                    </div>
-
-                    <div class="feature-card" onclick="showSection('leaderboard')">
-                        <div class="card-icon">📊</div>
-                        <h3>Classement</h3>
-                        <p>Voir le classement général</p>
-                    </div>
+                <h2 class="subhead">La <em>recalée</em></h2>
+                <p class="hint">Celle qui, selon toi, ne passera pas le premier tour. 10 points si tu as raison.</p>
+                <div class="pick-row">
+                    <img id="bonus15-photo" src="/img/candidate-placeholder.svg" alt="">
+                    <select class="select" id="bonus-top15" aria-label="Candidate qui ne sera pas dans le Top 15"></select>
                 </div>
-            </section>
+            </div>
 
-            <!-- Section Pronostics -->
-            <section id="pronostics" class="section">
-                <h2>Tes Pronostics</h2>
-                <p style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-                    ⏱️ <strong>Pendant la soirée :</strong> Valide tes choix au fur et à mesure ! Tu n'es pas obligé de tout remplir d'un coup.
-                </p>
-
-                <div class="prono-section" style="border: 2px solid #667eea; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0;">🥇 Top 15 - Les Sélectionnées</h3>
-                        <span id="top15-status" class="status-badge"></span>
-                    </div>
-                    <p class="hint">Choisis 15 candidates qui seront dans le top 15 (5 pts chacune)</p>
-                    <div id="top15-selection" class="candidates-grid"></div>
-
-                    <h4 style="margin-top: 20px;">⭐ Candidate Bonus (10 pts)</h4>
-                    <p class="hint">Celle-là c'est sûr qu'elle passe pas le premier tour !</p>
-                    <select id="bonus-top15" class="select-candidate">
-                        <option value="">-- Choisis une candidate --</option>
-                    </select>
-
-                    <h4 style="margin-top: 25px; color: var(--gold);">👑 PRONO D'OR - Miss France <span class="edition-year">2027</span> (80 pts)</h4>
-                    <p class="hint">Qui sera élue Miss France ? Si tu as raison, tu gagnes 80 points bonus !</p>
-                    <select id="prono-or-miss" class="select-candidate" style="border-color: var(--gold);">
-                        <option value="">-- Choisis ta future Miss France --</option>
-                    </select>
-
-                    <button onclick="saveTop15()" class="btn-primary btn-large" style="margin-top: 20px;">
-                        ✅ Valider mon Top 15 + Prono d'Or
-                    </button>
-                    <div id="top15-message" class="message"></div>
+            <div class="panel" id="p-top5">
+                <div id="top5-banner"></div>
+                <p class="hint">Choisis les 5 finalistes. 8 points par bonne réponse.</p>
+                <div class="cand-grid" id="top5-grid"></div>
+                <h2 class="subhead">La <em>déception</em></h2>
+                <p class="hint">Une candidate qui ne sera pas dans le Top 5. 20 points si tu as raison.</p>
+                <div class="pick-row">
+                    <img id="bonus5-photo" src="/img/candidate-placeholder.svg" alt="">
+                    <select class="select" id="bonus-top5" aria-label="Candidate qui ne sera pas dans le Top 5"></select>
                 </div>
+            </div>
 
-                <div class="prono-section" style="border: 2px solid #f39c12; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0;">🥈 Top 5 - Les Finalistes</h3>
-                        <span id="top5-status" class="status-badge"></span>
-                    </div>
-                    <p class="hint">Choisis 5 candidates qui seront dans le top 5 (8 pts chacune)</p>
-                    <div id="top5-selection" class="candidates-grid"></div>
+            <div class="panel" id="p-final">
+                <div id="final-banner"></div>
+                <p class="hint">Classe les 5 finalistes. 8 points par place exacte.</p>
+                <ol class="rank-list" id="final-list"></ol>
+            </div>
 
-                    <h4 style="margin-top: 20px;">⭐ Bonus Miss France (20 pts)</h4>
-                    <p class="hint">Quelle candidate ne sera PAS dans le top 5 ?</p>
-                    <select id="bonus-top5" class="select-candidate">
-                        <option value="">-- Choisis une candidate --</option>
-                    </select>
-
-                    <button onclick="saveTop5()" class="btn-primary btn-large" style="margin-top: 20px;">
-                        ✅ Valider mon Top 5
-                    </button>
-                    <div id="top5-message" class="message"></div>
-                </div>
-
-                <div class="prono-section" style="border: 2px solid #e74c3c; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0;">🥉 Classement Final</h3>
-                        <span id="final-status" class="status-badge"></span>
-                    </div>
-                    <p class="hint">Classe les 5 finalistes dans l'ordre (8 pts par bonne place)</p>
-                    <div id="final-ranking" class="ranking-list">
-                        <div class="rank-item">
-                            <span class="rank-number">1️⃣</span>
-                            <select class="select-candidate select-rank" data-rank="1">
-                                <option value="">-- Miss France 2027 --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-number">2️⃣</span>
-                            <select class="select-candidate select-rank" data-rank="2">
-                                <option value="">-- 1ère Dauphine --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-number">3️⃣</span>
-                            <select class="select-candidate select-rank" data-rank="3">
-                                <option value="">-- 2ème Dauphine --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-number">4️⃣</span>
-                            <select class="select-candidate select-rank" data-rank="4">
-                                <option value="">-- 3ème Dauphine --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-number">5️⃣</span>
-                            <select class="select-candidate select-rank" data-rank="5">
-                                <option value="">-- 4ème Dauphine --</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button onclick="saveFinalRanking()" class="btn-primary btn-large" style="margin-top: 20px;">
-                        ✅ Valider mon Classement Final
-                    </button>
-                    <div id="final-message" class="message"></div>
-                </div>
-            </section>
-
-            <!-- Section Quiz -->
-            <section id="quiz" class="section">
-                <h2>Quiz Miss France</h2>
-                
-                <div id="quiz-intro" class="quiz-intro">
-                    <p>Teste ta culture Miss France avec <span class="quiz-count">34</span> questions !</p>
-                    <div class="quiz-stats">
-                        <div class="stat">
-                            <span class="stat-number" id="quiz-answered">0</span>
-                            <span class="stat-label">Réponses</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-number" id="quiz-correct">0</span>
-                            <span class="stat-label">Correctes</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-number" id="quiz-points">0</span>
-                            <span class="stat-label">Points</span>
-                        </div>
-                    </div>
-                    <button onclick="startQuiz()" class="btn-primary btn-large">Commencer le Quiz</button>
-                </div>
-
-                <div id="quiz-game" class="quiz-game" style="display: none;">
-                    <div class="question-card">
-                        <div class="question-header">
-                            <span id="question-number"></span>
-                            <span id="question-difficulty" class="difficulty-badge"></span>
-                        </div>
-                        <h3 id="question-text"></h3>
-                        <div id="answers-container" class="answers-grid"></div>
-                    </div>
-                    <div id="quiz-feedback" class="quiz-feedback"></div>
-                </div>
-            </section>
-
-            <!-- Section Culture G Officiel -->
-            <section id="culture-g" class="section">
-                <h2>🎓 Questionnaire Culture Générale Officiel</h2>
-                <p class="subtitle culture-g-label">Le vrai test de culture générale des candidates Miss France !</p>
-
-                <div class="culture-g-intro">
-                    <div class="culture-g-header" style="background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; color: white;">
-                        <h3 style="margin: 0 0 10px 0;">📋 À propos de ce questionnaire</h3>
-                        <p style="margin: 0; opacity: 0.9;">Ce questionnaire est le test officiel de culture générale passé par les candidates Miss France. <span class="culture-g-count"></span> questions, <span class="culture-g-max"></span> points possibles.</p>
-                    </div>
-
-                    <div class="culture-g-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
-                            <span class="stat-number" id="culture-g-answered" style="font-size: 2em; color: var(--gold); display: block;">0</span>
-                            <span class="stat-label" style="color: var(--gris-elegant);">Réponses</span>
-                        </div>
-                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
-                            <span class="stat-number" id="culture-g-total" style="font-size: 2em; color: var(--gold); display: block;">0</span>
-                            <span class="stat-label" style="color: var(--gris-elegant);">Questions</span>
-                        </div>
-                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
-                            <span class="stat-number" id="culture-g-points-display" style="font-size: 2em; color: var(--gold); display: block;">0</span>
-                            <span class="stat-label" style="color: var(--gris-elegant);">Points</span>
-                        </div>
-                        <div class="stat-box" style="background: var(--noir-soft); padding: 15px; border-radius: 10px; text-align: center;">
-                            <span class="stat-number" id="culture-g-max" style="font-size: 2em; color: var(--gold); display: block;">~80</span>
-                            <span class="stat-label" style="color: var(--gris-elegant);">Max</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Catégories du questionnaire -->
-                <div id="culture-g-categories" class="culture-g-categories">
-                    <!-- Les catégories seront générées dynamiquement -->
-                </div>
-
-                <!-- Zone de quiz active -->
-                <div id="culture-g-quiz-area" class="culture-g-quiz-area" style="display: none;">
-                    <div class="quiz-category-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 id="culture-g-category-name" style="margin: 0;"></h3>
-                        <button onclick="closeCultureGCategory()" class="btn-secondary">← Retour aux catégories</button>
-                    </div>
-                    <div id="culture-g-questions-container"></div>
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button onclick="submitCultureGCategory()" class="btn-primary btn-large" id="culture-g-submit-btn">
-                            ✅ Valider mes réponses
-                        </button>
-                    </div>
-                    <div id="culture-g-results" class="culture-g-results" style="display: none;"></div>
-                </div>
-            </section>
-
-            <!-- Section Meilleur Costume -->
-            <section id="defis" class="section">
-                <h2>Meilleur Costume</h2>
-                <p class="subtitle">Vote pour le plus beau costume de la soirée !</p>
-
-                <!-- Upload Photo Costume -->
-                <div class="costume-upload-section" style="background: linear-gradient(135deg, #8e44ad, #9b59b6); border-radius: 15px; padding: 25px; margin-bottom: 30px; color: white;">
-                    <h3 style="margin-bottom: 15px;">📸 Ma Photo de Costume</h3>
-                    <p style="margin-bottom: 20px; opacity: 0.9;">Ajoute une photo de ton déguisement pour participer au concours !</p>
-
-                    <div id="my-costume-photo-preview" style="margin-bottom: 20px; text-align: center;">
-                        <!-- Photo preview will be inserted here -->
-                    </div>
-
-                    <div id="costume-upload-form">
-                        <input type="file" id="costume-photo-input" accept="image/*" style="display: none;">
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                            <button onclick="document.getElementById('costume-photo-input').click()" class="btn-primary" style="flex: 1; min-width: 150px; background: white; color: #8e44ad;">
-                                📷 Choisir une photo
-                            </button>
-                            <button onclick="deleteCostumePhoto()" id="delete-photo-btn" class="btn-secondary" style="flex: 1; min-width: 150px; display: none; background: rgba(231, 76, 60, 0.8); border: none;">
-                                🗑️ Supprimer
-                            </button>
-                        </div>
-                        <!-- Bouton ajouter/retirer de la galerie -->
-                        <button onclick="toggleCostumePublic()" id="toggle-public-btn" class="btn-primary" style="width: 100%; display: none; background: linear-gradient(135deg, #27ae60, #2ecc71); margin-bottom: 10px;">
-                            🎭 Ajouter à la galerie
-                        </button>
-                        <div id="public-status" style="display: none; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px;"></div>
-                        <p style="font-size: 0.85em; opacity: 0.8;">
-                            💡 La photo sera automatiquement redimensionnée. Formats acceptés : JPG, PNG, WebP
-                        </p>
-                    </div>
-
-                    <div id="costume-upload-message" class="message" style="margin-top: 15px;"></div>
-                </div>
-
-                <!-- Galerie des Costumes -->
-                <div class="costume-gallery-section" style="background: var(--noir-card); border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin-bottom: 30px;">
-                    <h3 style="color: var(--gold); margin-bottom: 15px;">🎭 Galerie des Costumes</h3>
-                    <p style="margin-bottom: 20px; color: var(--gris-elegant);">Regarde les costumes des autres joueurs avant de voter !</p>
-                    <div id="costume-gallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
-                        <!-- Photos will be inserted here -->
-                    </div>
-                </div>
-
-                <!-- Vote Meilleur Costume -->
-                <div class="costume-vote-section" style="background: linear-gradient(135deg, var(--noir-card), var(--noir-soft)); border: 2px solid var(--gold); border-radius: 15px; padding: 25px; margin-bottom: 30px;">
-                    <h3 style="color: var(--gold); margin-bottom: 15px;">👗 Élection du Plus Beau Costume</h3>
-                    <p style="margin-bottom: 20px; color: var(--gris-elegant);">Vote pour le joueur qui a le plus beau costume de la soirée !</p>
-
-                    <div id="costume-vote-status" style="margin-bottom: 15px;"></div>
-
-                    <div id="costume-vote-form">
-                        <select id="costume-vote-select" class="select-candidate" style="width: 100%; margin-bottom: 15px;">
-                            <option value="">-- Choisis un joueur --</option>
-                        </select>
-                        <button onclick="submitCostumeVote()" class="btn-primary" style="width: 100%;">
-                            🗳️ Voter
-                        </button>
-                    </div>
-
-                    <div id="costume-vote-message" class="message" style="margin-top: 15px;"></div>
-
-                    <!-- Classement des votes -->
-                    <div style="margin-top: 25px; border-top: 1px solid var(--gold-dark); padding-top: 20px;">
-                        <h4 style="color: var(--gold); margin-bottom: 15px;">🏆 Classement actuel</h4>
-                        <p style="font-size: 0.85rem; color: var(--gris-elegant); margin-bottom: 10px;">
-                            Points: 🥇 30 pts | 🥈 20 pts | 🥉 10 pts
-                        </p>
-                        <div id="costume-results-list"></div>
-                        <p id="costume-total-votes" style="margin-top: 10px; font-size: 0.9rem; color: var(--gris-elegant);"></p>
-                    </div>
-                </div>
-
-            </section>
-
-            <!-- Section Classement -->
-            <section id="leaderboard" class="section">
-                <h2>Classements</h2>
-                <p class="subtitle">Classement général et par catégorie</p>
-
-                <!-- Onglets de classement -->
-                <div class="leaderboard-tabs">
-                    <button class="leaderboard-tab active" onclick="showLeaderboardTab('general')" data-tab="general">
-                        🏆 Général
-                    </button>
-                    <button class="leaderboard-tab" onclick="showLeaderboardTab('pronostics')" data-tab="pronostics">
-                        🎯 Pronostics
-                    </button>
-                    <button class="leaderboard-tab" onclick="showLeaderboardTab('quiz')" data-tab="quiz">
-                        📚 Quiz
-                    </button>
-                    <button class="leaderboard-tab" onclick="showLeaderboardTab('culture-g')" data-tab="culture-g">
-                        🎓 Culture G
-                    </button>
-                    <button class="leaderboard-tab" onclick="showLeaderboardTab('costume')" data-tab="costume">
-                        👗 Costume
+            <div class="sticky-bar" id="prono-bar" hidden>
+                <div class="sticky-bar-inner">
+                    <span class="count" id="bar-count">0<small>/15</small></span>
+                    <button type="button" class="btn btn-blue btn-between" id="bar-save">
+                        <span id="bar-label">Valider</span>
+                        <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
                     </button>
                 </div>
+            </div>
+        </section>
 
-                <!-- Classement Général -->
-                <div id="leaderboard-general" class="leaderboard-panel active">
-                    <div class="leaderboard-container">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Joueur</th>
-                                    <th>Quiz</th>
-                                    <th>Culture G</th>
-                                    <th>Pronostics</th>
-                                    <th>Défis</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-body"></tbody>
-                        </table>
-                    </div>
+        <!-- QUIZ -->
+        <section id="quiz" class="section" aria-labelledby="quiz-title">
+            <div id="quiz-intro" class="quiz-intro">
+                <div class="page-head">
+                    <p class="kicker">Le test</p>
+                    <h1 class="headline" id="quiz-title">Quiz <em>Miss France</em></h1>
+                    <p class="lede"><span class="quiz-count">34</span> questions sur l'histoire du concours. Les 3 meilleurs scores gagnent 15, 10 et 5 points.</p>
                 </div>
-
-                <!-- Classement Pronostics -->
-                <div id="leaderboard-pronostics" class="leaderboard-panel">
-                    <div class="leaderboard-info" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--noir-profond); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                        <strong>🎯 Le classement le plus important !</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Points gagnés grâce aux pronostics Top 15, Top 5, Classement Final et Prono d'Or</p>
-                    </div>
-                    <div class="leaderboard-container">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Joueur</th>
-                                    <th>Points Pronostics</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-pronostics-body"></tbody>
-                        </table>
-                    </div>
+                <div class="stat-row">
+                    <div class="stat-cell"><span class="v" id="quiz-answered">0</span><span class="l">Répondues</span></div>
+                    <div class="stat-cell"><span class="v" id="quiz-correct">0</span><span class="l">Justes</span></div>
+                    <div class="stat-cell"><span class="v" id="quiz-total">34</span><span class="l">Questions</span></div>
                 </div>
-
-                <!-- Classement Quiz -->
-                <div id="leaderboard-quiz" class="leaderboard-panel">
-                    <div class="leaderboard-info" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                        <strong>📚 Quiz Miss France</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;"><span class="quiz-count">34</span> questions sur l'univers Miss France (1-3 pts par question)</p>
-                    </div>
-                    <div class="leaderboard-container">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Joueur</th>
-                                    <th>Points Quiz</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-quiz-body"></tbody>
-                        </table>
-                    </div>
+                <p class="lede" id="quiz-intro-text" style="margin-bottom: 16px;"></p>
+                <button type="button" class="btn btn-block btn-between" id="quiz-start">
+                    <span id="quiz-start-label">Commencer le quiz</span>
+                    <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
+                </button>
+            </div>
+            <div id="quiz-game" hidden>
+                <div class="q-head">
+                    <span class="q-num" id="q-num">01</span>
+                    <span class="q-meta">question<br>sur <span id="q-total">34</span></span>
+                    <span class="q-diff" id="q-diff"></span>
                 </div>
+                <h2 class="q-text" id="q-text"></h2>
+                <div class="answers" id="q-answers" role="group" aria-label="Réponses"></div>
+                <div class="feedback" id="q-feedback" role="status" aria-live="polite"></div>
+            </div>
+        </section>
 
-                <!-- Classement Culture G -->
-                <div id="leaderboard-culture-g" class="leaderboard-panel">
-                    <div class="leaderboard-info" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                        <strong>🎓 Questionnaire Culture Générale Officiel</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Le vrai test passé par les Miss ! Points attribués aux 3 meilleurs (15/10/5 pts)</p>
-                    </div>
-                    <div class="leaderboard-container">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Joueur</th>
-                                    <th>Score brut</th>
-                                    <th>Points gagnés</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-culture-g-body"></tbody>
-                        </table>
-                    </div>
+        <!-- CULTURE G -->
+        <section id="culture-g" class="section" aria-labelledby="cg-title">
+            <div id="cg-home">
+                <div class="page-head">
+                    <p class="kicker">Le vrai test des candidates</p>
+                    <h1 class="headline" id="cg-title">Culture <em>G</em></h1>
+                    <p class="lede culture-g-label"></p>
                 </div>
-
-                <!-- Classement Costume -->
-                <div id="leaderboard-costume" class="leaderboard-panel">
-                    <div class="leaderboard-info" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                        <strong>👗 Concours du Plus Beau Costume</strong>
-                        <p style="margin: 5px 0 0 0; font-size: 0.9rem;">Vote des participants ! 🥇 30 pts | 🥈 20 pts | 🥉 10 pts</p>
-                    </div>
-                    <div class="leaderboard-container">
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>Rang</th>
-                                    <th>Joueur</th>
-                                    <th>Votes reçus</th>
-                                    <th>Points</th>
-                                </tr>
-                            </thead>
-                            <tbody id="leaderboard-costume-body"></tbody>
-                        </table>
-                    </div>
+                <div class="stat-row">
+                    <div class="stat-cell"><span class="v" id="cg-answered">0</span><span class="l">Répondues</span></div>
+                    <div class="stat-cell"><span class="v" id="cg-points">0</span><span class="l">Points bruts</span></div>
+                    <div class="stat-cell"><span class="v" id="cg-max">0</span><span class="l">Maximum</span></div>
                 </div>
-            </section>
-
-            <!-- Section Points -->
-            <section id="points" class="section">
-                <h2>💰 Détail des Points</h2>
-                <p class="subtitle">Tous les points à aller chercher pendant la soirée !</p>
-
-                <div class="points-categories" style="display: grid; gap: 20px;">
-
-                    <!-- Quiz Miss France -->
-                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #3498db;">
-                        <h3 style="color: #3498db; margin: 0 0 15px 0;">📚 Quiz Miss France</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;"><span class="quiz-count">34</span> questions sur l'univers Miss France. Points attribués selon classement.</p>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥇 1er meilleur score : <strong style="color: var(--gold);">15 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥈 2ème meilleur score : <strong style="color: var(--gold);">10 pts</strong></li>
-                            <li style="padding: 8px 0;">🥉 3ème meilleur score : <strong style="color: var(--gold);">5 pts</strong></li>
-                        </ul>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(52, 152, 219, 0.2); border-radius: 8px;">
-                            <strong style="color: #3498db;">Maximum possible : 15 pts</strong>
-                        </div>
-                    </div>
-
-                    <!-- Culture G Officiel -->
-                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #9b59b6;">
-                        <h3 style="color: #9b59b6; margin: 0 0 15px 0;">🎓 Culture G Officiel</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Le vrai questionnaire des Miss ! Points attribués selon classement.</p>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥇 1er meilleur score : <strong style="color: var(--gold);">15 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥈 2ème meilleur score : <strong style="color: var(--gold);">10 pts</strong></li>
-                            <li style="padding: 8px 0;">🥉 3ème meilleur score : <strong style="color: var(--gold);">5 pts</strong></li>
-                        </ul>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(155, 89, 182, 0.2); border-radius: 8px;">
-                            <strong style="color: #9b59b6;">Maximum possible : 15 pts</strong>
-                        </div>
-                    </div>
-
-                    <!-- Pronostics -->
-                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid var(--gold);">
-                        <h3 style="color: var(--gold); margin: 0 0 15px 0;">🏆 Pronostics</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Devine le parcours des candidates !</p>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Top 15 : <strong style="color: var(--gold);">5 pts</strong> par bonne candidate (15 × 5 = 75 pts max)</li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Bonus Top 15 (celle qui passe pas) : <strong style="color: var(--gold);">10 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Top 5 : <strong style="color: var(--gold);">10 pts</strong> par bonne candidate (5 × 10 = 50 pts max)</li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Bonus Top 5 (celle qui passe pas) : <strong style="color: var(--gold);">20 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• Classement final (1-5) : <strong style="color: var(--gold);">20 pts</strong> par position exacte (5 × 20 = 100 pts max)</li>
-                            <li style="padding: 8px 0;">• 👑 <strong>PRONO D'OR</strong> (Miss France <span class="edition-year">2027</span>) : <strong style="color: var(--gold);">80 pts</strong></li>
-                        </ul>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(212, 175, 55, 0.2); border-radius: 8px;">
-                            <strong style="color: var(--gold);">Maximum possible : 335 pts</strong>
-                        </div>
-                    </div>
-
-                    <!-- Défis -->
-                    <div class="points-card" style="background: var(--noir-soft); padding: 25px; border-radius: 15px; border-left: 5px solid #f39c12;">
-                        <h3 style="color: #f39c12; margin: 0 0 15px 0;">👗 Meilleur Costume</h3>
-                        <p style="color: var(--gris-elegant); margin-bottom: 15px;">Vote pour le plus beau costume de la soirée !</p>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥇 1er : <strong style="color: var(--gold);">30 pts</strong></li>
-                            <li style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">🥈 2ème : <strong style="color: var(--gold);">20 pts</strong></li>
-                            <li style="padding: 8px 0;">🥉 3ème : <strong style="color: var(--gold);">10 pts</strong></li>
-                        </ul>
-                        <div style="margin-top: 15px; padding: 10px; background: rgba(243, 156, 18, 0.2); border-radius: 8px;">
-                            <strong style="color: #f39c12;">Maximum possible : 30 pts</strong>
-                        </div>
-                    </div>
-
-                    <!-- Total -->
-                    <div class="points-card" style="background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%); padding: 30px; border-radius: 15px; text-align: center;">
-                        <h3 style="color: black; margin: 0 0 10px 0; font-size: 1.5em;">🎉 TOTAL MAXIMUM</h3>
-                        <p style="color: rgba(0,0,0,0.7); font-size: 3em; font-weight: bold; margin: 0;">~395 pts</p>
-                        <p style="color: rgba(0,0,0,0.6); margin-top: 10px;">Bonne chance à tous !</p>
-                    </div>
-
+                <p class="hint">Les 3 meilleurs scores gagnent 15, 10 et 5 points au classement. Une fois une catégorie validée, impossible de modifier ses réponses.</p>
+                <ul class="cg-list" id="cg-categories"></ul>
+            </div>
+            <div id="cg-play" hidden>
+                <div class="page-head">
+                    <button type="button" class="btn-link" id="cg-back" style="align-self: flex-start;">← Toutes les catégories</button>
+                    <h1 class="headline" id="cg-cat-title"></h1>
                 </div>
-            </section>
+                <div id="cg-questions"></div>
+                <div id="cg-results"></div>
+                <button type="button" class="btn btn-blue btn-block btn-between" id="cg-submit" style="margin-top: 20px;">
+                    <span>Valider mes réponses</span>
+                    <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
+                </button>
+            </div>
+        </section>
 
-            <!-- Section Admin -->
-            <section id="admin" class="section">
-                <div class="admin-header" style="background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%); padding: 25px; border-radius: 15px; color: white; margin-bottom: 30px;">
-                    <h2 style="margin: 0; color: var(--gold); font-family: 'Playfair Display', serif;">Interface Admin</h2>
-                    <p style="margin: 10px 0 0 0; opacity: 0.9; color: var(--rose-poudre);">Validation des résultats en temps réel - Étape par étape</p>
+        <!-- COSTUME -->
+        <section id="costume" class="section" aria-labelledby="costume-title">
+            <div class="page-head">
+                <div class="page-head-row"><p class="kicker">Street style</p><p class="kicker">30 · 20 · 10 pts</p></div>
+                <h1 class="headline" id="costume-title">Les <em>looks</em><br>de la soirée</h1>
+            </div>
+            <div class="my-look">
+                <div class="thumb" id="my-look-thumb">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
                 </div>
-
-                <!-- Status de l'étape actuelle -->
-                <div class="admin-card" style="background: linear-gradient(135deg, var(--noir-medium), var(--noir-soft)); border: 2px solid var(--gold);">
-                    <h3 style="color: var(--gold);">📍 Étape Actuelle</h3>
-                    <div id="admin-current-step" style="font-size: 1.5em; font-weight: bold; margin: 15px 0; color: var(--blanc-perle);">
-                        Chargement...
-                    </div>
-                    <div class="steps-progress" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <span id="step-indicator-0" class="step-badge">⏳ Attente</span>
-                        <span id="step-indicator-1" class="step-badge">1️⃣ Top 15</span>
-                        <span id="step-indicator-2" class="step-badge">2️⃣ Top 5</span>
-                        <span id="step-indicator-3" class="step-badge">3️⃣ Final</span>
-                    </div>
+                <div class="actions">
+                    <input type="file" id="costume-input" accept="image/*" hidden>
+                    <button type="button" class="btn btn-sm" id="costume-pick">Poster mon look</button>
+                    <button type="button" class="btn btn-ghost btn-sm" id="costume-public" hidden>Ajouter à la galerie</button>
+                    <button type="button" class="btn-link" id="costume-delete" hidden style="align-self: flex-start;">Supprimer ma photo</button>
+                    <span class="status-line" id="costume-status">Ta photo reste privée tant que tu ne l'ajoutes pas à la galerie.</span>
                 </div>
+            </div>
+            <h2 class="subhead">La <em>galerie</em></h2>
+            <p class="hint" id="vote-hint">Touche un look pour l'agrandir et voter. Un seul vote, modifiable.</p>
+            <div class="looks" id="looks"></div>
+        </section>
 
-                <!-- Statistiques -->
-                <div class="admin-card">
-                    <h3>📊 Statistiques</h3>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label">Utilisateurs</span>
-                            <span class="stat-value" id="admin-stat-users">-</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Pronostics</span>
-                            <span class="stat-value" id="admin-stat-pronostics">-</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- CLASSEMENT -->
+        <section id="leaderboard" class="section" aria-labelledby="lb-title">
+            <div class="page-head">
+                <p class="kicker" id="lb-kicker">Le classement</p>
+                <h1 class="headline" id="lb-title">Le <em>palmarès</em></h1>
+            </div>
+            <div class="lb-tabs" role="tablist" aria-label="Classements">
+                <button type="button" class="lb-tab active" data-lb="total">Général</button>
+                <button type="button" class="lb-tab" data-lb="pronostics">Pronostics</button>
+                <button type="button" class="lb-tab" data-lb="quiz">Quiz</button>
+                <button type="button" class="lb-tab" data-lb="culture">Culture G</button>
+                <button type="button" class="lb-tab" data-lb="costume">Costume</button>
+            </div>
+            <div id="lb-content"></div>
+        </section>
 
-                <!-- ÉTAPE 1: Top 15 -->
-                <div class="admin-card" id="admin-step1-card" style="border: 3px solid #667eea;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0;">🥇 ÉTAPE 1 - Top 15</h3>
-                        <span id="step1-status" class="step-status"></span>
-                    </div>
-                    <p style="color: #888; margin-bottom: 15px;">Coche les 15 candidates sélectionnées puis valide</p>
-                    <p style="color: var(--gold); font-size: 0.9rem; margin-bottom: 15px;">
-                        💡 <strong>Bonus automatique :</strong> Les joueurs qui ont choisi une candidate qui n'est PAS dans le top 15 gagnent 10 pts
-                    </p>
-                    <div id="admin-top15-grid" class="admin-candidates-grid"></div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="adminValidateTop15()" class="btn-admin-step" style="background: linear-gradient(135deg, #667eea, #764ba2); flex: 1;">
-                            ✅ VALIDER LE TOP 15 (met à jour les scores)
-                        </button>
-                        <button onclick="adminResetStep(0)" id="btn-reset-step1" class="btn-admin-reset" style="background: linear-gradient(135deg, #666, #444); display: none;">
-                            ↩️ ANNULER
-                        </button>
-                    </div>
-                    <div id="step1-message" class="admin-step-message"></div>
-                </div>
+        <!-- RÈGLEMENT -->
+        <section id="rules" class="section" aria-labelledby="rules-title">
+            <div class="page-head">
+                <p class="kicker">Mode d'emploi</p>
+                <h1 class="headline" id="rules-title">Le <em>règlement</em></h1>
+            </div>
+            <h2 class="subhead">Pronostics</h2>
+            <ul class="rules">
+                <li><span>Top 15 : par candidate bien placée</span><strong>5 pts</strong></li>
+                <li><span>La recalée (pas dans le Top 15)</span><strong>10 pts</strong></li>
+                <li><span>Top 5 : par finaliste trouvée</span><strong>8 pts</strong></li>
+                <li><span>La déception (pas dans le Top 5)</span><strong>20 pts</strong></li>
+                <li><span>Podium : par place exacte</span><strong>8 pts</strong></li>
+                <li><span>Prono d'or : la future Miss France</span><strong>80 pts</strong></li>
+            </ul>
+            <h2 class="subhead">Jeux</h2>
+            <ul class="rules">
+                <li><span>Quiz Miss France (3 meilleurs scores)</span><strong>15 · 10 · 5</strong></li>
+                <li><span>Culture G (3 meilleurs scores)</span><strong>15 · 10 · 5</strong></li>
+                <li><span>Meilleur costume (3 plus votés)</span><strong>30 · 20 · 10</strong></li>
+            </ul>
+            <div class="rules-total"><span class="kicker">Maximum possible</span><span class="serif">325 pts</span></div>
+            <p class="hint">Les pronostics se verrouillent étape par étape, au moment où les résultats officiels tombent pendant l'émission. Les ex-æquo partagent la même place.</p>
+        </section>
 
-                <!-- ÉTAPE 2: Top 5 -->
-                <div class="admin-card" id="admin-step2-card" style="border: 3px solid #f39c12;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0;">🥈 ÉTAPE 2 - Top 5</h3>
-                        <span id="step2-status" class="step-status"></span>
-                    </div>
-                    <p style="color: #888; margin-bottom: 15px;">Coche les 5 finalistes (seules les candidates du Top 15 validé apparaîtront)</p>
-                    <p style="color: var(--gold); font-size: 0.9rem; margin-bottom: 15px;">
-                        💡 <strong>Bonus automatique :</strong> Les joueurs qui ont choisi une candidate qui n'est PAS dans le top 5 gagnent 20 pts
-                    </p>
-                    <div id="admin-top5-grid" class="admin-candidates-grid"></div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="adminValidateTop5()" class="btn-admin-step" style="background: linear-gradient(135deg, #f39c12, #e67e22); flex: 1;">
-                            ✅ VALIDER LE TOP 5 (met à jour les scores)
-                        </button>
-                        <button onclick="adminResetStep(1)" id="btn-reset-step2" class="btn-admin-reset" style="background: linear-gradient(135deg, #666, #444); display: none;">
-                            ↩️ ANNULER
-                        </button>
-                    </div>
-                    <div id="step2-message" class="admin-step-message"></div>
-                </div>
+        <!-- ADMIN -->
+        <section id="admin" class="section" aria-labelledby="admin-title">
+            <div class="page-head">
+                <div class="page-head-row"><p class="kicker">Rédaction · admin</p><p class="kicker blue" id="admin-step-label"></p></div>
+                <h1 class="headline" id="admin-title">Les <em>résultats</em><br>officiels</h1>
+            </div>
+            <ol class="steps" id="admin-steps">
+                <li data-step="1">1 · Top 15</li>
+                <li data-step="2">2 · Top 5</li>
+                <li data-step="3">3 · Podium</li>
+            </ol>
+            <div class="admin-stats stat-row">
+                <div class="stat-cell"><span class="v" id="admin-users">–</span><span class="l">Joueurs</span></div>
+                <div class="stat-cell"><span class="v" id="admin-pronos">–</span><span class="l">Pronostics</span></div>
+            </div>
+            <div class="admin-block" id="admin-step1"></div>
+            <div class="admin-block" id="admin-step2"></div>
+            <div class="admin-block" id="admin-step3"></div>
+            <div class="admin-block" id="admin-games"></div>
+            <div class="admin-block" id="admin-players">
+                <h3>Les <em>joueurs</em></h3>
+                <p class="hint">Renommer, retirer une photo de costume ou supprimer un joueur.</p>
+                <button type="button" class="btn btn-ghost btn-sm" id="admin-load-users">Afficher les joueurs</button>
+                <div id="admin-users-list"></div>
+            </div>
+            <div class="admin-block" id="admin-danger">
+                <h3>Remise à <em>zéro</em></h3>
+                <p class="hint">Supprime tous les joueurs (sauf les admins), les scores, pronostics, réponses, photos et résultats officiels. À faire une seule fois, après tes tests et avant d'envoyer le lien aux invités.</p>
+                <button type="button" class="btn btn-danger btn-block" id="admin-reset-all">Tout réinitialiser</button>
+            </div>
+        </section>
+    </main>
 
-                <!-- ÉTAPE 3: Classement Final -->
-                <div class="admin-card" id="admin-step3-card" style="border: 3px solid #e74c3c;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="margin: 0;">🏆 ÉTAPE 3 - Classement Final</h3>
-                        <span id="step3-status" class="step-status"></span>
-                    </div>
-                    <p style="color: #888; margin-bottom: 15px;">Entre le classement final (seules les candidates du Top 5 validé apparaîtront)</p>
-                    <div class="rank-selectors" id="admin-final-selectors">
-                        <div class="rank-item">
-                            <span class="rank-num">1️⃣</span>
-                            <select class="admin-final-rank admin-select" data-rank="1">
-                                <option value="">-- Miss France 2027 --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-num">2️⃣</span>
-                            <select class="admin-final-rank admin-select" data-rank="2">
-                                <option value="">-- 1ère Dauphine --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-num">3️⃣</span>
-                            <select class="admin-final-rank admin-select" data-rank="3">
-                                <option value="">-- 2ème Dauphine --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-num">4️⃣</span>
-                            <select class="admin-final-rank admin-select" data-rank="4">
-                                <option value="">-- 3ème Dauphine --</option>
-                            </select>
-                        </div>
-                        <div class="rank-item">
-                            <span class="rank-num">5️⃣</span>
-                            <select class="admin-final-rank admin-select" data-rank="5">
-                                <option value="">-- 4ème Dauphine --</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="adminValidateFinal()" class="btn-admin-step" style="background: linear-gradient(135deg, #e74c3c, #c0392b); flex: 1;">
-                            ✅ VALIDER LE CLASSEMENT FINAL + PRONO D'OR (scores finaux)
-                        </button>
-                        <button onclick="adminResetStep(2)" id="btn-reset-step3" class="btn-admin-reset" style="background: linear-gradient(135deg, #666, #444); display: none;">
-                            ↩️ ANNULER
-                        </button>
-                    </div>
-                    <div id="step3-message" class="admin-step-message"></div>
-                </div>
+    <nav class="bottom-nav" aria-label="Navigation principale">
+        <div class="bottom-nav-inner">
+            <button type="button" class="nav-btn active" data-go="une">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="3" width="14" height="18"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>La Une</button>
+            <button type="button" class="nav-btn" data-go="pronostics">
+                <svg viewBox="0 0 44 30" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 26 L2 8 L13 17 L22 3 L31 17 L42 8 L40 26 Z"/></svg>Pronos</button>
+            <button type="button" class="nav-btn" data-go="quiz">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>Quiz</button>
+            <button type="button" class="nav-btn" data-go="culture-g">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5C6.5 4 9.5 4 12 5.5v14C9.5 18 6.5 18 4 19.5z"/><path d="M20 5.5C17.5 4 14.5 4 12 5.5v14c2.5-1.5 5.5-1.5 8 0z"/></svg>Culture G</button>
+            <button type="button" class="nav-btn" data-go="costume">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 6a2 2 0 1 1 2 2c-1 0-2 .7-2 1.7V10"/><path d="M12 10l9 6.5c.7.5.4 1.5-.5 1.5h-17c-.9 0-1.2-1-.5-1.5z"/></svg>Costume</button>
+            <button type="button" class="nav-btn" data-go="leaderboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20v-6h4v6M10 20V8h4v12M15 20v-9h4v9"/></svg>Classement</button>
+        </div>
+    </nav>
 
-                <!-- Gestion des Joueurs -->
-                <div class="admin-card" style="border: 2px solid #3498db;">
-                    <h3>👥 Gestion des Joueurs</h3>
-                    <p style="color: #888; margin-bottom: 15px;">Modifier les pseudos, supprimer des joueurs ou leurs photos costume</p>
-                    <button onclick="loadAdminUsers()" class="btn-admin-step" style="background: linear-gradient(135deg, #3498db, #2980b9); margin-bottom: 15px;">
-                        🔄 Charger la liste des joueurs
-                    </button>
-                    <div id="admin-users-list"></div>
-                </div>
-
-                <!-- Reset Complet -->
-                <div class="admin-card" style="border: 2px solid #e74c3c; background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.1));">
-                    <h3 style="color: #e74c3c;">⚠️ Reset Complet des Données</h3>
-                    <p style="color: #888; margin-bottom: 15px;">
-                        <strong>Attention :</strong> Cette action supprime TOUTES les données de test :
-                    </p>
-                    <ul style="color: #888; margin-bottom: 20px; padding-left: 20px;">
-                        <li>Tous les joueurs (sauf les admins)</li>
-                        <li>Tous les scores, pronostics, réponses quiz</li>
-                        <li>Toutes les photos de costume uploadées</li>
-                        <li>Les résultats officiels validés</li>
-                    </ul>
-                    <p style="color: #27ae60; margin-bottom: 15px;">
-                        ✅ <strong>Conservé :</strong> Les comptes admin (dam, lucie) et les photos des Miss France (URLs externes)
-                    </p>
-                    <button onclick="adminResetAllData()" class="btn-admin-step" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-                        🗑️ RÉINITIALISER TOUTES LES DONNÉES
-                    </button>
-                    <div id="reset-all-message" class="admin-step-message"></div>
-                </div>
-
-                <div id="admin-status" class="admin-status-message"></div>
-            </section>
-        </main>
-    </div>
+    <div class="toast-zone" id="toasts" aria-live="polite"></div>
 
     <script src="app.js"></script>
+    <script src="pronostics.js"></script>
+    <script src="games.js"></script>
+    <script src="costume.js"></script>
+    <script src="leaderboard.js"></script>
+    <script src="admin.js"></script>
+    <script src="live.js"></script>
+    <script src="cover.js"></script>
 </body>
 </html>
