@@ -4,47 +4,45 @@
 //
 // Pour préparer l'édition suivante : copier ce fichier en
 // editions/2028.js, le mettre à jour, puis définir la variable
-// d'environnement EDITION=2028 (ou changer DEFAULT_EDITION dans server.js).
-// Chaque édition utilise sa propre base de données : l'ancienne est conservée.
+// d'environnement EDITION=2028 (et l'ajouter à la table EDITIONS de src/app.js).
 // ============================================================
-
-const PLACEHOLDER = '/img/candidate-placeholder.svg';
 
 // Liste des 31 candidates (source : Wikipédia « Miss France 2027 », novembre 2026).
 // `name` sert d'identifiant dans les pronostics : ne pas le modifier une fois les pronostics ouverts.
-// `photo` : remplacer PLACEHOLDER par l'URL de la photo officielle quand elle est disponible.
+// `photo` : photo principale ; `photos` : galerie (fichiers dans public/img/candidates/, 480 px de large).
+// Photos récupérées sur les comptes Instagram des comités régionaux (novembre 2026).
 const candidates = [
-  { name: "Miss Alsace", person: "Chiara Blazevic", photo: PLACEHOLDER },
-  { name: "Miss Aquitaine", person: "Solène Videau", photo: PLACEHOLDER },
-  { name: "Miss Auvergne", person: "Lina Berthelier", photo: PLACEHOLDER },
-  { name: "Miss Bourgogne", person: "Ilona Perrot", photo: PLACEHOLDER },
-  { name: "Miss Bretagne", person: "Margot Ferré-Bernard", photo: PLACEHOLDER },
-  { name: "Miss Centre-Val de Loire", person: "Justine Bourrelier", photo: PLACEHOLDER },
-  { name: "Miss Champagne-Ardenne", person: "Céline Leduc", photo: PLACEHOLDER },
-  { name: "Miss Corse", person: "Satine Nomary", photo: PLACEHOLDER },
-  { name: "Miss Côte d'Azur", person: "May Haoues", photo: PLACEHOLDER },
-  { name: "Miss Franche-Comté", person: "Emma Ninot", photo: PLACEHOLDER },
-  { name: "Miss Guadeloupe", person: "Julia Désirée", photo: PLACEHOLDER },
-  { name: "Miss Guyane", person: "Sandra Justine", photo: PLACEHOLDER },
-  { name: "Miss Île-de-France", person: "Camilla Alash", photo: PLACEHOLDER },
-  { name: "Miss Languedoc", person: "Candice Gauch", photo: PLACEHOLDER },
-  { name: "Miss Limousin", person: "Élise Escuriol", photo: PLACEHOLDER },
-  { name: "Miss Lorraine", person: "Léane Froment", photo: PLACEHOLDER },
-  { name: "Miss Martinique", person: "Maureen-Alycia Lucea-Merlin", photo: PLACEHOLDER },
-  { name: "Miss Mayotte", person: "Emma Saïd Issouf", photo: PLACEHOLDER },
-  { name: "Miss Midi-Pyrénées", person: "Carla Rachail", photo: PLACEHOLDER },
-  { name: "Miss Nord-Pas-de-Calais", person: "Shana Mendes", photo: PLACEHOLDER },
-  { name: "Miss Normandie", person: "Pauline Gourlez", photo: PLACEHOLDER },
-  { name: "Miss Nouvelle-Calédonie", person: "Lana Prost", photo: PLACEHOLDER },
-  { name: "Miss Pays de la Loire", person: "Maëlle Hamon", photo: PLACEHOLDER },
-  { name: "Miss Picardie", person: "Marie Villez", photo: PLACEHOLDER },
-  { name: "Miss Poitou-Charentes", person: "Mandy Goudal", photo: PLACEHOLDER },
-  { name: "Miss Provence", person: "Ophélie Vitalbo", photo: PLACEHOLDER },
-  { name: "Miss Réunion", person: "Laetitia Roguet", photo: PLACEHOLDER },
-  { name: "Miss Rhône-Alpes", person: "Julia Grid-Costantino", photo: PLACEHOLDER },
-  { name: "Miss Roussillon", person: "Juliette Gauthier", photo: PLACEHOLDER },
-  { name: "Miss Saint-Martin & Saint-Barthélemy", person: "Naïla Parotte", photo: PLACEHOLDER },
-  { name: "Miss Tahiti", person: "Leia Diard", photo: PLACEHOLDER }
+  { name: "Miss Alsace", person: "Chiara Blazevic", photo: '/img/candidates/alsace-1.jpg', photos: ['/img/candidates/alsace-1.jpg', '/img/candidates/alsace-2.jpg', '/img/candidates/alsace-3.jpg', '/img/candidates/alsace-4.jpg'] },
+  { name: "Miss Aquitaine", person: "Solène Videau", photo: '/img/candidates/aquitaine-1.jpg', photos: ['/img/candidates/aquitaine-1.jpg', '/img/candidates/aquitaine-2.jpg', '/img/candidates/aquitaine-3.jpg', '/img/candidates/aquitaine-4.jpg'] },
+  { name: "Miss Auvergne", person: "Lina Berthelier", photo: '/img/candidates/auvergne-1.jpg', photos: ['/img/candidates/auvergne-1.jpg', '/img/candidates/auvergne-2.jpg', '/img/candidates/auvergne-3.jpg', '/img/candidates/auvergne-4.jpg'] },
+  { name: "Miss Bourgogne", person: "Ilona Perrot", photo: '/img/candidates/bourgogne-1.jpg', photos: ['/img/candidates/bourgogne-1.jpg', '/img/candidates/bourgogne-2.jpg', '/img/candidates/bourgogne-3.jpg', '/img/candidates/bourgogne-4.jpg'] },
+  { name: "Miss Bretagne", person: "Margot Ferré-Bernard", photo: '/img/candidates/bretagne-1.jpg', photos: ['/img/candidates/bretagne-1.jpg', '/img/candidates/bretagne-2.jpg', '/img/candidates/bretagne-3.jpg', '/img/candidates/bretagne-4.jpg'] },
+  { name: "Miss Centre-Val de Loire", person: "Justine Bourrelier", photo: '/img/candidates/centre-val-de-loire-1.jpg', photos: ['/img/candidates/centre-val-de-loire-1.jpg', '/img/candidates/centre-val-de-loire-2.jpg', '/img/candidates/centre-val-de-loire-3.jpg'] },
+  { name: "Miss Champagne-Ardenne", person: "Céline Leduc", photo: '/img/candidates/champagne-ardenne-1.jpg', photos: ['/img/candidates/champagne-ardenne-1.jpg', '/img/candidates/champagne-ardenne-2.jpg', '/img/candidates/champagne-ardenne-3.jpg', '/img/candidates/champagne-ardenne-4.jpg'] },
+  { name: "Miss Corse", person: "Satine Nomary", photo: '/img/candidates/corse-1.jpg', photos: ['/img/candidates/corse-1.jpg', '/img/candidates/corse-2.jpg', '/img/candidates/corse-3.jpg'] },
+  { name: "Miss Côte d'Azur", person: "May Haoues", photo: '/img/candidates/cote-d-azur-1.jpg', photos: ['/img/candidates/cote-d-azur-1.jpg', '/img/candidates/cote-d-azur-2.jpg', '/img/candidates/cote-d-azur-3.jpg'] },
+  { name: "Miss Franche-Comté", person: "Emma Ninot", photo: '/img/candidates/franche-comte-1.jpg', photos: ['/img/candidates/franche-comte-1.jpg', '/img/candidates/franche-comte-2.jpg', '/img/candidates/franche-comte-3.jpg', '/img/candidates/franche-comte-4.jpg'] },
+  { name: "Miss Guadeloupe", person: "Julia Désirée", photo: '/img/candidates/guadeloupe-1.jpg', photos: ['/img/candidates/guadeloupe-1.jpg', '/img/candidates/guadeloupe-2.jpg', '/img/candidates/guadeloupe-3.jpg', '/img/candidates/guadeloupe-4.jpg'] },
+  { name: "Miss Guyane", person: "Sandra Justine", photo: '/img/candidates/guyane-1.jpg', photos: ['/img/candidates/guyane-1.jpg', '/img/candidates/guyane-2.jpg', '/img/candidates/guyane-3.jpg', '/img/candidates/guyane-4.jpg'] },
+  { name: "Miss Île-de-France", person: "Camilla Alash", photo: '/img/candidates/ile-de-france-1.jpg', photos: ['/img/candidates/ile-de-france-1.jpg', '/img/candidates/ile-de-france-2.jpg', '/img/candidates/ile-de-france-3.jpg', '/img/candidates/ile-de-france-4.jpg'] },
+  { name: "Miss Languedoc", person: "Candice Gauch", photo: '/img/candidates/languedoc-1.jpg', photos: ['/img/candidates/languedoc-1.jpg', '/img/candidates/languedoc-2.jpg', '/img/candidates/languedoc-3.jpg', '/img/candidates/languedoc-4.jpg'] },
+  { name: "Miss Limousin", person: "Élise Escuriol", photo: '/img/candidates/limousin-1.jpg', photos: ['/img/candidates/limousin-1.jpg', '/img/candidates/limousin-2.jpg', '/img/candidates/limousin-3.jpg', '/img/candidates/limousin-4.jpg'] },
+  { name: "Miss Lorraine", person: "Léane Froment", photo: '/img/candidates/lorraine-1.jpg', photos: ['/img/candidates/lorraine-1.jpg', '/img/candidates/lorraine-2.jpg', '/img/candidates/lorraine-3.jpg', '/img/candidates/lorraine-4.jpg'] },
+  { name: "Miss Martinique", person: "Maureen-Alycia Lucea-Merlin", photo: '/img/candidates/martinique-1.jpg', photos: ['/img/candidates/martinique-1.jpg', '/img/candidates/martinique-2.jpg', '/img/candidates/martinique-3.jpg', '/img/candidates/martinique-4.jpg'] },
+  { name: "Miss Mayotte", person: "Emma Saïd Issouf", photo: '/img/candidates/mayotte-1.jpg', photos: ['/img/candidates/mayotte-1.jpg', '/img/candidates/mayotte-2.jpg', '/img/candidates/mayotte-3.jpg'] },
+  { name: "Miss Midi-Pyrénées", person: "Carla Rachail", photo: '/img/candidates/midi-pyrenees-1.jpg', photos: ['/img/candidates/midi-pyrenees-1.jpg', '/img/candidates/midi-pyrenees-2.jpg', '/img/candidates/midi-pyrenees-3.jpg', '/img/candidates/midi-pyrenees-4.jpg'] },
+  { name: "Miss Nord-Pas-de-Calais", person: "Shana Mendes", photo: '/img/candidates/nord-pas-de-calais-1.jpg', photos: ['/img/candidates/nord-pas-de-calais-1.jpg', '/img/candidates/nord-pas-de-calais-2.jpg', '/img/candidates/nord-pas-de-calais-3.jpg'] },
+  { name: "Miss Normandie", person: "Pauline Gourlez", photo: '/img/candidates/normandie-1.jpg', photos: ['/img/candidates/normandie-1.jpg', '/img/candidates/normandie-2.jpg', '/img/candidates/normandie-3.jpg', '/img/candidates/normandie-4.jpg'] },
+  { name: "Miss Nouvelle-Calédonie", person: "Lana Prost", photo: '/img/candidates/nouvelle-caledonie-1.jpg', photos: ['/img/candidates/nouvelle-caledonie-1.jpg', '/img/candidates/nouvelle-caledonie-2.jpg', '/img/candidates/nouvelle-caledonie-3.jpg', '/img/candidates/nouvelle-caledonie-4.jpg'] },
+  { name: "Miss Pays de la Loire", person: "Maëlle Hamon", photo: '/img/candidates/pays-de-la-loire-1.jpg', photos: ['/img/candidates/pays-de-la-loire-1.jpg', '/img/candidates/pays-de-la-loire-2.jpg', '/img/candidates/pays-de-la-loire-3.jpg', '/img/candidates/pays-de-la-loire-4.jpg'] },
+  { name: "Miss Picardie", person: "Marie Villez", photo: '/img/candidates/picardie-1.jpg', photos: ['/img/candidates/picardie-1.jpg', '/img/candidates/picardie-2.jpg', '/img/candidates/picardie-3.jpg', '/img/candidates/picardie-4.jpg'] },
+  { name: "Miss Poitou-Charentes", person: "Mandy Goudal", photo: '/img/candidates/poitou-charentes-1.jpg', photos: ['/img/candidates/poitou-charentes-1.jpg', '/img/candidates/poitou-charentes-2.jpg', '/img/candidates/poitou-charentes-3.jpg', '/img/candidates/poitou-charentes-4.jpg'] },
+  { name: "Miss Provence", person: "Ophélie Vitalbo", photo: '/img/candidates/provence-1.jpg', photos: ['/img/candidates/provence-1.jpg', '/img/candidates/provence-2.jpg', '/img/candidates/provence-3.jpg'] },
+  { name: "Miss Réunion", person: "Laetitia Roguet", photo: '/img/candidates/reunion-1.jpg', photos: ['/img/candidates/reunion-1.jpg', '/img/candidates/reunion-2.jpg', '/img/candidates/reunion-3.jpg', '/img/candidates/reunion-4.jpg'] },
+  { name: "Miss Rhône-Alpes", person: "Julia Grid-Costantino", photo: '/img/candidates/rhone-alpes-1.jpg', photos: ['/img/candidates/rhone-alpes-1.jpg', '/img/candidates/rhone-alpes-2.jpg', '/img/candidates/rhone-alpes-3.jpg', '/img/candidates/rhone-alpes-4.jpg'] },
+  { name: "Miss Roussillon", person: "Juliette Gauthier", photo: '/img/candidates/roussillon-1.jpg', photos: ['/img/candidates/roussillon-1.jpg', '/img/candidates/roussillon-2.jpg', '/img/candidates/roussillon-3.jpg', '/img/candidates/roussillon-4.jpg'] },
+  { name: "Miss Saint-Martin & Saint-Barthélemy", person: "Naïla Parotte", photo: '/img/candidates/saint-martin-saint-barthelemy-1.jpg', photos: ['/img/candidates/saint-martin-saint-barthelemy-1.jpg', '/img/candidates/saint-martin-saint-barthelemy-2.jpg', '/img/candidates/saint-martin-saint-barthelemy-3.jpg', '/img/candidates/saint-martin-saint-barthelemy-4.jpg'] },
+  { name: "Miss Tahiti", person: "Leia Diard", photo: '/img/candidates/tahiti-1.jpg', photos: ['/img/candidates/tahiti-1.jpg', '/img/candidates/tahiti-2.jpg', '/img/candidates/tahiti-3.jpg', '/img/candidates/tahiti-4.jpg'] }
 ];
 
 // Quiz « univers Miss France »

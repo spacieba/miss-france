@@ -190,6 +190,7 @@ async function loadPronosticsSection() {
         label.innerHTML = `
             <input type="checkbox" id="${inputId}" value="${escapeHtml(candidate.name)}" data-type="top15">
             <img src="${escapeHtml(candidate.photo)}" alt="${escapeHtml(candidate.name)}" class="candidate-photo">
+            ${galleryButton(candidate)}
             <span>${escapeHtml(candidate.name)}${candidate.person ? `<br><small>${escapeHtml(candidate.person)}</small>` : ''}</span>
         `;
         top15Container.appendChild(label);
@@ -224,6 +225,7 @@ async function loadPronosticsSection() {
         label.innerHTML = `
             <input type="checkbox" id="${inputId}" value="${escapeHtml(candidateName)}" data-type="top5">
             ${candidatePhoto ? `<img src="${escapeHtml(candidatePhoto)}" alt="${escapeHtml(candidateName)}" class="candidate-photo">` : ''}
+            ${candidateObj ? galleryButton(candidateObj) : ''}
             <span>${escapeHtml(candidateName)}</span>
         `;
         top5Container.appendChild(label);
@@ -1031,6 +1033,75 @@ async function loadCostumeGallery() {
     } catch (error) {
         console.error('Erreur chargement galerie:', error);
     }
+}
+
+// === GALERIE PHOTOS DES CANDIDATES ===
+
+function galleryButton(candidate) {
+    const count = (candidate.photos || []).length;
+    if (count < 2) return '';
+    return `<button type="button" class="candidate-gallery-btn" data-gallery="${escapeHtml(candidate.name)}" title="Voir les ${count} photos">📷 ${count}</button>`;
+}
+
+// Un clic sur le bouton 📷 ouvre la galerie sans cocher/décocher la candidate
+document.addEventListener('click', (event) => {
+    const btn = event.target.closest('.candidate-gallery-btn');
+    if (!btn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const candidate = candidates.find(c => c.name === btn.dataset.gallery);
+    if (candidate) openCandidateGallery(candidate);
+}, true);
+
+function openCandidateGallery(candidate, startIndex = 0) {
+    const photos = candidate.photos && candidate.photos.length ? candidate.photos : [candidate.photo];
+    let index = startIndex;
+
+    const modal = document.createElement('div');
+    modal.className = 'candidate-gallery-modal';
+    modal.innerHTML = `
+        <button type="button" class="gallery-close" aria-label="Fermer">✕</button>
+        <button type="button" class="gallery-nav gallery-prev" aria-label="Photo précédente">‹</button>
+        <img class="gallery-image" alt="${escapeHtml(candidate.name)}">
+        <button type="button" class="gallery-nav gallery-next" aria-label="Photo suivante">›</button>
+        <div class="gallery-caption">
+            <strong>${escapeHtml(candidate.name)}</strong>${candidate.person ? ` — ${escapeHtml(candidate.person)}` : ''}
+            <div class="gallery-counter"></div>
+        </div>
+    `;
+    const img = modal.querySelector('.gallery-image');
+    const counter = modal.querySelector('.gallery-counter');
+    const show = (i) => {
+        index = (i + photos.length) % photos.length;
+        img.src = photos[index];
+        counter.textContent = `${index + 1} / ${photos.length}`;
+    };
+    const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => {
+        if (e.key === 'Escape') close();
+        else if (e.key === 'ArrowLeft') show(index - 1);
+        else if (e.key === 'ArrowRight') show(index + 1);
+    };
+
+    modal.querySelector('.gallery-prev').onclick = (e) => { e.stopPropagation(); show(index - 1); };
+    modal.querySelector('.gallery-next').onclick = (e) => { e.stopPropagation(); show(index + 1); };
+    modal.querySelector('.gallery-close').onclick = close;
+    modal.onclick = (e) => { if (e.target === modal) close(); };
+
+    // Balayage sur mobile
+    let touchX = null;
+    modal.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+    modal.addEventListener('touchend', (e) => {
+        if (touchX === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 40) show(index + (dx < 0 ? 1 : -1));
+        touchX = null;
+    });
+
+    if (photos.length < 2) modal.querySelectorAll('.gallery-nav').forEach(b => b.remove());
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(modal);
+    show(index);
 }
 
 function openCostumeModal(photoUrl, pseudo) {
