@@ -364,6 +364,22 @@ async function loadEdition() {
         $('une-date').textContent = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
     }
     document.title = `Miss France ${e.year} — Comité parallèle`;
+    renderTheme(e.theme);
+}
+
+// Thème de la soirée : carte sur la Une, dress code au règlement, rappel dans les looks
+function renderTheme(t) {
+    if (!t) return;
+    document.querySelectorAll('.theme-name').forEach(el => { el.textContent = t.name; });
+    document.querySelectorAll('.theme-inline').forEach(el => { el.hidden = false; });
+    $('une-theme-name').textContent = t.name;
+    $('une-theme-tagline').textContent = t.tagline || '';
+    $('une-theme').hidden = false;
+    $('rules-theme-intro').textContent = t.intro || '';
+    $('rules-theme-list').innerHTML = (t.rules || []).map((r, i) => `
+        <li><span class="dress-num">${String(i + 1).padStart(2, '0')}</span>
+            <span class="dress-body"><span class="dress-title">${escapeHtml(r.title)}</span><span class="dress-text">${escapeHtml(r.text)}</span></span></li>`).join('');
+    $('rules-theme').hidden = false;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

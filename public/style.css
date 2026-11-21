@@ -330,9 +330,6 @@ a:hover { color: var(--ink); }
 .feature.blue:hover { background: var(--blue-dark); }
 .feature svg { width: 26px; height: 26px; }
 
-.countdown { display: flex; gap: 18px; align-items: baseline; }
-.countdown span { font-family: var(--serif); font-size: 40px; line-height: 1; }
-.countdown small { font-family: var(--sans); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); margin-left: 4px; }
 
 .une-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 
@@ -718,3 +715,65 @@ a:hover { color: var(--ink); }
 .cand-bio-text { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink); }
 #candidates-grid .cand-hit { cursor: pointer; }
 .modal.has-bio .gallery-stage { max-height: 46vh; }
+
+/* ============================================================
+   Thème de la soirée (moustache, dress code) et page de couverture
+   ============================================================ */
+.stache { width: 44px; height: 15px; fill: currentColor; flex-shrink: 0; }
+
+/* Couverture d'accueil : plus haute, titres de une sur la photo */
+.home-cover { height: min(138vw, 660px); }
+.home-cover::after { height: 62%; background: linear-gradient(180deg, rgba(20,18,26,0) 0%, rgba(20,18,26,0.55) 55%, rgba(20,18,26,0.9) 100%); }
+.home-cover .cover-line { top: 44%; }
+.cover-theme { position: absolute; left: 16px; right: 16px; bottom: 22px; z-index: 2; color: #fff; }
+.cover-theme-kicker { margin: 0 0 4px; display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; }
+.cover-theme-name { margin: 0; font-family: var(--serif); font-style: italic; font-size: clamp(58px, 17vw, 96px); line-height: 0.9; letter-spacing: -0.02em; }
+.cover-theme-tagline { margin: 10px 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+
+/* Compte à rebours */
+.countdown { background: var(--ink); color: var(--paper); padding: 18px 16px 16px; text-align: center; }
+.countdown-cells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 420px; margin: 0 auto; }
+.countdown-cells > div { display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(247,242,238,0.25); }
+.countdown-cells > div:first-child { border-left: 0; }
+.countdown .v { font-family: var(--serif); font-size: clamp(40px, 12vw, 58px); line-height: 0.9; font-variant-numeric: tabular-nums; }
+.countdown .l { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(247,242,238,0.7); }
+.countdown-caption { margin: 14px 0 0; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(247,242,238,0.85); }
+.countdown.live .countdown-cells { display: none; }
+.countdown.live .countdown-caption { margin: 0; font-family: var(--serif); font-size: 26px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--paper); }
+
+.home .login-body { padding-top: 26px; gap: 22px; }
+.home #login-form { display: flex; flex-direction: column; gap: 14px; }
+.home #closed-box .login-pitch { margin-bottom: 8px; }
+.home #closed-box .hint { margin: 0; }
+
+/* Dress code */
+.ornament { display: flex; align-items: center; gap: 14px; color: var(--ink); margin-bottom: 14px; }
+.ornament::before, .ornament::after { content: ''; flex: 1 1 auto; border-top: 1.5px solid var(--ink); }
+.ornament .stache { width: 64px; height: 22px; }
+.dress .headline { margin: 4px 0 10px; }
+.dress-intro { margin: 0 0 6px; font-family: var(--serif); font-size: 22px; line-height: 1.25; }
+.dress-rules { list-style: none; margin: 0; padding: 0; }
+.dress-rules li { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.dress-rules li:last-child { border-bottom: 0; }
+.dress-num { font-family: var(--serif); font-size: 30px; line-height: 1; color: var(--blue); width: 40px; flex-shrink: 0; }
+.dress-body { display: flex; flex-direction: column; gap: 3px; }
+.dress-title { font-family: var(--serif); font-size: 24px; line-height: 1.05; }
+.dress-text { font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+.programme { border-top: 1.5px solid var(--ink); padding-top: 16px; }
+.programme-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.programme-list li { padding: 9px 0 9px 22px; position: relative; font-family: var(--serif); font-size: 20px; line-height: 1.2; border-bottom: 1px solid var(--line); }
+.programme-list li:last-child { border-bottom: 0; }
+.programme-list li::before { content: ''; position: absolute; left: 0; top: 18px; width: 12px; border-top: 1.5px solid var(--blue); }
+.home .login-switch { margin-top: 4px; color: var(--ink-3); font-size: 13px; }
+
+/* Dans l'appli */
+.theme-card { width: 100%; display: flex; align-items: center; gap: 16px; margin: 0 0 24px; padding: 16px; text-align: left; border: 0; background: var(--ink); color: var(--paper); }
+.theme-card .stache { width: 58px; height: 20px; }
+.theme-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.theme-card .kicker { color: rgba(247,242,238,0.75); }
+.theme-card .serif { font-family: var(--serif); font-style: italic; font-size: 34px; line-height: 1; }
+.theme-card .small { font-size: 13px; color: rgba(247,242,238,0.85); }
+.theme-card:hover { background: var(--blue); }
+#rules-theme { margin-bottom: 22px; }
+#rules-theme .subhead em { font-style: italic; color: var(--blue); }
+#admin-open { margin-bottom: 22px; }

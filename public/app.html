@@ -17,6 +17,12 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="moustache" viewBox="0 0 120 40">
+            <path d="M60 14C52 4 36 2 26 10 18 16 10 18 2 12c2 14 16 24 32 20 12-2 20-8 26-14 6 6 14 12 26 14 16 4 30-6 32-20-8 6-16 4-24-2C84 2 68 4 60 14Z"/>
+        </symbol>
+    </svg>
+
     <header class="app-header">
         <div class="app-header-inner">
             <button type="button" class="masthead-mini" data-go="une" aria-label="Retour à la Une">Miss France <em class="edition-year">2027</em></button>
@@ -49,6 +55,11 @@
             </div>
 
             <button type="button" class="btn btn-blue btn-block btn-between" id="replay-reveal" hidden style="margin-bottom: 22px;"><span>Revoir le dernier résultat</span><svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg></button>
+
+            <button type="button" class="theme-card" id="une-theme" data-go="rules" hidden>
+                <svg class="stache" aria-hidden="true"><use href="#moustache"/></svg>
+                <span class="theme-card-body"><span class="kicker">Le thème de la soirée</span><span class="serif" id="une-theme-name"></span><span class="small" id="une-theme-tagline"></span></span>
+            </button>
 
             <p class="kicker">Au sommaire</p>
             <ul class="toc" id="une-toc"></ul>
@@ -221,7 +232,7 @@
         <!-- COSTUME -->
         <section id="costume" class="section" aria-labelledby="costume-title">
             <div class="page-head">
-                <div class="page-head-row"><p class="kicker">Street style</p><p class="kicker">30 · 20 · 10 pts</p></div>
+                <div class="page-head-row"><p class="kicker">Street style<span class="theme-inline" hidden> · <span class="theme-name"></span></span></p><p class="kicker">30 · 20 · 10 pts</p></div>
                 <h1 class="headline" id="costume-title">Les <em>looks</em><br>de la soirée</h1>
             </div>
             <div class="my-look">
@@ -263,6 +274,11 @@
                 <p class="kicker">Mode d'emploi</p>
                 <h1 class="headline" id="rules-title">Le <em>règlement</em></h1>
             </div>
+            <div id="rules-theme" hidden>
+                <h2 class="subhead">Le dress code : <em class="theme-name"></em></h2>
+                <p class="hint" id="rules-theme-intro"></p>
+                <ol class="dress-rules" id="rules-theme-list"></ol>
+            </div>
             <h2 class="subhead">Pronostics</h2>
             <ul class="rules">
                 <li><span>Top <span class="semi-n">12</span> : par candidate bien placée</span><strong>5 pts</strong></li>
@@ -288,6 +304,7 @@
                 <div class="page-head-row"><p class="kicker">Rédaction · admin</p><p class="kicker blue" id="admin-step-label"></p></div>
                 <h1 class="headline" id="admin-title">Les <em>résultats</em><br>officiels</h1>
             </div>
+            <div class="admin-block" id="admin-open"></div>
             <ol class="steps" id="admin-steps">
                 <li data-step="1">1 · Top <span class="semi-n">12</span></li>
                 <li data-step="2">2 · Top 5</li>

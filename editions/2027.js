@@ -277,6 +277,24 @@ module.exports = {
   electionDate: '2026-12-12',          // Date de la soirée
   semiFinalists: 12,                   // Qualifiées au premier tour (12 en 2026, 15 certaines années) : à fixer AVANT l'ouverture des pronostics
   venue: 'Futuroscope Arena (Vienne)',
+  // Thème de la soirée : affiché sur la page de couverture, la Une, le règlement et le concours de looks
+  theme: {
+    name: 'Chic & Poils',
+    tagline: 'Tenue de soirée exigée, pilosité remarquée',
+    intro: "Cette année, on s'habille comme pour monter les marches… avec un détail de barbe, de moustache ou de coiffure que personne n'oubliera.",
+    rules: [
+      { title: 'Le chic', text: 'Tenue de soirée pour tout le monde : robe longue, smoking, costume, nœud papillon. On sort le grand jeu.' },
+      { title: 'Le poil', text: 'Un signe distinctif obligatoire côté barbe, moustache ou cheveux : moustache gominée, barbe pailletée, chignon vertigineux, banane, couleur improbable…' },
+      { title: 'Vrai ou faux', text: 'Postiches, perruques et fausses moustaches sont les bienvenus : seul le résultat compte.' },
+      { title: 'Le concours', text: "Chacun poste son look dans l'appli et vote pour son préféré. Les trois looks les plus votés gagnent 30, 20 et 10 points." }
+    ],
+    programme: [
+      'Les pronostics, du premier tour au podium',
+      'Le quiz Miss France et le vrai test de culture générale des candidates',
+      'Le concours du meilleur look',
+      "Le classement en direct pendant l'émission"
+    ]
+  },
   cultureGLabel: 'Le vrai test passé par les candidates Miss France 2027',
   candidates,
   quizQuestions,

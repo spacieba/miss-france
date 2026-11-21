@@ -18,42 +18,93 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="login">
-        <div class="login-cover">
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="moustache" viewBox="0 0 120 40">
+            <path d="M60 14C52 4 36 2 26 10 18 16 10 18 2 12c2 14 16 24 32 20 12-2 20-8 26-14 6 6 14 12 26 14 16 4 30-6 32-20-8 6-16 4-24-2C84 2 68 4 60 14Z"/>
+        </symbol>
+    </svg>
+
+    <main class="login home">
+        <!-- LA COUVERTURE -->
+        <div class="login-cover home-cover">
             <img id="cover-a" src="/img/candidates/picardie-1.jpg" alt="">
             <img id="cover-b" src="/img/candidates/martinique-1.jpg" alt="" style="opacity: 0">
-            <div class="cover-top"><span>Édition spéciale</span><span id="cover-date">Déc. 2026</span></div>
+            <div class="cover-top"><span>Édition spéciale</span><span id="cover-date">12 déc. 2026</span></div>
             <h1 class="cover-masthead">Miss<br>France</h1>
             <p class="cover-line"><span id="cand-count">31</span> candidates, une seule couronne</p>
-            <span class="cover-tag">Le jeu du comité · <span class="edition-year">2027</span></span>
+            <div class="cover-theme" id="cover-theme" hidden>
+                <p class="cover-theme-kicker"><svg class="stache" aria-hidden="true"><use href="#moustache"/></svg>Le thème de la soirée</p>
+                <p class="cover-theme-name" id="theme-name"></p>
+                <p class="cover-theme-tagline" id="theme-tagline"></p>
+            </div>
         </div>
 
-        <form class="login-body" id="login-form" novalidate>
-            <p class="login-pitch" id="pitch">Faites vos <em>pronostics</em> avant le grand soir.</p>
-            <p class="hint" id="login-hint">Choisis un pseudo et entre le code de soirée. Reprends le même pseudo pour retrouver tes pronostics.</p>
+        <!-- LE COMPTE À REBOURS -->
+        <div class="countdown" id="countdown" role="timer" aria-label="Compte à rebours avant l'élection">
+            <div class="countdown-cells">
+                <div><span class="v" id="cd-d">–</span><span class="l" id="cd-d-l">Jours</span></div>
+                <div><span class="v" id="cd-h">–</span><span class="l">Heures</span></div>
+                <div><span class="v" id="cd-m">–</span><span class="l">Minutes</span></div>
+                <div><span class="v" id="cd-s">–</span><span class="l">Secondes</span></div>
+            </div>
+            <p class="countdown-caption" id="cd-caption">Avant le grand soir</p>
+        </div>
 
-            <div class="login-fields">
-                <label class="field">Pseudo
-                    <input type="text" id="pseudo" placeholder="Votre pseudo" maxlength="24" autocomplete="username" autocapitalize="off" required>
-                </label>
-                <label class="field"><span id="code-label">Code de soirée</span>
-                    <input type="text" id="code" placeholder="Ton code" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
-                </label>
+        <div class="login-body">
+            <!-- Appli fermée : simple annonce -->
+            <div id="closed-box" hidden>
+                <p class="login-pitch">Le comité ouvre <em>bientôt</em>.</p>
+                <p class="hint">Pronostics, quiz et concours de looks arrivent ici même. D'ici là : prépare ta tenue.</p>
             </div>
 
-            <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
+            <!-- Appli ouverte (ou accès organisateur) : connexion -->
+            <form id="login-form" novalidate hidden>
+                <p class="login-pitch" id="pitch">Faites vos <em>pronostics</em> avant le grand soir.</p>
+                <p class="hint" id="login-hint">Choisis un pseudo et entre le code de soirée. Reprends le même pseudo pour retrouver tes pronostics.</p>
 
-            <button type="submit" class="btn btn-block btn-between" id="submit-btn">
-                <span id="submit-label">Entrer</span>
-                <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
-            </button>
+                <div class="login-fields">
+                    <label class="field">Pseudo
+                        <input type="text" id="pseudo" placeholder="Votre pseudo" maxlength="24" autocomplete="username" autocapitalize="off" required>
+                    </label>
+                    <label class="field"><span id="code-label">Code de soirée</span>
+                        <input type="text" id="code" placeholder="Ton code" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+                    </label>
+                </div>
+
+                <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
+
+                <button type="submit" class="btn btn-block btn-between" id="submit-btn">
+                    <span id="submit-label">Entrer</span>
+                    <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
+                </button>
+            </form>
+
+            <!-- LE THÈME ET SES RÈGLES -->
+            <section class="dress" id="dress" hidden aria-labelledby="dress-title">
+                <div class="ornament" aria-hidden="true"><svg class="stache"><use href="#moustache"/></svg></div>
+                <p class="kicker blue">Le dress code</p>
+                <h2 class="headline" id="dress-title"></h2>
+                <p class="dress-intro" id="dress-intro"></p>
+                <ol class="dress-rules" id="dress-rules"></ol>
+            </section>
+
+            <section class="programme" id="programme" hidden>
+                <p class="kicker">Au sommaire le soir J</p>
+                <ul class="programme-list" id="programme-list"></ul>
+            </section>
+
             <button type="button" class="btn-link login-switch" id="switch-btn">Accès organisateur</button>
-        </form>
+        </div>
     </main>
 
     <script>
-        let mode = 'player'; // 'player' : pseudo + code de soirée · 'admin' : pseudo + mot de passe
         const $ = (id) => document.getElementById(id);
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        // ---------- État : appli ouverte aux joueurs ou non ----------
+        let appOpen = false;
+        let mode = 'player'; // 'player' : pseudo + code de soirée · 'admin' : pseudo + mot de passe
+        let electionAt = new Date('2026-12-12T21:10:00+01:00');
 
         // Couverture : les photos des candidates défilent en fondu
         const covers = ['picardie', 'martinique', 'normandie', 'guyane', 'tahiti', 'rhone-alpes', 'bretagne', 'corse', 'aquitaine', 'reunion']
@@ -67,28 +118,47 @@
             img.src = covers[coverIndex];
         }, 4500);
 
-        fetch('/api/edition').then(r => r.ok ? r.json() : null).then(info => {
-            if (!info) return;
-            document.querySelectorAll('.edition-year').forEach(el => { el.textContent = info.year; });
-            $('cand-count').textContent = info.candidatesCount;
-            document.title = `Miss France ${info.year} — Comité parallèle`;
-        }).catch(() => {});
+        // ---------- Compte à rebours ----------
+        const pad = (n) => String(n).padStart(2, '0');
+        function tick() {
+            const diff = electionAt - Date.now();
+            if (diff <= 0) {
+                $('countdown').classList.add('live');
+                $('cd-caption').textContent = diff > -5 * 3600000 ? "C'est ce soir : le show a commencé" : 'Miss France est élue';
+                ['cd-d', 'cd-h', 'cd-m', 'cd-s'].forEach(id => { $(id).textContent = '00'; });
+                return;
+            }
+            const days = Math.floor(diff / 86400000);
+            $('cd-d').textContent = days;
+            $('cd-d-l').textContent = days > 1 ? 'Jours' : 'Jour';
+            $('cd-h').textContent = pad(Math.floor(diff / 3600000) % 24);
+            $('cd-m').textContent = pad(Math.floor(diff / 60000) % 60);
+            $('cd-s').textContent = pad(Math.floor(diff / 1000) % 60);
+        }
+        tick();
+        setInterval(tick, 1000);
 
-        // Déjà connecté : direction l'appli
-        fetch('/api/me').then(r => { if (r.ok) location.replace('/app.html'); }).catch(() => {});
+        // ---------- Affichage selon l'état ----------
+        function render() {
+            const admin = mode === 'admin';
+            $('closed-box').hidden = appOpen || admin;
+            $('login-form').hidden = !appOpen && !admin;
+            const input = $('code');
+            input.type = admin ? 'password' : 'text';
+            input.placeholder = admin ? '••••••' : 'Ton code';
+            input.autocomplete = admin ? 'current-password' : 'off';
+            $('code-label').textContent = admin ? 'Mot de passe' : 'Code de soirée';
+            $('login-hint').hidden = admin;
+            $('pitch').innerHTML = admin ? 'Accès <em>organisateur</em>.' : 'Faites vos <em>pronostics</em> avant le grand soir.';
+            $('switch-btn').textContent = admin ? (appOpen ? "Retour à l'accès joueur" : 'Fermer') : 'Accès organisateur';
+        }
 
         function setMode(next) {
             mode = next;
-            const admin = mode === 'admin';
-            const input = $('code');
-            input.value = '';
-            input.type = admin ? 'password' : 'text';
-            input.placeholder = admin ? '••••••' : "Ton code";
-            input.autocomplete = admin ? 'current-password' : 'off';
-            $('code-label').textContent = admin ? 'Mot de passe' : 'Code de soirée';
-            $('switch-btn').textContent = admin ? "Retour à l'accès joueur" : 'Accès organisateur';
-            $('login-hint').hidden = admin;
+            $('code').value = '';
             showMsg('');
+            render();
+            if (mode === 'admin') { $('login-form').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('pseudo').focus({ preventScroll: true }); }
         }
 
         function showMsg(text, type = 'error') {
@@ -96,6 +166,42 @@
             el.textContent = text;
             el.className = `form-msg ${text ? type : ''}`;
         }
+
+        fetch('/api/edition').then(r => r.ok ? r.json() : null).then(info => {
+            if (!info) { render(); return; }
+            appOpen = Boolean(info.open);
+            $('cand-count').textContent = info.candidatesCount;
+            document.title = `Miss France ${info.year} — Comité parallèle`;
+            if (info.electionDate) {
+                electionAt = new Date(`${info.electionDate}T21:10:00+01:00`);
+                const d = new Date(`${info.electionDate}T12:00:00`);
+                try {
+                    $('cover-date').textContent = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+                    $('cd-caption').textContent = `Avant le grand soir · ${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}, 21 h 10`;
+                } catch { /* formats par défaut */ }
+                tick();
+            }
+            const t = info.theme;
+            if (t) {
+                $('theme-name').textContent = t.name;
+                $('theme-tagline').textContent = t.tagline || '';
+                $('cover-theme').hidden = false;
+                $('dress-title').innerHTML = esc(t.name).replace(/ (&amp;|et) /, ' <em>$1</em> ');
+                $('dress-intro').textContent = t.intro || '';
+                $('dress-rules').innerHTML = (t.rules || []).map((r, i) => `
+                    <li><span class="dress-num">${String(i + 1).padStart(2, '0')}</span>
+                        <span class="dress-body"><span class="dress-title">${esc(r.title)}</span><span class="dress-text">${esc(r.text)}</span></span></li>`).join('');
+                $('dress').hidden = false;
+                if ((t.programme || []).length) {
+                    $('programme-list').innerHTML = t.programme.map(p => `<li>${esc(p)}</li>`).join('');
+                    $('programme').hidden = false;
+                }
+            }
+            render();
+        }).catch(render);
+
+        // Déjà connecté : direction l'appli
+        fetch('/api/me').then(r => { if (r.ok) location.replace('/app.html'); }).catch(() => {});
 
         $('switch-btn').addEventListener('click', () => setMode(mode === 'player' ? 'admin' : 'player'));
 

@@ -170,12 +170,24 @@ function rateLimit(name, { windowMs, max }) {
 const authLimiter = rateLimit('auth', { windowMs: 15 * 60 * 1000, max: 80 });
 const uploadLimiter = rateLimit('upload', { windowMs: 10 * 60 * 1000, max: 15 });
 
+// Ouverture aux joueurs : tant que l'admin n'a pas ouvert l'appli (official_results.app_open),
+// seule la page de couverture est visible et seuls les admins peuvent se connecter.
+let openCache = { value: false, at: 0 };
+async function isAppOpen() {
+  if (Date.now() - openCache.at < 5000) return openCache.value;
+  const [row] = await sql`select app_open from official_results where id = 1`;
+  openCache = { value: Boolean(row?.app_open), at: Date.now() };
+  return openCache.value;
+}
+const CLOSED_MESSAGE = "L'appli n'est pas encore ouverte : rendez-vous bientôt !";
+
 // Authentification : utilisateur rechargé depuis la base à chaque requête
 const requireAuth = async (req, res, next) => {
   try {
     if (!req.session.userId) return res.status(401).json({ error: 'Non authentifié' });
     const [user] = await sql`select id, pseudo::text as pseudo, is_admin from users where id = ${req.session.userId}`;
     if (!user) return res.status(401).json({ error: 'Non authentifié' });
+    if (!user.is_admin && !await isAppOpen()) return res.status(401).json({ error: CLOSED_MESSAGE });
     req.user = user;
     next();
   } catch (e) { next(e); }
@@ -309,8 +321,10 @@ const recalculateCostumePoints = () => sql.begin(async tx => awardByRank(tx, awa
 // ROUTES : ÉDITION & AUTHENTIFICATION
 // ============================================
 
-app.get('/api/edition', (req, res) => {
+app.get('/api/edition', wrap(async (req, res) => {
   res.json({
+    open: await isAppOpen(),
+    theme: edition.theme || null,
     year: YEAR,
     semiFinalists: SEMI,
     electionDate: edition.electionDate,
@@ -321,7 +335,7 @@ app.get('/api/edition', (req, res) => {
     cultureGCount: cultureGTotalQuestions,
     cultureGMaxPoints: cultureGTotalPoints
   });
-});
+}));
 
 function startSession(req, userId) {
   return new Promise((resolve, reject) => {
@@ -356,6 +370,7 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
       return res.status(401).json({ error: 'Mot de passe organisateur incorrect' });
     }
   } else {
+    if (!await isAppOpen()) return res.status(403).json({ error: CLOSED_MESSAGE });
     if (!PARTY_CODE) return res.status(503).json({ error: "Le code de soirée n'est pas encore configuré." });
     if (code.trim().toUpperCase() !== PARTY_CODE) return res.status(401).json({ error: 'Code de soirée incorrect' });
     if (!user) {
@@ -777,7 +792,8 @@ app.get('/api/official-results', requireAuth, wrap(async (req, res) => {
   const r = await getOfficial();
   res.json({
     top15: r.top15 || [], top5: r.top5 || [], classement_final: r.classement_final || [],
-    miss_france: r.miss_france, current_step: r.current_step, updated_at: r.updated_at
+    miss_france: r.miss_france, current_step: r.current_step, updated_at: r.updated_at,
+    app_open: Boolean(r.app_open)
   });
 }));
 
@@ -883,6 +899,13 @@ const admin = express.Router();
 admin.use(requireAuth, requireAdmin);
 
 admin.get('/candidates', (req, res) => res.json(candidates));
+
+admin.post('/app-open', wrap(async (req, res) => {
+  const open = req.body.open === true;
+  await sql`update official_results set app_open = ${open} where id = 1`;
+  openCache = { value: open, at: Date.now() };
+  res.json({ success: true, open, message: open ? "L'appli est ouverte aux joueurs." : "L'appli est refermée : seule la couverture est visible." });
+}));
 
 admin.get('/stats', wrap(async (req, res) => {
   const [{ users }] = await sql`select count(*) as users from users where not is_admin`;
