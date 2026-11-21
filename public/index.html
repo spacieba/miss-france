@@ -198,7 +198,14 @@
                 }
             }
             render();
-        }).catch(render);
+            openAdminFromLink();
+        }).catch(() => { render(); openAdminFromLink(); });
+
+        // Lien direct pour l'organisateur : /#admin ouvre tout de suite le formulaire mot de passe
+        function openAdminFromLink() {
+            if (location.hash === '#admin' && mode !== 'admin') setMode('admin');
+        }
+        window.addEventListener('hashchange', openAdminFromLink);
 
         // Déjà connecté : direction l'appli
         fetch('/api/me').then(r => { if (r.ok) location.replace('/app.html'); }).catch(() => {});
