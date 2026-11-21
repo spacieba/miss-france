@@ -26,7 +26,7 @@
 
     <main class="login home">
         <!-- LA COUVERTURE -->
-        <div class="login-cover home-cover">
+        <div class="login-cover" id="cover">
             <img id="cover-a" src="/img/candidates/picardie-1.jpg" alt="">
             <img id="cover-b" src="/img/candidates/martinique-1.jpg" alt="" style="opacity: 0">
             <div class="cover-top"><span>Édition spéciale</span><span id="cover-date">12 déc. 2026</span></div>
@@ -40,7 +40,7 @@
         </div>
 
         <!-- LE COMPTE À REBOURS -->
-        <div class="countdown" id="countdown" role="timer" aria-label="Compte à rebours avant l'élection">
+        <div class="countdown" id="countdown" hidden role="timer" aria-label="Compte à rebours avant l'élection">
             <div class="countdown-cells">
                 <div><span class="v" id="cd-d">–</span><span class="l" id="cd-d-l">Jours</span></div>
                 <div><span class="v" id="cd-h">–</span><span class="l">Heures</span></div>
@@ -53,14 +53,14 @@
         <div class="login-body">
             <!-- Appli fermée : simple annonce -->
             <div id="closed-box" hidden>
-                <p class="login-pitch">Le comité ouvre <em>bientôt</em>.</p>
+                <p class="login-pitch">Bonsoir <em id="hello-pseudo"></em>. Le comité ouvre <em>bientôt</em>.</p>
                 <p class="hint">Pronostics, quiz et concours de looks arrivent ici même. D'ici là : prépare ta tenue.</p>
             </div>
 
             <!-- Appli ouverte (ou accès organisateur) : connexion -->
             <form id="login-form" novalidate hidden>
-                <p class="login-pitch" id="pitch">Faites vos <em>pronostics</em> avant le grand soir.</p>
-                <p class="hint" id="login-hint">Entre ton nom ou un pseudo, puis le mot de passe de la soirée. Reprends le même nom pour retrouver tes pronostics.</p>
+                <p class="login-pitch" id="pitch">Bienvenue au <em>comité</em>.</p>
+                <p class="hint" id="login-hint">Entre ton nom ou un pseudo, puis le mot de passe de la soirée. Reprends toujours le même nom.</p>
 
                 <div class="login-fields">
                     <label class="field">Nom ou pseudo
@@ -94,6 +94,7 @@
             </section>
 
             <button type="button" class="btn-link login-switch" id="switch-btn">Accès organisateur</button>
+            <button type="button" class="btn-link login-switch" id="logout-btn" hidden>Ce n'est pas moi : changer de nom</button>
         </div>
     </main>
 
@@ -103,6 +104,8 @@
 
         // ---------- État : appli ouverte aux joueurs ou non ----------
         let appOpen = false;
+        let me = null;        // joueur identifié alors que l'appli est encore fermée : il voit la couverture
+        let themeReady = false;
         let mode = 'player'; // 'player' : pseudo + code de soirée · 'admin' : pseudo + mot de passe
         let electionAt = new Date('2026-12-12T21:10:00+01:00');
 
@@ -139,18 +142,28 @@
         setInterval(tick, 1000);
 
         // ---------- Affichage selon l'état ----------
+        // Deux écrans : l'identification (nom + mot de passe), puis la couverture
+        // (thème, compte à rebours, dress code) tant que l'appli n'est pas ouverte.
         function render() {
             const admin = mode === 'admin';
-            $('closed-box').hidden = appOpen || admin;
-            $('login-form').hidden = !appOpen && !admin;
+            const teaser = Boolean(me);
+            $('cover').classList.toggle('home-cover', teaser);
+            $('cover-theme').hidden = !teaser || !themeReady;
+            $('countdown').hidden = !teaser;
+            $('closed-box').hidden = !teaser;
+            $('dress').hidden = !teaser || !themeReady;
+            $('programme').hidden = !teaser || !themeReady || !$('programme-list').children.length;
+            $('login-form').hidden = teaser;
+            $('switch-btn').hidden = teaser;
+            $('logout-btn').hidden = !teaser;
+            if (teaser) $('hello-pseudo').textContent = me.pseudo;
             const input = $('code');
             input.type = admin ? 'password' : 'text';
             input.placeholder = admin ? '••••••' : 'De la soirée';
             input.autocomplete = admin ? 'current-password' : 'off';
-            $('code-label').textContent = 'Mot de passe';
             $('login-hint').hidden = admin;
-            $('pitch').innerHTML = admin ? 'Accès <em>organisateur</em>.' : 'Faites vos <em>pronostics</em> avant le grand soir.';
-            $('switch-btn').textContent = admin ? (appOpen ? "Retour à l'accès joueur" : 'Fermer') : 'Accès organisateur';
+            $('pitch').innerHTML = admin ? 'Accès <em>organisateur</em>.' : 'Bienvenue au <em>comité</em>.';
+            $('switch-btn').textContent = admin ? "Retour à l'accès invité" : 'Accès organisateur';
         }
 
         function setMode(next) {
@@ -185,16 +198,14 @@
             if (t) {
                 $('theme-name').textContent = t.name;
                 $('theme-tagline').textContent = t.tagline || '';
-                $('cover-theme').hidden = false;
                 $('dress-title').innerHTML = esc(t.name).replace(/ (&amp;|et) /, ' <em>$1</em> ');
                 $('dress-intro').textContent = t.intro || '';
                 $('dress-rules').innerHTML = (t.rules || []).map((r, i) => `
                     <li><span class="dress-num">${String(i + 1).padStart(2, '0')}</span>
                         <span class="dress-body"><span class="dress-title">${esc(r.title)}</span><span class="dress-text">${esc(r.text)}</span></span></li>`).join('');
-                $('dress').hidden = false;
+                themeReady = true;
                 if ((t.programme || []).length) {
                     $('programme-list').innerHTML = t.programme.map(p => `<li>${esc(p)}</li>`).join('');
-                    $('programme').hidden = false;
                 }
             }
             render();
@@ -207,8 +218,32 @@
         }
         window.addEventListener('hashchange', openAdminFromLink);
 
-        // Déjà connecté : direction l'appli
-        fetch('/api/me').then(r => { if (r.ok) location.replace('/app.html'); }).catch(() => {});
+        // Déjà identifié : l'appli si elle est ouverte (ou pour l'organisateur), sinon la couverture
+        function enter(session) {
+            appOpen = Boolean(session.open);
+            if (session.isAdmin || appOpen) { location.replace('/app.html'); return; }
+            me = { pseudo: session.pseudo };
+            render();
+            window.scrollTo({ top: 0 });
+        }
+        function checkSession() {
+            return fetch('/api/session').then(r => r.ok ? r.json() : null).then(s => { if (s && s.loggedIn) enter(s); }).catch(() => {});
+        }
+        checkSession();
+        // La couverture reste affichée : on regarde de temps en temps si l'appli a ouvert
+        setInterval(() => { if (me && !document.hidden) checkSession(); }, 30000);
+        document.addEventListener('visibilitychange', () => { if (me && !document.hidden) checkSession(); });
+
+        $('logout-btn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+            me = null;
+            $('pseudo').value = '';
+            $('code').value = '';
+            $('submit-btn').disabled = false;
+            showMsg('');
+            render();
+            window.scrollTo({ top: 0 });
+        });
 
         $('switch-btn').addEventListener('click', () => setMode(mode === 'player' ? 'admin' : 'player'));
 
@@ -233,7 +268,7 @@
                     return;
                 }
                 showMsg(data.created ? 'Bienvenue au comité !' : 'Bon retour !', 'success');
-                location.href = '/app.html';
+                enter({ pseudo: data.pseudo, isAdmin: data.isAdmin, open: data.open });
             } catch {
                 showMsg('Impossible de joindre le serveur.');
                 $('submit-btn').disabled = false;

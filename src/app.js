@@ -350,6 +350,8 @@ function startSession(req, userId) {
 // Connexion : un joueur entre avec son pseudo + le code de soirée (variable PARTY_CODE,
 // insensible à la casse) ; son compte est créé à la première connexion.
 // Les admins, eux, gardent leur mot de passe (ADMIN_USERS), saisi dans le même champ.
+// Tant que l'appli est fermée, un joueur identifié ne voit que la page de couverture
+// (requireAuth lui refuse toutes les routes de l'appli).
 const PARTY_CODE = String(process.env.PARTY_CODE || '').trim().toUpperCase();
 if (!PARTY_CODE) console.warn('⚠️  PARTY_CODE non défini : les joueurs ne peuvent pas se connecter.');
 const NO_PASSWORD = '!'; // les joueurs n'ont pas de mot de passe (valeur qu'aucun hash bcrypt ne peut égaler)
@@ -370,7 +372,6 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
       return res.status(401).json({ error: 'Mot de passe organisateur incorrect' });
     }
   } else {
-    if (!await isAppOpen()) return res.status(403).json({ error: CLOSED_MESSAGE });
     if (!PARTY_CODE) return res.status(503).json({ error: "Le mot de passe de la soirée n'est pas encore configuré." });
     if (code.trim().toUpperCase() !== PARTY_CODE) return res.status(401).json({ error: 'Mot de passe de la soirée incorrect' });
     if (!user) {
@@ -391,7 +392,15 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
   }
 
   await startSession(req, user.id);
-  res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin, created });
+  res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin, created, open: await isAppOpen() });
+}));
+
+app.get('/api/session', wrap(async (req, res) => {
+  const open = await isAppOpen();
+  if (!req.session.userId) return res.json({ loggedIn: false, open });
+  const [user] = await sql`select pseudo::text as pseudo, is_admin from users where id = ${req.session.userId}`;
+  if (!user) return res.json({ loggedIn: false, open });
+  res.json({ loggedIn: true, pseudo: user.pseudo, isAdmin: user.is_admin, open });
 }));
 
 app.post('/api/logout', (req, res) => {

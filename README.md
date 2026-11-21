@@ -87,7 +87,7 @@ Les comptes admin se connectent depuis la page d'accueil via **Accès organisate
 Sans `ADMIN_USERS`, aucun compte admin n'est créé (un avertissement apparaît dans les logs).
 
 #### Avant la soirée : couverture seule, puis ouverture
-Tant que l'admin n'a pas ouvert l'appli (onglet Admin → **L'ouverture**), les invités ne voient que la page de couverture : thème de la soirée, dress code, compte à rebours. Seuls les admins peuvent se connecter (lien *Accès organisateur*). L'état est stocké dans `official_results.app_open` et n'est pas touché par la remise à zéro.
+Tant que l'admin n'a pas ouvert l'appli (onglet Admin → **L'ouverture**), les invités ne voient que la page de couverture : thème de la soirée, dress code, compte à rebours. Les invités s'identifient d'abord (nom ou pseudo + mot de passe de la soirée), puis voient cette couverture ; seuls les admins entrent dans l'appli (lien *Accès organisateur*). L'état est stocké dans `official_results.app_open` et n'est pas touché par la remise à zéro.
 
 Le thème (nom, accroche, règles du dress code, programme) se règle dans `theme` du fichier d'édition.
 
