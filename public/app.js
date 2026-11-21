@@ -248,6 +248,7 @@ async function loadUne() {
 
     $('une-pseudo').textContent = App.user.pseudo;
     renderWhereLine();
+    renderTeamCard();
 
     // Couverture : ma future Miss France, sinon une candidate au hasard (fixe pour la journée)
     const or = pronos?.prono_or;
@@ -374,6 +375,32 @@ async function loadEdition() {
 // ---------- Sur place ou ailleurs ----------
 
 const placeName = () => App.edition.place || 'la soirée';
+const teamInfo = (key) => (App.edition.teams || []).find(t => t.key === key) || null;
+
+// Carte « ton équipe » sur la Une, et annonce plein écran la première fois
+function renderTeamCard() {
+    const t = App.user.isAdmin ? null : teamInfo(App.user.team);
+    const card = $('une-team');
+    card.hidden = !t;
+    if (!t) return;
+    card.className = `team-card team-${t.key}`;
+    $('une-team-name').textContent = t.name;
+    $('une-team-motto').textContent = t.motto || '';
+    let seen = null;
+    try { seen = localStorage.getItem('mf-team-seen'); } catch { /* stockage indisponible */ }
+    if (seen === `${App.user.id}:${t.key}`) return;
+    try { localStorage.setItem('mf-team-seen', `${App.user.id}:${t.key}`); } catch { /* ignoré */ }
+    openModal(`
+        ${modalTop('Le tirage au sort')}
+        <div class="team-reveal team-${t.key}">
+            <p class="kicker">Tu rejoins</p>
+            <h2 class="team-reveal-name">${escapeHtml(t.name)}</h2>
+            <p class="team-reveal-motto">${escapeHtml(t.motto || '')}</p>
+        </div>
+        <p class="hint">Les équipes sont tirées au hasard, à effectifs égaux. Tes points comptent pour ton équipe, et des épreuves collectives viendront départager les deux camps pendant la soirée.</p>
+        <button type="button" class="btn btn-block" data-close>C'est parti</button>`);
+    if (window.MFX) window.MFX.fanfare();
+}
 const isAway = () => !App.user.isAdmin && App.user.location === 'away';
 
 function renderWhereLine() {
@@ -400,9 +427,11 @@ function askWhere({ required = false } = {}) {
             try {
                 const data = await api('/api/me/location', { method: 'POST', body: { location: b.dataset.pick } });
                 App.user.location = data.location;
+                App.user.team = data.team || null;
                 try { localStorage.setItem('mf-where', data.location); } catch { /* ignoré */ }
                 close();
                 renderWhereLine();
+                renderTeamCard();
                 const loader = App.loaders[App.current];
                 if (loader) Promise.resolve(loader()).catch(() => {});
             } catch (err) { toast(err.message, 'error'); }

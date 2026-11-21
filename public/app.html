@@ -51,6 +51,9 @@
             </div>
 
             <p class="une-hello">Bonsoir <em id="une-pseudo"></em>.</p>
+            <button type="button" class="team-card" id="une-team" data-go="leaderboard" hidden>
+                <span class="kicker">Ton équipe</span><span class="serif" id="une-team-name"></span><span class="small" id="une-team-motto"></span>
+            </button>
             <p class="une-where" id="une-where" hidden><span id="une-where-text"></span> <button type="button" class="btn-link" id="une-where-change">Changer</button></p>
 
             <div class="stat-row">
@@ -274,16 +277,16 @@
             </div>
             <div class="lb-tabs" role="tablist" aria-label="Classements">
                 <button type="button" class="lb-tab active" data-lb="total">Général</button>
-                <button type="button" class="lb-tab" data-lb="pronostics">Pronostics</button>
+                <button type="button" class="lb-tab" data-lb="home" id="lb-tab-home" hidden><span class="place-name">Jarrie</span></button>
+                <button type="button" class="lb-tab" data-lb="teams" id="lb-tab-teams" hidden>Équipes</button>
                 <button type="button" class="lb-tab" data-lb="quiz">Quiz</button>
                 <button type="button" class="lb-tab" data-lb="culture">Culture G</button>
                 <button type="button" class="lb-tab" data-lb="blind">Blind test</button>
                 <button type="button" class="lb-tab" data-lb="costume">Costume</button>
             </div>
-            <div class="lb-where" id="lb-where" role="group" aria-label="Filtrer par lieu">
-                <button type="button" class="chip active" data-where-filter="all">Tout le monde</button>
-                <button type="button" class="chip" data-where-filter="home">À <span class="place-name">Jarrie</span></button>
-                <button type="button" class="chip" data-where-filter="away">Ailleurs</button>
+            <div class="lb-where" id="lb-mode" role="group" aria-label="Épreuves prises en compte">
+                <button type="button" class="chip active" data-lb-mode="all">Toutes les épreuves</button>
+                <button type="button" class="chip" data-lb-mode="pronos">Pronostics seuls</button>
             </div>
             <div id="lb-content"></div>
         </section>
@@ -338,6 +341,7 @@
             <div class="admin-block" id="admin-step1"></div>
             <div class="admin-block" id="admin-step2"></div>
             <div class="admin-block" id="admin-step3"></div>
+            <div class="admin-block" id="admin-teams"></div>
             <div class="admin-block" id="admin-blind"></div>
             <div class="admin-block" id="admin-games"></div>
             <div class="admin-block" id="admin-players">

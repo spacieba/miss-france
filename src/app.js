@@ -185,7 +185,7 @@ const CLOSED_MESSAGE = "L'appli n'est pas encore ouverte : rendez-vous bientôt 
 const requireAuth = async (req, res, next) => {
   try {
     if (!req.session.userId) return res.status(401).json({ error: 'Non authentifié' });
-    const [user] = await sql`select id, pseudo::text as pseudo, is_admin, location from users where id = ${req.session.userId}`;
+    const [user] = await sql`select id, pseudo::text as pseudo, is_admin, location, team from users where id = ${req.session.userId}`;
     if (!user) return res.status(401).json({ error: 'Non authentifié' });
     if (!user.is_admin && !await isAppOpen()) return res.status(401).json({ error: CLOSED_MESSAGE });
     req.user = user;
@@ -325,6 +325,7 @@ app.get('/api/edition', wrap(async (req, res) => {
   res.json({
     open: await isAppOpen(),
     place: edition.party?.place || null,
+    teams: TEAMS,
     theme: edition.theme || null,
     year: YEAR,
     semiFinalists: SEMI,
@@ -357,9 +358,28 @@ const PARTY_CODE = String(process.env.PARTY_CODE || '').trim().toUpperCase();
 if (!PARTY_CODE) console.warn('⚠️  PARTY_CODE non défini : les joueurs ne peuvent pas se connecter.');
 const NO_PASSWORD = '!'; // les joueurs n'ont pas de mot de passe (valeur qu'aucun hash bcrypt ne peut égaler)
 
-const findUser = async (p) => (await sql`select id, pseudo::text as pseudo, password, is_admin, location from users where pseudo = ${p}`)[0];
+const findUser = async (p) => (await sql`select id, pseudo::text as pseudo, password, is_admin, location, team from users where pseudo = ${p}`)[0];
 // Où le joueur regarde l'élection : 'home' (sur place, chez l'organisateur) ou 'away' (ailleurs)
 const cleanLocation = (v) => (v === 'home' || v === 'away' ? v : null);
+
+// Équipes : réservées aux joueurs sur place, tirées au hasard en gardant des effectifs égaux
+const TEAMS = edition.party?.teams || [];
+const teamOf = (key) => TEAMS.find(t => t.key === key) || null;
+async function syncTeam(userId, location, current) {
+  if (!TEAMS.length) return null;
+  if (location !== 'home') {
+    if (current) await sql`update users set team = null where id = ${userId}`;
+    return null;
+  }
+  if (teamOf(current)) return current;
+  const counts = await sql`select team, count(*) as n from users where not is_admin and location = 'home' and team is not null group by team`;
+  const size = (key) => Number(counts.find(c => c.team === key)?.n || 0);
+  const smallest = Math.min(...TEAMS.map(t => size(t.key)));
+  const pool = TEAMS.filter(t => size(t.key) === smallest);
+  const team = pool[crypto.randomInt(pool.length)].key;
+  await sql`update users set team = ${team} where id = ${userId}`;
+  return team;
+}
 
 app.post('/api/login', authLimiter, wrap(async (req, res) => {
   const code = typeof req.body.code === 'string' ? req.body.code : '';
@@ -400,6 +420,7 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
     await sql`update users set location = ${location} where id = ${user.id}`;
     user.location = location;
   }
+  if (!user.is_admin) user.team = await syncTeam(user.id, user.location, user.team);
   await startSession(req, user.id);
   res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin, created, location: user.location || null, open: await isAppOpen() });
 }));
@@ -408,7 +429,8 @@ app.post('/api/me/location', requireAuth, wrap(async (req, res) => {
   const location = cleanLocation(req.body.location);
   if (!location) return res.status(400).json({ error: 'Choix invalide' });
   await sql`update users set location = ${location} where id = ${req.user.id}`;
-  res.json({ success: true, location });
+  const team = req.user.is_admin ? null : await syncTeam(req.user.id, location, req.user.team);
+  res.json({ success: true, location, team });
 }));
 
 app.get('/api/session', wrap(async (req, res) => {
@@ -427,9 +449,13 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/me', requireAuth, wrap(async (req, res) => {
+  // Joueur sur place sans équipe (compte plus ancien que les équipes) : on le tire au sort maintenant
+  if (!req.user.is_admin && req.user.location === 'home' && !teamOf(req.user.team)) {
+    req.user.team = await syncTeam(req.user.id, 'home', req.user.team);
+  }
   const [score] = await sql`select * from scores where user_id = ${req.user.id}`;
   res.json({
-    user: { id: req.user.id, pseudo: req.user.pseudo, is_admin: req.user.is_admin ? 1 : 0, isAdmin: req.user.is_admin, location: req.user.location || null, avatar: null },
+    user: { id: req.user.id, pseudo: req.user.pseudo, is_admin: req.user.is_admin ? 1 : 0, isAdmin: req.user.is_admin, location: req.user.location || null, team: req.user.team || null, avatar: null },
     partyCode: PARTY_CODE || null,
     score
   });
@@ -888,12 +914,41 @@ app.post('/api/blind/answer', requireAuth, wrap(async (req, res) => {
 }));
 
 // ============================================
+// ÉQUIPES : score = moyenne des points individuels des membres (pour ne pas avantager
+// l'équipe la plus nombreuse) + points gagnés aux épreuves d'équipe saisies par l'admin.
+// ============================================
+
+async function teamStandings() {
+  const members = await sql`
+    select u.id, u.pseudo::text as pseudo, u.team, s.total_score, s.pronostics_score from users u join scores s on s.user_id = u.id
+    where not u.is_admin and u.location = 'home' and u.team is not null order by s.total_score desc, u.pseudo asc`;
+  const events = await sql`select id, label, team, points from team_events order by id`;
+  const round1 = (n) => Math.round(n * 10) / 10;
+  return TEAMS.map(t => {
+    const mine = members.filter(m => m.team === t.key);
+    const average = mine.length ? mine.reduce((n, m) => n + Number(m.total_score), 0) / mine.length : 0;
+    const averagePronos = mine.length ? mine.reduce((n, m) => n + Number(m.pronostics_score), 0) / mine.length : 0;
+    const ev = events.filter(e => e.team === t.key);
+    const bonus = ev.reduce((n, e) => n + e.points, 0);
+    return {
+      ...t, size: mine.length, average: round1(average), bonus, total: round1(average + bonus), averagePronos: round1(averagePronos),
+      members: mine.map(m => ({ id: m.id, pseudo: m.pseudo, points: Number(m.total_score), pronos: Number(m.pronostics_score) })),
+      events: ev.map(e => ({ id: e.id, label: e.label, points: e.points }))
+    };
+  });
+}
+
+app.get('/api/teams', requireAuth, wrap(async (req, res) => {
+  res.json({ teams: await teamStandings(), myTeam: req.user.team || null });
+}));
+
+// ============================================
 // ROUTES : CLASSEMENT
 // ============================================
 
 app.get('/api/leaderboard', requireAuth, wrap(async (req, res) => {
   res.json(await sql`
-    select u.pseudo::text as pseudo, u.location, s.user_id, s.quiz_score, s.culture_g_score, s.pronostics_score, s.defis_score, s.blind_points, s.total_score
+    select u.pseudo::text as pseudo, u.location, u.team, s.user_id, s.quiz_score, s.culture_g_score, s.pronostics_score, s.defis_score, s.blind_points, s.total_score
     from scores s join users u on s.user_id = u.id
     where not u.is_admin order by s.total_score desc, u.pseudo asc`);
 }));
@@ -1066,18 +1121,45 @@ admin.get('/stats', wrap(async (req, res) => {
 
 admin.get('/users', wrap(async (req, res) => {
   const rows = await sql`
-    select u.id, u.pseudo::text as pseudo, u.is_admin, u.location, u.costume_photo_public, p.version,
+    select u.id, u.pseudo::text as pseudo, u.is_admin, u.location, u.team, u.costume_photo_public, p.version,
            s.total_score, s.quiz_score, s.pronostics_score, s.culture_g_score, s.defis_score
     from users u left join scores s on u.id = s.user_id left join costume_photos p on p.user_id = u.id
     order by u.pseudo`;
   res.json(rows.map(({ version, ...r }) => ({ ...r, is_admin: r.is_admin ? 1 : 0, costume_photo: photoUrl(r.id, version) })));
 }));
 
+// Changer un joueur d'équipe à la main
+admin.put('/users/:id/team', wrap(async (req, res) => {
+  const team = teamOf(req.body.team);
+  if (!team) return res.status(400).json({ error: 'Équipe inconnue' });
+  const [target] = await sql`update users set team = ${team.key} where id = ${Number(req.params.id)} and not is_admin and location = 'home' returning id`;
+  if (!target) return res.status(404).json({ error: 'Joueur non trouvé (ou pas sur place)' });
+  res.json({ success: true, message: `Joueur passé dans l'${team.name}.` });
+}));
+
+// Épreuves d'équipe (karaoké, défis…) : l'admin attribue des points à une équipe
+admin.post('/team-events', wrap(async (req, res) => {
+  const team = teamOf(req.body.team);
+  const label = typeof req.body.label === 'string' ? req.body.label.trim().slice(0, 60) : '';
+  const points = Number(req.body.points);
+  if (!team) return res.status(400).json({ error: 'Choisis une équipe' });
+  if (!label) return res.status(400).json({ error: "Donne un nom à l'épreuve" });
+  if (!Number.isInteger(points) || points === 0 || Math.abs(points) > 500) return res.status(400).json({ error: 'Points invalides' });
+  await sql`insert into team_events (label, team, points) values (${label}, ${team.key}, ${points})`;
+  res.json({ success: true, message: `${points > 0 ? '+' : ''}${points} pts pour l'${team.name}.`, teams: await teamStandings() });
+}));
+
+admin.delete('/team-events/:id', wrap(async (req, res) => {
+  await sql`delete from team_events where id = ${Number(req.params.id)}`;
+  res.json({ success: true, message: 'Épreuve supprimée.', teams: await teamStandings() });
+}));
+
 admin.put('/users/:id/location', wrap(async (req, res) => {
   const location = cleanLocation(req.body.location);
   if (!location) return res.status(400).json({ error: 'Choix invalide' });
-  const r = await sql`update users set location = ${location} where id = ${Number(req.params.id)} and not is_admin`;
-  if (r.count === 0) return res.status(404).json({ error: 'Joueur non trouvé' });
+  const [target] = await sql`update users set location = ${location} where id = ${Number(req.params.id)} and not is_admin returning id, team`;
+  if (!target) return res.status(404).json({ error: 'Joueur non trouvé' });
+  await syncTeam(target.id, location, target.team);
   res.json({ success: true, message: location === 'home' ? 'Joueur noté sur place.' : 'Joueur noté à distance.' });
 }));
 
@@ -1185,6 +1267,7 @@ admin.post('/reset-all-data', wrap(async (req, res) => {
     await tx`update scores set quiz_score = 0, quiz_correct = 0, culture_g_score = 0, culture_g_correct = 0,
       pronostics_score = 0, defis_score = 0, blind_points = 0, total_score = 0`;
     await tx`delete from blind_answers`;
+    await tx`delete from team_events`;
     await tx`update official_results set blind = ${tx.json({ phase: 'idle', index: -1 })} where id = 1`;
     await tx`update official_results set top15 = null, top5 = null, classement_final = null, miss_france = null,
       current_step = 0, updated_at = now() where id = 1`;

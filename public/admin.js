@@ -44,6 +44,7 @@ function renderAdmin() {
     });
 
     renderAdminBlind().catch(() => {});
+    renderAdminTeams().catch(() => {});
 
     const all = App.candidates.map(c => c.name);
 
@@ -176,11 +177,12 @@ async function loadAdminUsers() {
     box.innerHTML = Admin.users.map(u => `
         <div class="user-row" data-user="${u.id}">
             ${u.costume_photo ? `<img src="${escapeHtml(u.costume_photo)}" alt="">` : ''}
-            <span class="serif" data-name>${escapeHtml(u.pseudo)}${u.is_admin ? ' <span class="small muted">(admin)</span>' : ` <span class="small muted">· ${u.location === 'home' ? 'sur place' : u.location === 'away' ? 'à distance' : 'lieu non indiqué'}</span>`}</span>
+            <span class="serif" data-name>${escapeHtml(u.pseudo)}${u.is_admin ? ' <span class="small muted">(admin)</span>' : ` <span class="small muted">· ${u.location === 'home' ? `sur place${teamInfo(u.team) ? ` · ${teamInfo(u.team).short}` : ''}` : u.location === 'away' ? 'à distance' : 'lieu non indiqué'}</span>`}</span>
             <span class="small">${u.total_score || 0} pts</span>
             ${u.is_admin ? '' : `
                 <button type="button" class="icon-btn" data-user-act="rename">Renommer</button>
                 <button type="button" class="icon-btn" data-user-act="where">${u.location === 'home' ? '→ À distance' : '→ Sur place'}</button>
+                ${u.location === 'home' && (App.edition.teams || []).length > 1 ? '<button type="button" class="icon-btn" data-user-act="team">Changer d\'équipe</button>' : ''}
                 ${u.costume_photo ? '<button type="button" class="icon-btn" data-user-act="photo">Photo ✕</button>' : ''}
                 <button type="button" class="icon-btn danger" data-user-act="delete">Supprimer</button>`}
         </div>`).join('') + `<p class="hint" style="margin-top: 10px;">${Admin.users.length} compte(s).</p>`;
@@ -195,6 +197,12 @@ async function adminUserAct(id, act) {
             if (!pseudo || pseudo.trim() === user.pseudo) return;
             const data = await api(`/api/admin/users/${id}`, { method: 'PUT', body: { pseudo: pseudo.trim() } });
             toast(data.message, 'success');
+        } else if (act === 'team') {
+            const teams = App.edition.teams || [];
+            const other = teams[(teams.findIndex(t => t.key === user.team) + 1) % teams.length];
+            const data = await api(`/api/admin/users/${id}/team`, { method: 'PUT', body: { team: other.key } });
+            toast(data.message, 'success');
+            renderAdminTeams().catch(() => {});
         } else if (act === 'where') {
             const data = await api(`/api/admin/users/${id}/location`, { method: 'PUT', body: { location: user.location === 'home' ? 'away' : 'home' } });
             toast(data.message, 'success');
@@ -317,4 +325,55 @@ document.addEventListener('app:ready', () => {
             if (el) el.textContent = `${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}`;
         }).catch(() => {});
     }, 3000);
+});
+
+
+// ---------- Équipes : effectifs et épreuves collectives ----------
+
+async function renderAdminTeams(data) {
+    const box = $('admin-teams');
+    if (!box) return;
+    const teams = (data || await api('/api/teams')).teams || [];
+    if (!teams.length) { box.innerHTML = ''; return; }
+    const events = teams.flatMap(t => t.events.map(e => ({ ...e, team: t }))).sort((a, b) => a.id - b.id);
+    box.innerHTML = `
+        <h3>Les <em>équipes</em></h3>
+        <p class="hint">Les joueurs sur place sont répartis au hasard, à effectifs égaux. Score d'équipe = moyenne des points des joueurs + épreuves ci-dessous.</p>
+        <ul class="rules">${teams.map(t => `<li><span>${escapeHtml(t.name)} · ${t.size} joueur${t.size > 1 ? 's' : ''}</span><strong>${t.total} pts</strong></li>`).join('')}</ul>
+        <p class="kicker" style="margin-top: 14px;">Ajouter une épreuve d'équipe</p>
+        <form id="admin-team-form" class="team-form">
+            <input type="text" class="input" id="team-event-label" maxlength="60" placeholder="Nom de l'épreuve (ex. Karaoké)" autocomplete="off">
+            <div class="team-form-row">
+                <select class="input" id="team-event-team" aria-label="Équipe gagnante">${teams.map(t => `<option value="${escapeHtml(t.key)}">${escapeHtml(t.short || t.name)}</option>`).join('')}</select>
+                <input type="number" class="input" id="team-event-points" value="10" step="1" aria-label="Points">
+                <button type="submit" class="btn btn-blue">Ajouter</button>
+            </div>
+        </form>
+        ${events.length ? `<ul class="rules" style="margin-top: 12px;">${events.map(e => `
+            <li><span>${escapeHtml(e.label)} · ${escapeHtml(e.team.short || e.team.name)} · ${e.points > 0 ? '+' : ''}${e.points}</span><button type="button" class="icon-btn danger" data-team-event="${e.id}">Supprimer</button></li>`).join('')}</ul>` : ''}`;
+}
+
+document.addEventListener('app:ready', () => {
+    const box = $('admin-teams');
+    if (!box) return;
+    box.addEventListener('submit', async (e) => {
+        if (e.target.id !== 'admin-team-form') return;
+        e.preventDefault();
+        try {
+            const data = await api('/api/admin/team-events', { method: 'POST', body: {
+                label: $('team-event-label').value, team: $('team-event-team').value, points: Number($('team-event-points').value)
+            } });
+            toast(data.message, 'success');
+            renderAdminTeams(data);
+        } catch (err) { toast(err.message, 'error'); }
+    });
+    box.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-team-event]');
+        if (!b || !confirm('Supprimer cette épreuve et ses points ?')) return;
+        try {
+            const data = await api(`/api/admin/team-events/${b.dataset.teamEvent}`, { method: 'DELETE' });
+            toast(data.message, 'success');
+            renderAdminTeams(data);
+        } catch (err) { toast(err.message, 'error'); }
+    });
 });

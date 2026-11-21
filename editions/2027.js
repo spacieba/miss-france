@@ -316,7 +316,14 @@ module.exports = {
   venue: 'Futuroscope Arena (Vienne)',
   // Lieu de la soirée : chaque joueur indique s'il regarde l'élection sur place (« home ») ou ailleurs (« away »).
   // Les jeux en direct (blind test) sont réservés aux présents ; pronostics, quiz et tenues sont ouverts à tous.
-  party: { place: 'Jarrie' },
+  // Les joueurs sur place sont répartis au hasard (et à parts égales) entre les équipes.
+  party: {
+    place: 'Jarrie',
+    teams: [
+      { key: 'fontenay', name: 'Équipe de Fontenay', short: 'De Fontenay', motto: 'Le chapeau, la classe, la tradition.' },
+      { key: 'foucault', name: 'Équipe Foucault', short: 'Foucault', motto: "Le micro, le sourire, le dernier mot." }
+    ]
+  },
   // Thème de la soirée : affiché sur la page de couverture, la Une, le règlement et le concours de looks
   theme: {
     name: 'Chic & Poils',

@@ -848,3 +848,25 @@ a:hover { color: var(--ink); }
 .chip { min-height: 34px; padding: 0 12px; border: 1.5px solid var(--line-strong); background: transparent; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; }
 .chip.active { background: var(--ink); color: var(--paper); }
 .away-tag { margin-left: 6px; padding: 2px 6px; border: 1px solid currentColor; font-family: var(--sans); font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: middle; opacity: 0.75; }
+
+/* ---------- Équipes ---------- */
+.team-fontenay { --team: var(--ink); --team-on: var(--paper); }
+.team-foucault { --team: var(--blue); --team-on: #fff; }
+.team-card { width: 100%; display: flex; flex-direction: column; gap: 2px; margin: -6px 0 14px; padding: 14px 16px; text-align: left; border: 0; background: var(--team, var(--ink)); color: var(--team-on, #fff); }
+.team-card .kicker { color: inherit; opacity: 0.75; }
+.team-card .serif { font-family: var(--serif); font-style: italic; font-size: 34px; line-height: 1; }
+.team-card .small { font-size: 13px; opacity: 0.85; }
+.team-reveal { padding: 34px 20px; text-align: center; background: var(--team, var(--ink)); color: var(--team-on, #fff); }
+.team-reveal .kicker { color: inherit; opacity: 0.75; }
+.team-reveal-name { margin: 10px 0 8px; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(48px, 15vw, 76px); line-height: 0.95; }
+.team-reveal-motto { margin: 0; font-size: 14px; opacity: 0.9; }
+.team-tag { border-color: var(--team); background: var(--team); color: var(--team-on); opacity: 1; }
+.team-duel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+.team-col { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; border: 1.5px solid var(--team, var(--ink)); }
+.team-col.lead { background: var(--team); color: var(--team-on); }
+.team-col.lead .kicker, .team-col.lead .muted { color: inherit; opacity: 0.8; }
+.team-col .team-name { font-family: var(--serif); font-style: italic; font-size: 26px; line-height: 1; }
+.team-col .team-total { font-family: var(--serif); font-size: 46px; line-height: 0.95; }
+.team-col .team-total small { font-family: var(--sans); font-size: 12px; }
+.team-form { display: flex; flex-direction: column; gap: 8px; }
+.team-form-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) auto; gap: 8px; }
