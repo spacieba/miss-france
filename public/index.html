@@ -37,7 +37,7 @@
                     <input type="text" id="pseudo" placeholder="Votre pseudo" maxlength="24" autocomplete="username" autocapitalize="off" required>
                 </label>
                 <label class="field"><span id="code-label">Code de soirée</span>
-                    <input type="text" id="code" placeholder="Le code donné par l'organisateur" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+                    <input type="text" id="code" placeholder="Ton code" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
                 </label>
             </div>
 
@@ -83,7 +83,7 @@
             const input = $('code');
             input.value = '';
             input.type = admin ? 'password' : 'text';
-            input.placeholder = admin ? '••••••' : "Le code donné par l'organisateur";
+            input.placeholder = admin ? '••••••' : "Ton code";
             input.autocomplete = admin ? 'current-password' : 'off';
             $('code-label').textContent = admin ? 'Mot de passe' : 'Code de soirée';
             $('switch-btn').textContent = admin ? "Retour à l'accès joueur" : 'Accès organisateur';

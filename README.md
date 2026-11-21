@@ -97,6 +97,7 @@ Les points Quiz / Culture G (15/10/5) et Costume (30/20/10) sont recalculés aut
 
 Tout le contenu de l'édition est dans `editions/2027.js` : candidates (nom, prénom, photo), quiz, questionnaire Culture G, année.
 - **Nombre de qualifiées au premier tour** : `semiFinalists` (12 par défaut, comme en 2026 ; parfois 15). À fixer **avant** que les joueurs fassent leurs pronostics.
+- **Portraits des candidates** (rubrique « Les candidates ») : objet `profiles` du fichier d'édition (`age`, `city`, `job`, `bio`), affiché aussi dans la galerie des pronostics.
 - **Photos des candidates** : remplacez `PLACEHOLDER` par l'URL de la photo officielle.
 - **Questionnaire Culture G** : c'est le test officiel 2027 (publié le 20 novembre 2026), sans la question en images ni 5 des 10 énigmes de logique, non publiées.
 - **Édition suivante** : copiez `editions/2027.js` en `editions/2028.js`, mettez-le à jour, ajoutez-le dans la table `EDITIONS` de `src/app.js` et définissez `EDITION=2028`.

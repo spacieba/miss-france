@@ -114,6 +114,7 @@ function openCandidateGallery(name, options = {}) {
     const photos = cand.photos && cand.photos.length ? cand.photos : [cand.photo];
     let index = 0;
     const action = options.action;
+    const bioHtml = candidateBioHtml(cand);
     const { el } = openModal(`
         ${modalTop(regionOf(name) === name ? 'Portfolio' : `Miss ${regionOf(name)}`)}
         <div class="gallery-stage"><img alt="${escapeHtml(name)}"></div>
@@ -126,7 +127,8 @@ function openCandidateGallery(name, options = {}) {
             <button type="button" class="square-btn" data-dir="1" aria-label="Photo suivante">${ARROW}</button>
             ${action ? '<button type="button" class="btn btn-blue" data-action></button>' : ''}
         </div>
-    `);
+        ${bioHtml}
+    `, { className: bioHtml ? 'has-bio' : '' });
     const img = el.querySelector('.gallery-stage img');
     const counter = el.querySelector('.gallery-counter');
     const pad = (n) => String(n).padStart(2, '0');
@@ -264,6 +266,7 @@ async function loadUne() {
 
     const top15Count = pronos?.top15?.length || 0;
     const items = [
+        { go: 'candidates', title: 'Les candidates', sub: `${App.candidates.length} portraits : photos et biographies`, pts: null },
         { go: 'pronostics', title: 'Les pronostics', sub: step >= 1 ? 'Résultats en cours' : (top15Count ? `Top ${SEMI()} : ${top15Count}/${SEMI()}${pronos.prono_or ? ' · prono d\'or choisi' : ''}` : 'Pas encore commencé'), pts: s.pronostics_score },
         { go: 'quiz', title: 'Le quiz Miss France', sub: quiz.totalAnswers ? `${quiz.totalAnswers}/${App.edition.quizCount} réponses · ${quiz.correctAnswers} justes` : `${App.edition.quizCount} questions`, pts: s.quiz_score },
         { go: 'culture-g', title: 'La Culture G', sub: cg.totalAnswers ? `${cg.totalAnswers}/${cg.totalQuestions} réponses` : 'Le vrai test des candidates', pts: s.culture_g_score },

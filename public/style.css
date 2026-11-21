@@ -711,3 +711,10 @@ a:hover { color: var(--ink); }
 /* Évite les doubles filets entre blocs */
 .page-head + .seg, .page-head + .stat-row, .page-head + .steps, .steps + .stat-row, .page-head + .stat-row { border-top: 0; }
 .page-head:has(+ .seg), .page-head:has(+ .stat-row), .page-head:has(+ .steps) { margin-bottom: 0; }
+
+/* ---------- Les candidates : biographie ---------- */
+.cand-bio { margin-top: 18px; padding-top: 14px; border-top: 1.5px solid var(--ink); }
+.cand-facts { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--blue); line-height: 1.5; }
+.cand-bio-text { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink); }
+#candidates-grid .cand-hit { cursor: pointer; }
+.modal.has-bio .gallery-stage { max-height: 46vh; }
