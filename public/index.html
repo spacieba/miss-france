@@ -30,13 +30,14 @@
 
         <form class="login-body" id="login-form" novalidate>
             <p class="login-pitch" id="pitch">Faites vos <em>pronostics</em> avant le grand soir.</p>
+            <p class="hint" id="login-hint">Choisis un pseudo et entre le code de soirée. Reprends le même pseudo pour retrouver tes pronostics.</p>
 
             <div class="login-fields">
                 <label class="field">Pseudo
                     <input type="text" id="pseudo" placeholder="Votre pseudo" maxlength="24" autocomplete="username" autocapitalize="off" required>
                 </label>
-                <label class="field">Mot de passe
-                    <input type="password" id="password" placeholder="••••••" minlength="6" autocomplete="current-password" required>
+                <label class="field"><span id="code-label">Code de soirée</span>
+                    <input type="text" id="code" placeholder="Le code donné par l'organisateur" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
                 </label>
             </div>
 
@@ -46,12 +47,12 @@
                 <span id="submit-label">Entrer</span>
                 <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
             </button>
-            <button type="button" class="btn-link login-switch" id="switch-btn">Pas encore de compte ? S'inscrire</button>
+            <button type="button" class="btn-link login-switch" id="switch-btn">Accès organisateur</button>
         </form>
     </main>
 
     <script>
-        let mode = 'login';
+        let mode = 'player'; // 'player' : pseudo + code de soirée · 'admin' : pseudo + mot de passe
         const $ = (id) => document.getElementById(id);
 
         // Couverture : les photos des candidates défilent en fondu
@@ -78,12 +79,15 @@
 
         function setMode(next) {
             mode = next;
-            $('submit-label').textContent = mode === 'login' ? 'Entrer' : 'Créer mon compte';
-            $('switch-btn').textContent = mode === 'login' ? "Pas encore de compte ? S'inscrire" : 'Déjà inscrit ? Se connecter';
-            $('pitch').innerHTML = mode === 'login'
-                ? 'Faites vos <em>pronostics</em> avant le grand soir.'
-                : 'Rejoignez le <em>jury</em> du comité.';
-            $('password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+            const admin = mode === 'admin';
+            const input = $('code');
+            input.value = '';
+            input.type = admin ? 'password' : 'text';
+            input.placeholder = admin ? '••••••' : "Le code donné par l'organisateur";
+            input.autocomplete = admin ? 'current-password' : 'off';
+            $('code-label').textContent = admin ? 'Mot de passe' : 'Code de soirée';
+            $('switch-btn').textContent = admin ? "Retour à l'accès joueur" : 'Accès organisateur';
+            $('login-hint').hidden = admin;
             showMsg('');
         }
 
@@ -93,22 +97,21 @@
             el.className = `form-msg ${text ? type : ''}`;
         }
 
-        $('switch-btn').addEventListener('click', () => setMode(mode === 'login' ? 'register' : 'login'));
+        $('switch-btn').addEventListener('click', () => setMode(mode === 'player' ? 'admin' : 'player'));
 
         $('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pseudo = $('pseudo').value.trim();
-            const password = $('password').value;
+            const code = $('code').value;
             if (!pseudo) return showMsg('Entre ton pseudo.');
-            if (!password) return showMsg('Entre ton mot de passe.');
-            if (mode === 'register' && password.length < 6) return showMsg('Le mot de passe doit faire au moins 6 caractères.');
+            if (!code.trim()) return showMsg(mode === 'admin' ? 'Entre ton mot de passe.' : 'Entre le code de soirée.');
 
             $('submit-btn').disabled = true;
             try {
-                const response = await fetch(mode === 'login' ? '/api/login' : '/api/register', {
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, password })
+                    body: JSON.stringify({ pseudo, code })
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
@@ -116,7 +119,7 @@
                     $('submit-btn').disabled = false;
                     return;
                 }
-                showMsg(mode === 'login' ? 'Bienvenue !' : 'Compte créé, bienvenue !', 'success');
+                showMsg(data.created ? 'Bienvenue au comité !' : 'Bon retour !', 'success');
                 location.href = '/app.html';
             } catch {
                 showMsg('Impossible de joindre le serveur.');

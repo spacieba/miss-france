@@ -62,7 +62,7 @@ L'application sera accessible sur http://localhost:3000
 ## 📱 Utilisation
 
 ### Pour les joueurs
-1. Se connecter avec un pseudo (ou créer un compte)
+1. Choisir un pseudo et entrer le **code de soirée** donné par l'organisateur (le compte est créé à la première connexion ; reprendre le même pseudo pour retrouver ses pronostics)
 2. Remplir ses pronostics avant l'émission
 3. Répondre au quiz Miss France
 4. Jouer aux prédictions live pendant l'émission
@@ -72,7 +72,7 @@ L'application sera accessible sur http://localhost:3000
 
 ### 🔐 Pour l'organisateur - Interface Admin
 
-Les comptes admin se connectent normalement (page d'accueil) et voient l'onglet **Admin**.
+Les comptes admin se connectent depuis la page d'accueil via **Accès organisateur** (pseudo + mot de passe) et voient l'onglet **Admin**.
 
 #### Variables d'environnement (Vercel → Settings → Environment Variables)
 
@@ -80,6 +80,7 @@ Les comptes admin se connectent normalement (page d'accueil) et voient l'onglet 
 |---|---|
 | `DATABASE_URL` | **Obligatoire.** URL Supabase « Transaction pooler » (port 6543) avec le mot de passe de la base. |
 | `ADMIN_USERS` | **Obligatoire en prod.** Comptes admin : `pseudo1:motdepasse1,pseudo2:motdepasse2`. Les mots de passe sont resynchronisés à chaque démarrage. |
+| `PARTY_CODE` | **Obligatoire.** Code de soirée demandé aux joueurs (insensible à la casse). Ne pas le mettre dans le dépôt, qui est public. |
 | `SESSION_SECRET` | **Obligatoire en prod.** Chaîne aléatoire d'au moins 32 caractères. |
 | `EDITION` | Optionnel. Édition à charger (`2027` par défaut → `editions/2027.js`). |
 
@@ -112,7 +113,7 @@ Tout le contenu de l'édition est dans `editions/2027.js` : candidates (nom, pr�
 ## 📝 Notes importantes
 
 - Les données sont stockées dans Supabase (persistantes entre les déploiements)
-- Tous les joueurs doivent se connecter avec leur pseudo
+- Les joueurs n'ont pas de mot de passe : quiconque connaît le code de soirée peut entrer sous n'importe quel pseudo de joueur (choix assumé pour une soirée entre amis)
 - Les pronostics peuvent être modifiés jusqu'à ce que vous validiez les résultats
 - Le classement se met à jour automatiquement
 

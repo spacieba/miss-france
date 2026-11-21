@@ -167,7 +167,7 @@ function rateLimit(name, { windowMs, max }) {
     } catch (e) { next(e); }
   };
 }
-const authLimiter = rateLimit('auth', { windowMs: 15 * 60 * 1000, max: 20 });
+const authLimiter = rateLimit('auth', { windowMs: 15 * 60 * 1000, max: 80 });
 const uploadLimiter = rateLimit('upload', { windowMs: 10 * 60 * 1000, max: 15 });
 
 // Authentification : utilisateur rechargé depuis la base à chaque requête
@@ -333,45 +333,50 @@ function startSession(req, userId) {
   });
 }
 
-app.post('/api/register', authLimiter, wrap(async (req, res) => {
-  const { pseudo, password } = req.body;
-  const pseudoError = validatePseudo(pseudo);
-  if (pseudoError) return res.status(400).json({ error: pseudoError });
-  if (typeof password !== 'string' || password.length < 6 || password.length > 72) {
-    return res.status(400).json({ error: 'Mot de passe requis (6 caractères minimum)' });
-  }
-  const p = cleanPseudo(pseudo);
-  if (/^admin/i.test(p)) return res.status(400).json({ error: 'Ce pseudo est réservé' });
+// Connexion : un joueur entre avec son pseudo + le code de soirée (variable PARTY_CODE,
+// insensible à la casse) ; son compte est créé à la première connexion.
+// Les admins, eux, gardent leur mot de passe (ADMIN_USERS), saisi dans le même champ.
+const PARTY_CODE = String(process.env.PARTY_CODE || '').trim().toUpperCase();
+if (!PARTY_CODE) console.warn('⚠️  PARTY_CODE non défini : les joueurs ne peuvent pas se connecter.');
+const NO_PASSWORD = '!'; // les joueurs n'ont pas de mot de passe (valeur qu'aucun hash bcrypt ne peut égaler)
 
-  const hash = await bcrypt.hash(password, 11);
-  let userId;
-  try {
-    userId = await sql.begin(async tx => {
-      const [u] = await tx`insert into users (pseudo, password) values (${p}, ${hash}) returning id`;
-      await tx`insert into scores (user_id) values (${u.id})`;
-      return u.id;
-    });
-  } catch (e) {
-    if (e.code === '23505') return res.status(400).json({ error: 'Ce pseudo existe déjà' });
-    throw e;
-  }
-  await startSession(req, userId);
-  res.json({ success: true, userId, pseudo: p });
-}));
-
-const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 11);
+const findUser = async (p) => (await sql`select id, pseudo::text as pseudo, password, is_admin from users where pseudo = ${p}`)[0];
 
 app.post('/api/login', authLimiter, wrap(async (req, res) => {
-  const { pseudo, password } = req.body;
-  if (typeof pseudo !== 'string' || !pseudo.trim() || typeof password !== 'string' || !password) {
-    return res.status(400).json({ error: 'Pseudo et mot de passe requis' });
+  const code = typeof req.body.code === 'string' ? req.body.code : '';
+  const pseudoError = validatePseudo(req.body.pseudo);
+  if (pseudoError) return res.status(400).json({ error: pseudoError });
+  if (!code.trim()) return res.status(400).json({ error: 'Code de soirée requis' });
+  const p = cleanPseudo(req.body.pseudo);
+
+  let user = await findUser(p);
+  let created = false;
+  if (user?.is_admin) {
+    if (!await bcrypt.compare(code.slice(0, 72), user.password)) {
+      return res.status(401).json({ error: 'Mot de passe organisateur incorrect' });
+    }
+  } else {
+    if (!PARTY_CODE) return res.status(503).json({ error: "Le code de soirée n'est pas encore configuré." });
+    if (code.trim().toUpperCase() !== PARTY_CODE) return res.status(401).json({ error: 'Code de soirée incorrect' });
+    if (!user) {
+      if (/^admin/i.test(p)) return res.status(400).json({ error: 'Ce pseudo est réservé' });
+      try {
+        user = await sql.begin(async tx => {
+          const [u] = await tx`insert into users (pseudo, password) values (${p}, ${NO_PASSWORD}) returning id, pseudo::text as pseudo, is_admin`;
+          await tx`insert into scores (user_id) values (${u.id})`;
+          return u;
+        });
+        created = true;
+      } catch (e) {
+        if (e.code !== '23505') throw e;
+        user = await findUser(p); // créé au même instant depuis un autre téléphone
+        if (!user || user.is_admin) return res.status(409).json({ error: 'Réessaie dans un instant.' });
+      }
+    }
   }
-  const [user] = await sql`select id, pseudo::text as pseudo, password, is_admin from users where pseudo = ${cleanPseudo(pseudo)}`;
-  const valid = await bcrypt.compare(password.slice(0, 72), user ? user.password : DUMMY_HASH);
-  if (!user || !valid) return res.status(401).json({ error: 'Pseudo ou mot de passe incorrect' });
 
   await startSession(req, user.id);
-  res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin });
+  res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin, created });
 }));
 
 app.post('/api/logout', (req, res) => {
@@ -385,6 +390,7 @@ app.get('/api/me', requireAuth, wrap(async (req, res) => {
   const [score] = await sql`select * from scores where user_id = ${req.user.id}`;
   res.json({
     user: { id: req.user.id, pseudo: req.user.pseudo, is_admin: req.user.is_admin ? 1 : 0, isAdmin: req.user.is_admin, avatar: null },
+    partyCode: PARTY_CODE || null,
     score
   });
 }));
