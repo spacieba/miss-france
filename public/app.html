@@ -51,6 +51,7 @@
             </div>
 
             <p class="une-hello">Bonsoir <em id="une-pseudo"></em>.</p>
+            <p class="une-where" id="une-where" hidden><span id="une-where-text"></span> <button type="button" class="btn-link" id="une-where-change">Changer</button></p>
 
             <div class="stat-row">
                 <div class="stat-cell"><span class="v" id="une-score">0</span><span class="l">Points</span></div>
@@ -278,6 +279,11 @@
                 <button type="button" class="lb-tab" data-lb="culture">Culture G</button>
                 <button type="button" class="lb-tab" data-lb="blind">Blind test</button>
                 <button type="button" class="lb-tab" data-lb="costume">Costume</button>
+            </div>
+            <div class="lb-where" id="lb-where" role="group" aria-label="Filtrer par lieu">
+                <button type="button" class="chip active" data-where-filter="all">Tout le monde</button>
+                <button type="button" class="chip" data-where-filter="home">À <span class="place-name">Jarrie</span></button>
+                <button type="button" class="chip" data-where-filter="away">Ailleurs</button>
             </div>
             <div id="lb-content"></div>
         </section>

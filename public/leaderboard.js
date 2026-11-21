@@ -2,7 +2,8 @@
    Le palmarès : classement général et par jeu
    ============================================================ */
 
-const Board = { tab: 'total', culture: null, costume: null };
+const Board = { tab: 'total', where: 'all', culture: null, costume: null };
+const awayTag = (r) => (r.location === 'away' ? ' <span class="away-tag">à distance</span>' : '');
 
 // Rangs partagés pour les ex-æquo (1, 2, 2, 4…)
 function withRanks(rows, value) {
@@ -21,14 +22,14 @@ function renderBoard(rows, { value, unit = 'pts', detail, isMe }) {
     return `
         <div class="leader">
             <span class="n">${String(first.rank).padStart(2, '0')}</span>
-            <span class="who"><span class="kicker">En tête</span><span class="serif">${escapeHtml(first.pseudo)}</span></span>
+            <span class="who"><span class="kicker">En tête</span><span class="serif">${escapeHtml(first.pseudo)}${awayTag(first)}</span></span>
             <span class="pts">${fmt(value(first))}</span>
         </div>
         <ol class="board">
             ${rest.map(r => `
                 <li class="board-row ${isMe(r) ? 'me' : ''}">
                     <span class="n">${String(r.rank).padStart(2, '0')}</span>
-                    <span class="name">${escapeHtml(r.pseudo)}${detail ? `<span class="detail">${escapeHtml(detail(r))}</span>` : ''}</span>
+                    <span class="name">${escapeHtml(r.pseudo)}${awayTag(r)}${detail ? `<span class="detail">${escapeHtml(detail(r))}</span>` : ''}</span>
                     <span class="pts">${value(r)} ${unit}</span>
                 </li>`).join('')}
         </ol>
@@ -39,9 +40,12 @@ async function renderTab() {
     const me = (id) => id === App.user.id;
     const box = $('lb-content');
     const t = Board.tab;
+    // Le filtre par lieu ne concerne que les classements communs à tous
+    $('lb-where').hidden = !(t === 'total' || t === 'pronostics' || t === 'quiz');
     if (t === 'total' || t === 'pronostics' || t === 'quiz') {
         const key = { total: 'total_score', pronostics: 'pronostics_score', quiz: 'quiz_score' }[t];
-        const rows = [...App.leaderboard].sort((a, b) => (b[key] || 0) - (a[key] || 0) || a.pseudo.localeCompare(b.pseudo));
+        const pool = Board.where === 'all' ? App.leaderboard : App.leaderboard.filter(r => (Board.where === 'away' ? r.location === 'away' : r.location !== 'away'));
+        const rows = [...pool].sort((a, b) => (b[key] || 0) - (a[key] || 0) || a.pseudo.localeCompare(b.pseudo));
         box.innerHTML = renderBoard(rows, {
             value: r => r[key] || 0,
             isMe: r => me(r.user_id),
@@ -83,6 +87,11 @@ async function loadLeaderboard() {
 App.loaders.leaderboard = loadLeaderboard;
 
 document.addEventListener('app:ready', () => {
+    document.querySelectorAll('[data-where-filter]').forEach(b => b.addEventListener('click', () => {
+        Board.where = b.dataset.whereFilter;
+        document.querySelectorAll('[data-where-filter]').forEach(x => x.classList.toggle('active', x === b));
+        renderTab().catch(err => toast(err.message, 'error'));
+    }));
     document.querySelectorAll('.lb-tab').forEach(b => b.addEventListener('click', () => {
         Board.tab = b.dataset.lb;
         document.querySelectorAll('.lb-tab').forEach(x => x.classList.toggle('active', x === b));

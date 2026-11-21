@@ -176,10 +176,11 @@ async function loadAdminUsers() {
     box.innerHTML = Admin.users.map(u => `
         <div class="user-row" data-user="${u.id}">
             ${u.costume_photo ? `<img src="${escapeHtml(u.costume_photo)}" alt="">` : ''}
-            <span class="serif" data-name>${escapeHtml(u.pseudo)}${u.is_admin ? ' <span class="small muted">(admin)</span>' : ''}</span>
+            <span class="serif" data-name>${escapeHtml(u.pseudo)}${u.is_admin ? ' <span class="small muted">(admin)</span>' : ` <span class="small muted">· ${u.location === 'home' ? 'sur place' : u.location === 'away' ? 'à distance' : 'lieu non indiqué'}</span>`}</span>
             <span class="small">${u.total_score || 0} pts</span>
             ${u.is_admin ? '' : `
                 <button type="button" class="icon-btn" data-user-act="rename">Renommer</button>
+                <button type="button" class="icon-btn" data-user-act="where">${u.location === 'home' ? '→ À distance' : '→ Sur place'}</button>
                 ${u.costume_photo ? '<button type="button" class="icon-btn" data-user-act="photo">Photo ✕</button>' : ''}
                 <button type="button" class="icon-btn danger" data-user-act="delete">Supprimer</button>`}
         </div>`).join('') + `<p class="hint" style="margin-top: 10px;">${Admin.users.length} compte(s).</p>`;
@@ -193,6 +194,9 @@ async function adminUserAct(id, act) {
             const pseudo = prompt(`Nouveau pseudo pour ${user.pseudo} :`, user.pseudo);
             if (!pseudo || pseudo.trim() === user.pseudo) return;
             const data = await api(`/api/admin/users/${id}`, { method: 'PUT', body: { pseudo: pseudo.trim() } });
+            toast(data.message, 'success');
+        } else if (act === 'where') {
+            const data = await api(`/api/admin/users/${id}/location`, { method: 'PUT', body: { location: user.location === 'home' ? 'away' : 'home' } });
             toast(data.message, 'success');
         } else if (act === 'photo') {
             if (!confirm(`Supprimer la photo de costume de ${user.pseudo} ?`)) return;

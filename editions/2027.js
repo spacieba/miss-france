@@ -314,6 +314,9 @@ module.exports = {
   electionDate: '2026-12-12',          // Date de la soirée
   semiFinalists: 12,                   // Qualifiées au premier tour (12 en 2026, 15 certaines années) : à fixer AVANT l'ouverture des pronostics
   venue: 'Futuroscope Arena (Vienne)',
+  // Lieu de la soirée : chaque joueur indique s'il regarde l'élection sur place (« home ») ou ailleurs (« away »).
+  // Les jeux en direct (blind test) sont réservés aux présents ; pronostics, quiz et tenues sont ouverts à tous.
+  party: { place: 'Jarrie' },
   // Thème de la soirée : affiché sur la page de couverture, la Une, le règlement et le concours de looks
   theme: {
     name: 'Chic & Poils',

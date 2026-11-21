@@ -185,7 +185,7 @@ const CLOSED_MESSAGE = "L'appli n'est pas encore ouverte : rendez-vous bientôt 
 const requireAuth = async (req, res, next) => {
   try {
     if (!req.session.userId) return res.status(401).json({ error: 'Non authentifié' });
-    const [user] = await sql`select id, pseudo::text as pseudo, is_admin from users where id = ${req.session.userId}`;
+    const [user] = await sql`select id, pseudo::text as pseudo, is_admin, location from users where id = ${req.session.userId}`;
     if (!user) return res.status(401).json({ error: 'Non authentifié' });
     if (!user.is_admin && !await isAppOpen()) return res.status(401).json({ error: CLOSED_MESSAGE });
     req.user = user;
@@ -324,6 +324,7 @@ const recalculateCostumePoints = () => sql.begin(async tx => awardByRank(tx, awa
 app.get('/api/edition', wrap(async (req, res) => {
   res.json({
     open: await isAppOpen(),
+    place: edition.party?.place || null,
     theme: edition.theme || null,
     year: YEAR,
     semiFinalists: SEMI,
@@ -356,7 +357,9 @@ const PARTY_CODE = String(process.env.PARTY_CODE || '').trim().toUpperCase();
 if (!PARTY_CODE) console.warn('⚠️  PARTY_CODE non défini : les joueurs ne peuvent pas se connecter.');
 const NO_PASSWORD = '!'; // les joueurs n'ont pas de mot de passe (valeur qu'aucun hash bcrypt ne peut égaler)
 
-const findUser = async (p) => (await sql`select id, pseudo::text as pseudo, password, is_admin from users where pseudo = ${p}`)[0];
+const findUser = async (p) => (await sql`select id, pseudo::text as pseudo, password, is_admin, location from users where pseudo = ${p}`)[0];
+// Où le joueur regarde l'élection : 'home' (sur place, chez l'organisateur) ou 'away' (ailleurs)
+const cleanLocation = (v) => (v === 'home' || v === 'away' ? v : null);
 
 app.post('/api/login', authLimiter, wrap(async (req, res) => {
   const code = typeof req.body.code === 'string' ? req.body.code : '';
@@ -365,6 +368,7 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
   if (!code.trim()) return res.status(400).json({ error: 'Mot de passe requis' });
   const p = cleanPseudo(req.body.pseudo);
 
+  const location = cleanLocation(req.body.location);
   let user = await findUser(p);
   let created = false;
   if (user?.is_admin) {
@@ -378,7 +382,7 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
       if (/^admin/i.test(p)) return res.status(400).json({ error: 'Ce pseudo est réservé' });
       try {
         user = await sql.begin(async tx => {
-          const [u] = await tx`insert into users (pseudo, password) values (${p}, ${NO_PASSWORD}) returning id, pseudo::text as pseudo, is_admin`;
+          const [u] = await tx`insert into users (pseudo, password, location) values (${p}, ${NO_PASSWORD}, ${location}) returning id, pseudo::text as pseudo, is_admin, location`;
           await tx`insert into scores (user_id) values (${u.id})`;
           return u;
         });
@@ -391,16 +395,28 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
     }
   }
 
+  // Un joueur qui se reconnecte peut changer de lieu
+  if (!user.is_admin && location && user.location !== location) {
+    await sql`update users set location = ${location} where id = ${user.id}`;
+    user.location = location;
+  }
   await startSession(req, user.id);
-  res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin, created, open: await isAppOpen() });
+  res.json({ success: true, userId: user.id, pseudo: user.pseudo, isAdmin: user.is_admin, created, location: user.location || null, open: await isAppOpen() });
+}));
+
+app.post('/api/me/location', requireAuth, wrap(async (req, res) => {
+  const location = cleanLocation(req.body.location);
+  if (!location) return res.status(400).json({ error: 'Choix invalide' });
+  await sql`update users set location = ${location} where id = ${req.user.id}`;
+  res.json({ success: true, location });
 }));
 
 app.get('/api/session', wrap(async (req, res) => {
   const open = await isAppOpen();
   if (!req.session.userId) return res.json({ loggedIn: false, open });
-  const [user] = await sql`select pseudo::text as pseudo, is_admin from users where id = ${req.session.userId}`;
+  const [user] = await sql`select pseudo::text as pseudo, is_admin, location from users where id = ${req.session.userId}`;
   if (!user) return res.json({ loggedIn: false, open });
-  res.json({ loggedIn: true, pseudo: user.pseudo, isAdmin: user.is_admin, open });
+  res.json({ loggedIn: true, pseudo: user.pseudo, isAdmin: user.is_admin, location: user.location || null, open });
 }));
 
 app.post('/api/logout', (req, res) => {
@@ -413,7 +429,7 @@ app.post('/api/logout', (req, res) => {
 app.get('/api/me', requireAuth, wrap(async (req, res) => {
   const [score] = await sql`select * from scores where user_id = ${req.user.id}`;
   res.json({
-    user: { id: req.user.id, pseudo: req.user.pseudo, is_admin: req.user.is_admin ? 1 : 0, isAdmin: req.user.is_admin, avatar: null },
+    user: { id: req.user.id, pseudo: req.user.pseudo, is_admin: req.user.is_admin ? 1 : 0, isAdmin: req.user.is_admin, location: req.user.location || null, avatar: null },
     partyCode: PARTY_CODE || null,
     score
   });
@@ -809,6 +825,7 @@ const recalculateBlindPoints = () => sql.begin(async tx => awardByRank(tx, await
 
 app.get('/api/blind', requireAuth, wrap(async (req, res) => {
   if (!BLIND) return res.json({ enabled: false });
+  if (!req.user.is_admin && req.user.location === 'away') return res.json({ enabled: true, away: true, phase: 'idle', index: -1, total: BLIND.songs.length });
   const st = blindState(await getOfficial());
   const mine = await sql`select question_id, answer, is_correct, points from blind_answers where user_id = ${req.user.id}`;
   const out = {
@@ -845,6 +862,7 @@ app.get('/api/blind', requireAuth, wrap(async (req, res) => {
 
 app.post('/api/blind/answer', requireAuth, wrap(async (req, res) => {
   if (!BLIND) return res.status(404).json({ error: 'Pas de blind test' });
+  if (!req.user.is_admin && req.user.location === 'away') return res.status(403).json({ error: 'Le blind test se joue sur place.' });
   const st = blindState(await getOfficial());
   const { questionId, answer } = req.body;
   let stored, isCorrect, points;
@@ -875,7 +893,7 @@ app.post('/api/blind/answer', requireAuth, wrap(async (req, res) => {
 
 app.get('/api/leaderboard', requireAuth, wrap(async (req, res) => {
   res.json(await sql`
-    select u.pseudo::text as pseudo, s.user_id, s.quiz_score, s.culture_g_score, s.pronostics_score, s.defis_score, s.blind_points, s.total_score
+    select u.pseudo::text as pseudo, u.location, s.user_id, s.quiz_score, s.culture_g_score, s.pronostics_score, s.defis_score, s.blind_points, s.total_score
     from scores s join users u on s.user_id = u.id
     where not u.is_admin order by s.total_score desc, u.pseudo asc`);
 }));
@@ -1000,7 +1018,7 @@ const adminBlindView = async () => {
   const next = BLIND.songs[st.index + 1];
   const qid = st.phase === 'theme' ? 'theme' : song?.id;
   const [{ n }] = qid ? await sql`select count(*) as n from blind_answers a join users u on u.id = a.user_id where a.question_id = ${qid} and not u.is_admin` : [{ n: 0 }];
-  const [{ players }] = await sql`select count(*) as players from users where not is_admin`;
+  const [{ players }] = await sql`select count(*) as players from users where not is_admin and location is distinct from 'away'`;
   const brief = (x) => (x ? { title: x.title, artist: x.artist, ask: x.ask, cue: x.cue } : null);
   return {
     enabled: true, phase: st.phase, index: st.index, total: BLIND.songs.length,
@@ -1048,11 +1066,19 @@ admin.get('/stats', wrap(async (req, res) => {
 
 admin.get('/users', wrap(async (req, res) => {
   const rows = await sql`
-    select u.id, u.pseudo::text as pseudo, u.is_admin, u.costume_photo_public, p.version,
+    select u.id, u.pseudo::text as pseudo, u.is_admin, u.location, u.costume_photo_public, p.version,
            s.total_score, s.quiz_score, s.pronostics_score, s.culture_g_score, s.defis_score
     from users u left join scores s on u.id = s.user_id left join costume_photos p on p.user_id = u.id
     order by u.pseudo`;
   res.json(rows.map(({ version, ...r }) => ({ ...r, is_admin: r.is_admin ? 1 : 0, costume_photo: photoUrl(r.id, version) })));
+}));
+
+admin.put('/users/:id/location', wrap(async (req, res) => {
+  const location = cleanLocation(req.body.location);
+  if (!location) return res.status(400).json({ error: 'Choix invalide' });
+  const r = await sql`update users set location = ${location} where id = ${Number(req.params.id)} and not is_admin`;
+  if (r.count === 0) return res.status(404).json({ error: 'Joueur non trouvé' });
+  res.json({ success: true, message: location === 'home' ? 'Joueur noté sur place.' : 'Joueur noté à distance.' });
 }));
 
 admin.put('/users/:id', wrap(async (req, res) => {

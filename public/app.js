@@ -247,6 +247,7 @@ async function loadUne() {
     const s = App.score || {};
 
     $('une-pseudo').textContent = App.user.pseudo;
+    renderWhereLine();
 
     // Couverture : ma future Miss France, sinon une candidate au hasard (fixe pour la journée)
     const or = pronos?.prono_or;
@@ -271,7 +272,7 @@ async function loadUne() {
         { go: 'pronostics', title: 'Les pronostics', sub: step >= 1 ? 'Résultats en cours' : (top15Count ? `Top ${SEMI()} : ${top15Count}/${SEMI()}${pronos.prono_or ? ' · prono d\'or choisi' : ''}` : 'Pas encore commencé'), pts: s.pronostics_score },
         { go: 'quiz', title: 'Le quiz Miss France', sub: quiz.totalAnswers ? `${quiz.totalAnswers}/${App.edition.quizCount} réponses · ${quiz.correctAnswers} justes` : `${App.edition.quizCount} questions`, pts: s.quiz_score },
         { go: 'culture-g', title: 'La Culture G', sub: cg.totalAnswers ? `${cg.totalAnswers}/${cg.totalQuestions} réponses` : 'Le vrai test des candidates', pts: s.culture_g_score },
-        { go: 'blind', title: 'Le blind test', sub: 'En direct pendant la soirée', pts: s.blind_points },
+        ...(isAway() ? [] : [{ go: 'blind', title: 'Le blind test', sub: `En direct, à ${placeName()}`, pts: s.blind_points }]),
         { go: 'costume', title: 'Le meilleur costume', sub: myPhoto.photo ? (myPhoto.isPublic ? 'Mon look est en ligne' : 'Mon look est privé') : 'Poster mon look', pts: s.defis_score },
         { go: 'leaderboard', title: 'Le palmarès', sub: 'Le classement du comité', pts: null }
     ];
@@ -367,6 +368,46 @@ async function loadEdition() {
     }
     document.title = `Miss France ${e.year} — Comité parallèle`;
     renderTheme(e.theme);
+    if (e.place) document.querySelectorAll('.place-name').forEach(el => { el.textContent = e.place; });
+}
+
+// ---------- Sur place ou ailleurs ----------
+
+const placeName = () => App.edition.place || 'la soirée';
+const isAway = () => !App.user.isAdmin && App.user.location === 'away';
+
+function renderWhereLine() {
+    const line = $('une-where');
+    if (App.user.isAdmin || !App.user.location) { line.hidden = true; return; }
+    $('une-where-text').textContent = App.user.location === 'home'
+        ? `Tu regardes l'élection à ${placeName()}.`
+        : `Tu regardes l'élection ailleurs qu'à ${placeName()}.`;
+    line.hidden = false;
+}
+
+// Fenêtre de choix : obligatoire à la première visite, puis accessible depuis la Une
+function askWhere({ required = false } = {}) {
+    return new Promise((resolve) => {
+        const { el, close } = openModal(`
+            ${required ? '<div class="modal-top"><p class="kicker">Avant de commencer</p></div>' : modalTop('Mon lieu')}
+            <h2 class="headline">Où regardes-tu <em>l'élection</em> ?</h2>
+            <p class="hint">Les jeux en direct, comme le blind test, se jouent sur place. Les pronostics, les quiz et le concours de tenues sont ouverts à tout le monde.</p>
+            <div class="where-options">
+                <button type="button" class="where-btn ${App.user.location === 'home' ? 'active' : ''}" data-pick="home"><span class="serif">À ${escapeHtml(placeName())}</span><span class="small">Sur place, avec le comité</span></button>
+                <button type="button" class="where-btn ${App.user.location === 'away' ? 'active' : ''}" data-pick="away"><span class="serif">Ailleurs</span><span class="small">À distance : pronostics et tenues</span></button>
+            </div>`, { onClose: () => resolve() });
+        el.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', async () => {
+            try {
+                const data = await api('/api/me/location', { method: 'POST', body: { location: b.dataset.pick } });
+                App.user.location = data.location;
+                try { localStorage.setItem('mf-where', data.location); } catch { /* ignoré */ }
+                close();
+                renderWhereLine();
+                const loader = App.loaders[App.current];
+                if (loader) Promise.resolve(loader()).catch(() => {});
+            } catch (err) { toast(err.message, 'error'); }
+        }));
+    });
 }
 
 // Thème de la soirée : carte sur la Une, dress code au règlement, rappel dans les looks
@@ -403,6 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         location.href = '/';
     });
     $('open-invite').addEventListener('click', openInvite);
+    $('une-where-change').addEventListener('click', () => askWhere());
     $('replay-reveal').addEventListener('click', () => window.Live && window.Live.replay().catch(err => toast(err.message, 'error')));
     $('open-install').addEventListener('click', openInstall);
     $('open-cover').addEventListener('click', () => window.openCoverStudio && window.openCoverStudio());
@@ -418,6 +460,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     refreshScore().catch(() => {});
     go((location.hash || '#une').slice(1), { push: false });
     document.dispatchEvent(new CustomEvent('app:ready'));
+    // Compte créé avant l'ajout de la question : on la pose une fois
+    if (!App.user.isAdmin && !App.user.location) askWhere({ required: true });
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 });

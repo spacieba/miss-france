@@ -91,6 +91,9 @@ Tant que l'admin n'a pas ouvert l'appli (onglet Admin → **L'ouverture**), les 
 
 Le thème (nom, accroche, règles du dress code, programme) se règle dans `theme` du fichier d'édition.
 
+#### Sur place ou ailleurs
+À l'identification, chaque joueur indique s'il regarde l'élection sur place (`party.place` du fichier d'édition, « Jarrie » en 2027) ou ailleurs. Le choix est stocké dans `users.location` (`home` / `away`), modifiable depuis la Une ou par l'admin dans la liste des joueurs. Les joueurs à distance participent aux pronostics, aux quiz et au concours de tenues, mais pas au blind test ; le classement se filtre par lieu.
+
 #### Le blind test (en direct)
 Onglet Admin → **Le blind test** : l'admin lance chaque chanson sur son enceinte, ouvre les réponses (les propositions s'affichent sur tous les téléphones), puis révèle. Après la dernière chanson, chacun tente de deviner le thème caché (réponse libre, bonus de points). Les 3 premiers gagnent 15, 10 et 5 points au classement général.
 Les chansons, propositions, repères et mots-clés acceptés pour le thème sont dans `blindTest` du fichier d'édition ; l'état est dans `official_results.blind`, les réponses dans la table `blind_answers`.

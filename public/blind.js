@@ -33,6 +33,12 @@ function renderBlind() {
     const d = Blind.data;
     const box = $('blind-body');
     if (!d || !d.enabled) { box.innerHTML = '<p class="empty">Pas de blind test cette année.</p>'; return; }
+    if (d.away) {
+        $('blind-kicker').textContent = 'Sur place uniquement';
+        box.innerHTML = `<div class="blind-wait"><h2 class="subhead">Le blind test se joue <em>à ${escapeHtml(placeName())}</em></h2>
+            <p class="hint">Il est lancé en direct pendant la soirée, avec la musique dans le salon : impossible d'y jouer à distance. Les pronostics, les quiz et le concours de tenues, eux, comptent pour tout le monde.</p></div>`;
+        return;
+    }
 
     $('blind-kicker').textContent = d.phase === 'idle' ? 'En attente' : d.phase === 'theme' ? 'La question finale' : d.phase === 'done' ? 'Terminé' : `Chanson ${d.index + 1} / ${d.total}`;
     $('blind-score').textContent = `${d.myPoints || 0} pt${d.myPoints > 1 ? 's' : ''}`;
@@ -184,7 +190,7 @@ document.addEventListener('app:ready', () => {
     // Rafraîchissement : rapide sur l'écran du blind test, plus lent ailleurs (pour le bandeau)
     let tick = 0;
     setInterval(() => {
-        if (document.visibilityState !== 'visible' || App.current === 'admin') return;
+        if (document.visibilityState !== 'visible' || App.current === 'admin' || isAway()) return;
         tick++;
         const typing = document.activeElement && document.activeElement.id === 'blind-theme-input';
         if (App.current === 'blind') { if (!typing) refreshBlind().catch(() => {}); }

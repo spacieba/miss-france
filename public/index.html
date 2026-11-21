@@ -71,6 +71,14 @@
                     </label>
                 </div>
 
+                <fieldset class="where" id="where">
+                    <legend>Où regardes-tu l'élection ?</legend>
+                    <div class="where-options">
+                        <button type="button" class="where-btn" data-where="home" aria-pressed="false"><span class="serif">À <span class="place-name">Jarrie</span></span><span class="small">Sur place, avec le comité</span></button>
+                        <button type="button" class="where-btn" data-where="away" aria-pressed="false"><span class="serif">Ailleurs</span><span class="small">À distance : pronostics et tenues</span></button>
+                    </div>
+                </fieldset>
+
                 <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
 
                 <button type="submit" class="btn btn-block btn-between" id="submit-btn">
@@ -106,6 +114,23 @@
         let appOpen = false;
         let me = null;        // joueur identifié alors que l'appli est encore fermée : il voit la couverture
         let themeReady = false;
+        let where = null;     // 'home' (sur place) ou 'away' (ailleurs)
+        try { where = localStorage.getItem('mf-where'); } catch { /* stockage indisponible */ }
+        function renderWhere() {
+            document.querySelectorAll('.where-btn').forEach(b => {
+                const on = b.dataset.where === where;
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+        }
+        document.addEventListener('click', (e) => {
+            const b = e.target.closest('.where-btn');
+            if (!b) return;
+            where = b.dataset.where;
+            try { localStorage.setItem('mf-where', where); } catch { /* ignoré */ }
+            renderWhere();
+            showMsg('');
+        });
         let mode = 'player'; // 'player' : pseudo + code de soirée · 'admin' : pseudo + mot de passe
         let electionAt = new Date('2026-12-12T21:10:00+01:00');
 
@@ -162,6 +187,8 @@
             input.placeholder = admin ? '••••••' : 'De la soirée';
             input.autocomplete = admin ? 'current-password' : 'off';
             $('login-hint').hidden = admin;
+            $('where').hidden = admin;
+            renderWhere();
             $('pitch').innerHTML = admin ? 'Accès <em>organisateur</em>.' : 'Bienvenue au <em>comité</em>.';
             $('switch-btn').textContent = admin ? "Retour à l'accès invité" : 'Accès organisateur';
         }
@@ -184,6 +211,7 @@
             if (!info) { render(); return; }
             appOpen = Boolean(info.open);
             $('cand-count').textContent = info.candidatesCount;
+            if (info.place) document.querySelectorAll('.place-name').forEach(el => { el.textContent = info.place; });
             document.title = `Miss France ${info.year} — Comité parallèle`;
             if (info.electionDate) {
                 electionAt = new Date(`${info.electionDate}T21:10:00+01:00`);
@@ -253,13 +281,14 @@
             const code = $('code').value;
             if (!pseudo) return showMsg('Entre ton nom ou un pseudo.');
             if (!code.trim()) return showMsg(mode === 'admin' ? 'Entre ton mot de passe.' : 'Entre le mot de passe de la soirée.');
+            if (mode !== 'admin' && !where) return showMsg("Dis-nous où tu regardes l'élection.");
 
             $('submit-btn').disabled = true;
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pseudo, code })
+                    body: JSON.stringify(mode === 'admin' ? { pseudo, code } : { pseudo, code, location: where })
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
