@@ -35,6 +35,10 @@
         </div>
     </header>
 
+    <button type="button" class="blind-banner" id="blind-banner" data-go="blind" hidden>
+        <span class="blind-dot" aria-hidden="true"></span><span id="blind-banner-text">Blind test en cours</span><span class="blind-banner-go">Jouer</span>
+    </button>
+
     <main class="main" id="main">
         <!-- LA UNE -->
         <section id="une" class="section active" aria-labelledby="une-title">
@@ -229,6 +233,15 @@
             </div>
         </section>
 
+        <!-- BLIND TEST -->
+        <section id="blind" class="section" aria-labelledby="blind-title">
+            <div class="page-head">
+                <div class="page-head-row"><p class="kicker blue" id="blind-kicker">En attente</p><p class="kicker">Mon score · <span id="blind-score">0 pt</span></p></div>
+                <h1 class="headline" id="blind-title">Le <em>blind test</em></h1>
+            </div>
+            <div id="blind-body"></div>
+        </section>
+
         <!-- COSTUME -->
         <section id="costume" class="section" aria-labelledby="costume-title">
             <div class="page-head">
@@ -263,6 +276,7 @@
                 <button type="button" class="lb-tab" data-lb="pronostics">Pronostics</button>
                 <button type="button" class="lb-tab" data-lb="quiz">Quiz</button>
                 <button type="button" class="lb-tab" data-lb="culture">Culture G</button>
+                <button type="button" class="lb-tab" data-lb="blind">Blind test</button>
                 <button type="button" class="lb-tab" data-lb="costume">Costume</button>
             </div>
             <div id="lb-content"></div>
@@ -292,6 +306,7 @@
             <ul class="rules">
                 <li><span>Quiz Miss France (3 meilleurs scores)</span><strong>15 · 10 · 5</strong></li>
                 <li><span>Culture G (3 meilleurs scores)</span><strong>15 · 10 · 5</strong></li>
+                <li><span>Blind test (3 meilleurs scores)</span><strong>15 · 10 · 5</strong></li>
                 <li><span>Meilleur costume (3 plus votés)</span><strong>30 · 20 · 10</strong></li>
             </ul>
             <div class="rules-total"><span class="kicker">Maximum possible</span><span class="serif"><span class="rules-max">310</span> pts</span></div>
@@ -317,6 +332,7 @@
             <div class="admin-block" id="admin-step1"></div>
             <div class="admin-block" id="admin-step2"></div>
             <div class="admin-block" id="admin-step3"></div>
+            <div class="admin-block" id="admin-blind"></div>
             <div class="admin-block" id="admin-games"></div>
             <div class="admin-block" id="admin-players">
                 <h3>Les <em>joueurs</em></h3>
@@ -355,6 +371,7 @@
     <script src="candidates.js"></script>
     <script src="pronostics.js"></script>
     <script src="games.js"></script>
+    <script src="blind.js"></script>
     <script src="costume.js"></script>
     <script src="leaderboard.js"></script>
     <script src="admin.js"></script>

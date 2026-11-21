@@ -45,7 +45,7 @@ async function renderTab() {
         box.innerHTML = renderBoard(rows, {
             value: r => r[key] || 0,
             isMe: r => me(r.user_id),
-            detail: t === 'total' ? r => `Pronos ${r.pronostics_score} · Quiz ${r.quiz_score} · Culture G ${r.culture_g_score || 0} · Costume ${r.defis_score}` : null
+            detail: t === 'total' ? r => `Pronos ${r.pronostics_score} · Quiz ${r.quiz_score} · Culture G ${r.culture_g_score || 0} · Blind test ${r.blind_points || 0} · Costume ${r.defis_score}` : null
         });
     } else if (t === 'culture') {
         Board.culture = await api('/api/culture-g/leaderboard');
@@ -55,6 +55,15 @@ async function renderTab() {
             isMe: r => me(r.id),
             detail: r => (r.awarded_points ? `+${r.awarded_points} pts au général` : '')
         }) + '<p class="hint" style="margin-top: 12px;">Score brut du questionnaire. Les 3 premiers gagnent 15, 10 et 5 points.</p>';
+    } else if (t === 'blind') {
+        const data = await api('/api/blind');
+        const rows = data.ranking || [];
+        box.innerHTML = (rows.length ? renderBoard(rows, {
+            value: r => r.points,
+            isMe: r => r.me,
+            detail: r => (r.awarded ? `+${r.awarded} pts au général` : '')
+        }) : '<p class="empty">Le classement du blind test s\'affiche après chaque chanson révélée.</p>')
+            + '<p class="hint" style="margin-top: 12px;">1 point par bonne réponse, plus un bonus pour le thème caché. Les 3 premiers gagnent 15, 10 et 5 points.</p>';
     } else {
         const data = await api('/api/costume/results');
         const rows = data.results.map(r => ({ ...r, votes: Number(r.votes) }));

@@ -272,6 +272,43 @@ const cultureGQuestions = {
   }
 };
 
+// ============================================================
+// BLIND TEST (piloté en direct par l'admin)
+// L'admin lance la chanson sur son enceinte, ouvre les réponses, puis révèle.
+// `ask` : ce qu'on demande ('title' ou 'artist') ; `options` : propositions (4 à 6) ; `correct` : index de la bonne.
+// `cue` : repère pour l'admin (où se trouve le passage) ; `link` : anecdote dévoilée à la toute fin, avec le thème.
+// ⚠️ Rien ici ne doit trahir le thème avant la fin : il n'est envoyé aux téléphones qu'au dévoilement final.
+// ============================================================
+const blindTest = {
+  pointsPerSong: 1,
+  themeBonus: 3,                       // points en plus pour qui devine le thème
+  awards: [15, 10, 5],                 // points au classement général pour les 3 premiers
+  theme: {
+    question: 'Quel était le point commun de toutes ces chansons ?',
+    answer: 'Les cheveux',
+    explanation: 'Dans chacune de ces chansons, on parle de cheveux.',
+    // La réponse libre est acceptée si elle contient l'un de ces morceaux de mots (sans accents, en minuscules)
+    keywords: ['cheveu', 'chevelure', 'coiff', 'capill', 'tifs', 'criniere', 'poil']
+  },
+  songs: [
+    { id: 'b01', title: "Que je t'aime", artist: 'Johnny Hallyday', ask: 'title', options: ['Je te promets', "Que je t'aime", 'Gabrielle', 'Requiem pour un fou'], correct: 1, cue: 'Dès la première phrase', link: 'Les cheveux ouvrent la chanson.' },
+    { id: 'b02', title: 'Nathalie', artist: 'Gilbert Bécaud', ask: 'artist', options: ['Charles Aznavour', 'Yves Montand', 'Gilbert Bécaud', 'Serge Reggiani'], correct: 2, cue: 'Début de la chanson', link: 'Les cheveux blonds de la guide.' },
+    { id: 'b03', title: 'Est-ce que tu viens pour les vacances ?', artist: 'David et Jonathan', ask: 'artist', options: ['Début de Soirée', 'David et Jonathan', 'Images', 'Peter et Sloane'], correct: 1, cue: 'Couplet', link: 'Les cheveux blonds et le crocodile sur le blouson.' },
+    { id: 'b04', title: "Comme d'habitude", artist: 'Claude François', ask: 'title', options: ['Le Lundi au soleil', 'Le téléphone pleure', 'Chanson populaire', "Comme d'habitude"], correct: 3, cue: 'Premier couplet', link: 'Une main dans les cheveux, presque malgré lui.' },
+    { id: 'b05', title: "Il venait d'avoir 18 ans", artist: 'Dalida', ask: 'title', options: ["Il venait d'avoir 18 ans", 'Gigi l\'amoroso', 'Paroles, paroles', 'Mourir sur scène'], correct: 0, cue: 'Dernier couplet', link: 'Elle remet de l\'ordre à ses cheveux.' },
+    { id: 'b06', title: 'San Francisco', artist: 'Maxime Le Forestier', ask: 'artist', options: ['Georges Moustaki', 'Yves Duteil', 'Hugues Aufray', 'Maxime Le Forestier'], correct: 3, cue: 'Premier couplet', link: 'Une maison bleue peuplée de cheveux longs.' },
+    { id: 'b07', title: 'Que reste-t-il de nos amours ?', artist: 'Charles Trenet', ask: 'title', options: ['La Mer', 'Que reste-t-il de nos amours ?', 'Douce France', "Y'a d'la joie"], correct: 1, cue: 'Refrain', link: 'Les cheveux au vent du refrain.' },
+    { id: 'b08', title: "La Maladie d'amour", artist: 'Michel Sardou', ask: 'title', options: ["Je vais t'aimer", 'En chantant', "La Maladie d'amour", 'Les Lacs du Connemara'], correct: 2, cue: 'Refrain', link: 'Elle unit les cheveux blonds et les cheveux gris.' },
+    { id: 'b09', title: 'Michèle', artist: 'Gérard Lenorman', ask: 'artist', options: ['Gérard Lenorman', 'Michel Delpech', 'Dave', 'Joe Dassin'], correct: 0, cue: 'Début de la chanson', link: 'Des rubans dans les cheveux.' },
+    { id: 'b10', title: 'La Plus Belle pour aller danser', artist: 'Sylvie Vartan', ask: 'artist', options: ['Sheila', 'France Gall', 'Françoise Hardy', 'Sylvie Vartan'], correct: 3, cue: 'Deuxième couplet', link: 'Les cheveux coiffés… puis décoiffés.' },
+    { id: 'b11', title: 'Le Métèque', artist: 'Georges Moustaki', ask: 'title', options: ['Ma liberté', 'Le Métèque', 'Milord', 'Il est trop tard'], correct: 1, cue: 'Première strophe', link: 'Les cheveux aux quatre vents.' },
+    { id: 'b12', title: 'San Francisco', artist: 'Scott McKenzie', ask: 'title', options: ["California Dreamin'", 'Let the Sunshine In', 'San Francisco', 'Mrs. Robinson'], correct: 2, cue: 'Refrain', link: 'Des fleurs dans les cheveux (« in your hair »).' },
+    { id: 'b13', title: "Les Élucubrations d'Antoine", artist: 'Antoine', ask: 'artist', options: ['Jacques Dutronc', 'Nino Ferrer', 'Antoine', 'Michel Polnareff'], correct: 2, cue: 'Premier couplet', link: 'Sa mère veut qu\'il se fasse couper les cheveux.' },
+    { id: 'b14', title: 'Cheveux longs et idées courtes', artist: 'Johnny Hallyday', ask: 'artist', options: ['Eddy Mitchell', 'Johnny Hallyday', 'Dick Rivers', 'Claude François'], correct: 1, cue: 'Refrain', link: 'La réponse de Johnny à Antoine : tout est dans le titre.' },
+    { id: 'b15', title: "Y'a qu'un ch'veu", artist: 'Michel Polnareff', ask: 'artist', options: ['Michel Polnareff', 'Jacques Dutronc', 'Antoine', 'Nino Ferrer'], correct: 0, cue: 'Refrain', link: 'Un seul cheveu, mais tout un refrain.' }
+  ]
+};
+
 module.exports = {
   year: 2027,                          // Titre décerné : Miss France 2027
   electionDate: '2026-12-12',          // Date de la soirée
@@ -298,5 +335,6 @@ module.exports = {
   cultureGLabel: 'Le vrai test passé par les candidates Miss France 2027',
   candidates,
   quizQuestions,
-  cultureGQuestions
+  cultureGQuestions,
+  blindTest
 };

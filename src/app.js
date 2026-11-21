@@ -250,7 +250,7 @@ const photoUrl = (userId, version) => (version ? `/api/photos/${userId}?v=${vers
 
 const SCORING = { top15: 5, bonusTop15: 10, top5: 8, bonusTop5: 20, finalPosition: 8, pronoOr: 80 };
 
-const recomputeTotals = (tx) => tx`update scores set total_score = quiz_score + culture_g_score + pronostics_score + defis_score`;
+const recomputeTotals = (tx) => tx`update scores set total_score = quiz_score + culture_g_score + pronostics_score + defis_score + blind_points`;
 
 function computePronoScore(prono, official) {
   const step = official.current_step || 0;
@@ -787,12 +787,95 @@ app.get('/api/costume/results', requireAuth, wrap(async (req, res) => {
 }));
 
 // ============================================
+// BLIND TEST en direct : l'admin ouvre une chanson, les joueurs répondent, l'admin révèle.
+// État dans official_results.blind = { phase, index } ; phases : idle → open ⇄ revealed → theme → done.
+// La bonne réponse et le thème ne sont envoyés aux téléphones qu'une fois révélés.
+// ============================================
+
+const BLIND = edition.blindTest && edition.blindTest.songs?.length ? edition.blindTest : null;
+const blindState = (official) => ({ phase: 'idle', index: -1, ...(official?.blind || {}) });
+const blindThemeOk = (text) => {
+  const t = normalizeText(text);
+  return Boolean(t) && (BLIND.theme.keywords || []).some(k => t.includes(k));
+};
+const blindRanking = () => sql`
+  select u.id, u.pseudo::text as pseudo, coalesce(sum(a.points), 0)::int as points, s.blind_points as awarded
+  from users u join scores s on s.user_id = u.id join blind_answers a on a.user_id = u.id
+  where not u.is_admin group by u.id, s.blind_points order by points desc, u.pseudo asc`;
+
+const recalculateBlindPoints = () => sql.begin(async tx => awardByRank(tx, await tx`
+  select u.id, u.pseudo::text as pseudo, sum(a.points)::int as v from users u join blind_answers a on a.user_id = u.id
+  where not u.is_admin group by u.id having sum(a.points) > 0 order by v desc`, 'blind_points', BLIND.awards || [15, 10, 5]));
+
+app.get('/api/blind', requireAuth, wrap(async (req, res) => {
+  if (!BLIND) return res.json({ enabled: false });
+  const st = blindState(await getOfficial());
+  const mine = await sql`select question_id, answer, is_correct, points from blind_answers where user_id = ${req.user.id}`;
+  const out = {
+    enabled: true, phase: st.phase, index: st.index, total: BLIND.songs.length,
+    themeBonus: BLIND.themeBonus, awards: BLIND.awards
+  };
+  const song = BLIND.songs[st.index];
+  if ((st.phase === 'open' || st.phase === 'revealed') && song) {
+    const a = mine.find(m => m.question_id === song.id);
+    out.question = { id: song.id, number: st.index + 1, ask: song.ask, options: song.options };
+    out.myAnswer = a ? Number(a.answer) : null;
+    if (st.phase === 'revealed') {
+      out.reveal = { correct: song.correct, title: song.title, artist: song.artist, isCorrect: Boolean(a?.is_correct), last: st.index === BLIND.songs.length - 1 };
+    }
+  }
+  if (st.phase === 'theme' || st.phase === 'done') {
+    const g = mine.find(m => m.question_id === 'theme');
+    out.theme = { question: BLIND.theme.question, myGuess: g ? g.answer : null };
+    if (st.phase === 'done') {
+      out.theme.answer = BLIND.theme.answer;
+      out.theme.explanation = BLIND.theme.explanation;
+      out.theme.isCorrect = Boolean(g?.is_correct);
+      out.songs = BLIND.songs.map(x => ({ title: x.title, artist: x.artist, link: x.link, ok: Boolean(mine.find(m => m.question_id === x.id)?.is_correct) }));
+    }
+  }
+  // Le score ne compte que les chansons déjà révélées (la réponse en cours reste secrète)
+  const hidden = st.phase === 'open' && song ? song.id : st.phase === 'theme' ? 'theme' : null;
+  out.myPoints = mine.filter(m => m.question_id !== hidden).reduce((n, m) => n + m.points, 0);
+  if (st.phase === 'revealed' || st.phase === 'done') {
+    out.ranking = (await blindRanking()).map(r => ({ pseudo: r.pseudo, points: r.points, awarded: st.phase === 'done' ? r.awarded : 0, me: r.id === req.user.id }));
+  }
+  res.json(out);
+}));
+
+app.post('/api/blind/answer', requireAuth, wrap(async (req, res) => {
+  if (!BLIND) return res.status(404).json({ error: 'Pas de blind test' });
+  const st = blindState(await getOfficial());
+  const { questionId, answer } = req.body;
+  let stored, isCorrect, points;
+  if (st.phase === 'open' && BLIND.songs[st.index]?.id === questionId) {
+    const song = BLIND.songs[st.index];
+    const idx = Number(answer);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= song.options.length) return res.status(400).json({ error: 'Réponse invalide' });
+    stored = String(idx);
+    isCorrect = idx === song.correct;
+    points = isCorrect ? (BLIND.pointsPerSong || 1) : 0;
+  } else if (st.phase === 'theme' && questionId === 'theme') {
+    if (typeof answer !== 'string' || !answer.trim()) return res.status(400).json({ error: 'Écris ta réponse' });
+    stored = answer.trim().slice(0, 80);
+    isCorrect = blindThemeOk(stored);
+    points = isCorrect ? (BLIND.themeBonus || 0) : 0;
+  } else {
+    return res.status(409).json({ error: 'Trop tard : les réponses sont fermées.' });
+  }
+  await sql`insert into blind_answers (user_id, question_id, answer, is_correct, points)
+    values (${req.user.id}, ${questionId}, ${stored}, ${isCorrect}, ${points})
+    on conflict (user_id, question_id) do update set answer = excluded.answer, is_correct = excluded.is_correct, points = excluded.points, created_at = now()`;
+  res.json({ success: true });
+}));
+
+// ============================================
 // ROUTES : CLASSEMENT
 // ============================================
 
 app.get('/api/leaderboard', requireAuth, wrap(async (req, res) => {
   res.json(await sql`
-    select u.pseudo::text as pseudo, s.user_id, s.quiz_score, s.culture_g_score, s.pronostics_score, s.defis_score, s.total_score
+    select u.pseudo::text as pseudo, s.user_id, s.quiz_score, s.culture_g_score, s.pronostics_score, s.defis_score, s.blind_points, s.total_score
     from scores s join users u on s.user_id = u.id
     where not u.is_admin order by s.total_score desc, u.pseudo asc`);
 }));
@@ -802,7 +885,8 @@ app.get('/api/official-results', requireAuth, wrap(async (req, res) => {
   res.json({
     top15: r.top15 || [], top5: r.top5 || [], classement_final: r.classement_final || [],
     miss_france: r.miss_france, current_step: r.current_step, updated_at: r.updated_at,
-    app_open: Boolean(r.app_open)
+    app_open: Boolean(r.app_open),
+    blind: BLIND ? { phase: blindState(r).phase, index: blindState(r).index, total: BLIND.songs.length } : null
   });
 }));
 
@@ -908,6 +992,46 @@ const admin = express.Router();
 admin.use(requireAuth, requireAdmin);
 
 admin.get('/candidates', (req, res) => res.json(candidates));
+
+// Télécommande du blind test
+const adminBlindView = async () => {
+  const st = blindState(await getOfficial());
+  const song = BLIND.songs[st.index];
+  const next = BLIND.songs[st.index + 1];
+  const qid = st.phase === 'theme' ? 'theme' : song?.id;
+  const [{ n }] = qid ? await sql`select count(*) as n from blind_answers a join users u on u.id = a.user_id where a.question_id = ${qid} and not u.is_admin` : [{ n: 0 }];
+  const [{ players }] = await sql`select count(*) as players from users where not is_admin`;
+  const brief = (x) => (x ? { title: x.title, artist: x.artist, ask: x.ask, cue: x.cue } : null);
+  return {
+    enabled: true, phase: st.phase, index: st.index, total: BLIND.songs.length,
+    current: brief(song), next: brief(next), answered: n, players,
+    theme: { question: BLIND.theme.question, answer: BLIND.theme.answer }
+  };
+};
+
+admin.get('/blind', wrap(async (req, res) => res.json(BLIND ? await adminBlindView() : { enabled: false })));
+
+admin.post('/blind', wrap(async (req, res) => {
+  if (!BLIND) return res.status(404).json({ error: 'Pas de blind test' });
+  const st = blindState(await getOfficial());
+  const last = st.index >= BLIND.songs.length - 1;
+  const action = req.body.action;
+  let next = null;
+  if (action === 'next' && (st.phase === 'idle' || st.phase === 'revealed')) {
+    next = last && st.phase === 'revealed' ? { phase: 'theme', index: st.index } : { phase: 'open', index: st.index + 1 };
+  } else if (action === 'reveal' && st.phase === 'open') {
+    next = { phase: 'revealed', index: st.index };
+  } else if (action === 'reveal' && st.phase === 'theme') {
+    next = { phase: 'done', index: st.index };
+  } else if (action === 'reset') {
+    next = { phase: 'idle', index: -1 };
+  }
+  if (!next) return res.status(409).json({ error: "Action impossible à cette étape (l'écran n'était peut-être plus à jour)." });
+  if (action === 'reset') await sql`delete from blind_answers`;
+  await sql`update official_results set blind = ${sql.json(next)} where id = 1`;
+  if (next.phase === 'done' || action === 'reset') await recalculateBlindPoints();
+  res.json(await adminBlindView());
+}));
 
 admin.post('/app-open', wrap(async (req, res) => {
   const open = req.body.open === true;
@@ -1033,7 +1157,9 @@ admin.post('/reset-all-data', wrap(async (req, res) => {
     await tx`delete from costume_photos`;
     await tx`update users set costume_photo_public = false`;
     await tx`update scores set quiz_score = 0, quiz_correct = 0, culture_g_score = 0, culture_g_correct = 0,
-      pronostics_score = 0, defis_score = 0, total_score = 0`;
+      pronostics_score = 0, defis_score = 0, blind_points = 0, total_score = 0`;
+    await tx`delete from blind_answers`;
+    await tx`update official_results set blind = ${tx.json({ phase: 'idle', index: -1 })} where id = 1`;
     await tx`update official_results set top15 = null, top5 = null, classement_final = null, miss_france = null,
       current_step = 0, updated_at = now() where id = 1`;
     await tx`delete from sessions where sid <> ${req.sessionID}`;

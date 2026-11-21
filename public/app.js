@@ -178,6 +178,7 @@ function go(section, { push = true } = {}) {
     if (bar && section !== 'pronostics') bar.hidden = true;
     window.scrollTo({ top: 0 });
     if (push && location.hash !== `#${section}`) history.pushState({ section }, '', `#${section}`);
+    if (typeof updateBlindBanner === 'function' && typeof Blind !== 'undefined') updateBlindBanner(Blind.data);
     const loader = App.loaders[section];
     if (loader) Promise.resolve(loader()).catch(err => toast(err.message, 'error'));
 }
@@ -270,6 +271,7 @@ async function loadUne() {
         { go: 'pronostics', title: 'Les pronostics', sub: step >= 1 ? 'Résultats en cours' : (top15Count ? `Top ${SEMI()} : ${top15Count}/${SEMI()}${pronos.prono_or ? ' · prono d\'or choisi' : ''}` : 'Pas encore commencé'), pts: s.pronostics_score },
         { go: 'quiz', title: 'Le quiz Miss France', sub: quiz.totalAnswers ? `${quiz.totalAnswers}/${App.edition.quizCount} réponses · ${quiz.correctAnswers} justes` : `${App.edition.quizCount} questions`, pts: s.quiz_score },
         { go: 'culture-g', title: 'La Culture G', sub: cg.totalAnswers ? `${cg.totalAnswers}/${cg.totalQuestions} réponses` : 'Le vrai test des candidates', pts: s.culture_g_score },
+        { go: 'blind', title: 'Le blind test', sub: 'En direct pendant la soirée', pts: s.blind_points },
         { go: 'costume', title: 'Le meilleur costume', sub: myPhoto.photo ? (myPhoto.isPublic ? 'Mon look est en ligne' : 'Mon look est privé') : 'Poster mon look', pts: s.defis_score },
         { go: 'leaderboard', title: 'Le palmarès', sub: 'Le classement du comité', pts: null }
     ];
@@ -356,7 +358,7 @@ async function loadEdition() {
     document.querySelectorAll('.edition-year').forEach(el => { el.textContent = e.year; });
     const semi = Number(e.semiFinalists) || 15;
     document.querySelectorAll('.semi-n').forEach(el => { el.textContent = semi; });
-    document.querySelectorAll('.rules-max').forEach(el => { el.textContent = semi * 5 + 250; });
+    document.querySelectorAll('.rules-max').forEach(el => { el.textContent = semi * 5 + 265; });
     document.querySelectorAll('.quiz-count').forEach(el => { el.textContent = e.quizCount; });
     document.querySelectorAll('.culture-g-label').forEach(el => { el.textContent = e.cultureGLabel; });
     if (e.electionDate) {

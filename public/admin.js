@@ -43,6 +43,8 @@ function renderAdmin() {
         } catch (err) { toast(err.message, 'error'); }
     });
 
+    renderAdminBlind().catch(() => {});
+
     const all = App.candidates.map(c => c.name);
 
     // Étape 1 : Top 15
@@ -244,4 +246,71 @@ document.addEventListener('app:ready', () => {
     });
     $('admin-load-users').addEventListener('click', () => loadAdminUsers().catch(err => toast(err.message, 'error')));
     $('admin-reset-all').addEventListener('click', adminResetAll);
+});
+
+
+// ---------- Télécommande du blind test ----------
+
+const BLIND_ASK_ADMIN = { title: 'on demande le titre', artist: 'on demande l\'artiste' };
+
+async function renderAdminBlind(data) {
+    const box = $('admin-blind');
+    if (!box) return;
+    const d = data || await api('/api/admin/blind');
+    Admin.blind = d;
+    if (!d.enabled) { box.innerHTML = ''; return; }
+    const song = (x) => (x ? `<p class="blind-admin-song"><span class="serif">${escapeHtml(x.title)}</span><span>${escapeHtml(x.artist)} · ${BLIND_ASK_ADMIN[x.ask] || ''}</span><span class="small muted">Passage : ${escapeHtml(x.cue || '')}</span></p>` : '');
+    const count = `<p class="kicker" id="admin-blind-count">${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}</p>`;
+    const btn = (action, label, cls = 'btn-blue') => `<button type="button" class="btn ${cls} btn-block btn-between" data-blind-act="${action}"><span>${label}</span>${ARROW}</button>`;
+    let status, body;
+    if (d.phase === 'idle') {
+        status = statusTag('Pas commencé', 'wait');
+        body = `<p class="hint">Lance la première chanson sur ton enceinte, puis ouvre les réponses : les propositions s'affichent sur tous les téléphones.</p>
+            <p class="kicker">À lancer en premier</p>${song(d.next)}${btn('next', 'Ouvrir les réponses · chanson 1')}`;
+    } else if (d.phase === 'open') {
+        status = statusTag(`Chanson ${d.index + 1}/${d.total} · réponses ouvertes`, 'wait');
+        body = `<p class="kicker">En cours</p>${song(d.current)}${count}${btn('reveal', 'Révéler la réponse')}`;
+    } else if (d.phase === 'revealed') {
+        status = statusTag(`Chanson ${d.index + 1}/${d.total} · révélée`, 'ok');
+        body = d.next
+            ? `<p class="hint">Lance la chanson suivante sur ton enceinte, puis ouvre les réponses.</p><p class="kicker">À lancer maintenant</p>${song(d.next)}${btn('next', `Ouvrir les réponses · chanson ${d.index + 2}`)}`
+            : `<p class="hint">Toutes les chansons sont passées. Dernière étape : chacun tente de deviner le thème caché (réponse attendue : « ${escapeHtml(d.theme.answer)} »).</p>${btn('next', 'Poser la question du thème')}`;
+    } else if (d.phase === 'theme') {
+        status = statusTag('Question finale : le thème', 'wait');
+        body = `<p class="hint">« ${escapeHtml(d.theme.question)} » Réponse attendue : « ${escapeHtml(d.theme.answer)} ».</p>${count}${btn('reveal', 'Révéler le thème et le podium')}`;
+    } else {
+        status = statusTag('Terminé · points attribués', 'ok');
+        body = '<p class="hint">Le podium est affiché sur les téléphones et les points sont ajoutés au classement général.</p>';
+    }
+    box.innerHTML = `${status}<h3>Le <em>blind test</em></h3>${body}
+        ${d.phase === 'idle' ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-blind-act="reset" style="margin-top: 12px;">Recommencer le blind test à zéro</button>'}`;
+}
+
+document.addEventListener('app:ready', () => {
+    const box = $('admin-blind');
+    if (!box) return;
+    box.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-blind-act]');
+        if (!b || b.disabled) return;
+        const action = b.dataset.blindAct;
+        if (action === 'reset' && !confirm('Recommencer le blind test à zéro ?\n\nToutes les réponses et les points du blind test seront effacés.')) return;
+        b.disabled = true;
+        try {
+            await renderAdminBlind(await api('/api/admin/blind', { method: 'POST', body: { action } }));
+        } catch (err) {
+            toast(err.message, 'error');
+            renderAdminBlind().catch(() => {});
+        }
+    });
+    // Compteur de réponses en direct pendant qu'une question est ouverte
+    setInterval(() => {
+        if (App.current !== 'admin' || document.visibilityState !== 'visible' || !Admin.blind) return;
+        if (Admin.blind.phase !== 'open' && Admin.blind.phase !== 'theme') return;
+        api('/api/admin/blind').then(d => {
+            if (d.phase !== Admin.blind.phase || d.index !== Admin.blind.index) return renderAdminBlind(d);
+            Admin.blind = d;
+            const el = $('admin-blind-count');
+            if (el) el.textContent = `${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}`;
+        }).catch(() => {});
+    }, 3000);
 });
