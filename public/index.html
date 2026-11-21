@@ -60,14 +60,14 @@
             <!-- Appli ouverte (ou accès organisateur) : connexion -->
             <form id="login-form" novalidate hidden>
                 <p class="login-pitch" id="pitch">Faites vos <em>pronostics</em> avant le grand soir.</p>
-                <p class="hint" id="login-hint">Choisis un pseudo et entre le code de soirée. Reprends le même pseudo pour retrouver tes pronostics.</p>
+                <p class="hint" id="login-hint">Entre ton nom ou un pseudo, puis le mot de passe de la soirée. Reprends le même nom pour retrouver tes pronostics.</p>
 
                 <div class="login-fields">
-                    <label class="field">Pseudo
-                        <input type="text" id="pseudo" placeholder="Votre pseudo" maxlength="24" autocomplete="username" autocapitalize="off" required>
+                    <label class="field">Nom ou pseudo
+                        <input type="text" id="pseudo" placeholder="Ton nom" maxlength="24" autocomplete="username" autocapitalize="off" required>
                     </label>
-                    <label class="field"><span id="code-label">Code de soirée</span>
-                        <input type="text" id="code" placeholder="Ton code" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+                    <label class="field"><span id="code-label">Mot de passe</span>
+                        <input type="text" id="code" placeholder="De la soirée" maxlength="72" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
                     </label>
                 </div>
 
@@ -145,9 +145,9 @@
             $('login-form').hidden = !appOpen && !admin;
             const input = $('code');
             input.type = admin ? 'password' : 'text';
-            input.placeholder = admin ? '••••••' : 'Ton code';
+            input.placeholder = admin ? '••••••' : 'De la soirée';
             input.autocomplete = admin ? 'current-password' : 'off';
-            $('code-label').textContent = admin ? 'Mot de passe' : 'Code de soirée';
+            $('code-label').textContent = 'Mot de passe';
             $('login-hint').hidden = admin;
             $('pitch').innerHTML = admin ? 'Accès <em>organisateur</em>.' : 'Faites vos <em>pronostics</em> avant le grand soir.';
             $('switch-btn').textContent = admin ? (appOpen ? "Retour à l'accès joueur" : 'Fermer') : 'Accès organisateur';
@@ -216,8 +216,8 @@
             e.preventDefault();
             const pseudo = $('pseudo').value.trim();
             const code = $('code').value;
-            if (!pseudo) return showMsg('Entre ton pseudo.');
-            if (!code.trim()) return showMsg(mode === 'admin' ? 'Entre ton mot de passe.' : 'Entre le code de soirée.');
+            if (!pseudo) return showMsg('Entre ton nom ou un pseudo.');
+            if (!code.trim()) return showMsg(mode === 'admin' ? 'Entre ton mot de passe.' : 'Entre le mot de passe de la soirée.');
 
             $('submit-btn').disabled = true;
             try {

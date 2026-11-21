@@ -292,13 +292,13 @@ function openInvite() {
         <div class="qr-box">
             <img src="/api/invite-qr.svg" alt="QR code vers ${escapeHtml(url)}" width="300" height="300">
             <span class="qr-url">${escapeHtml(url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>
-            ${App.partyCode ? `<p class="qr-code-line">Code de soirée : <strong>${escapeHtml(App.partyCode)}</strong></p>` : ''}
-            <p class="hint">Fais scanner ce code avec l'appareil photo du téléphone, ou envoie le lien. Chacun choisit son pseudo et entre le code de soirée.</p>
+            ${App.partyCode ? `<p class="qr-code-line">Mot de passe de la soirée : <strong>${escapeHtml(App.partyCode)}</strong></p>` : ''}
+            <p class="hint">Fais scanner ce code avec l'appareil photo du téléphone, ou envoie le lien. Chacun entre son nom ou un pseudo, puis le mot de passe de la soirée.</p>
         </div>
         <button type="button" class="btn btn-blue btn-block btn-between" data-share><span>Envoyer le lien</span>${ARROW}</button>
     `);
     el.querySelector('[data-share]').addEventListener('click', async () => {
-        const text = `Rejoins le comité parallèle Miss France ${App.edition.year} : pronostics, quiz et costumes !${App.partyCode ? ` Code de soirée : ${App.partyCode}` : ''}`;
+        const text = `Rejoins le comité parallèle Miss France ${App.edition.year} : pronostics, quiz et costumes !${App.partyCode ? ` Mot de passe : ${App.partyCode}` : ''}`;
         if (navigator.share) {
             try { await navigator.share({ title: 'Miss France — Comité parallèle', text, url }); } catch { /* annulé */ }
         } else {

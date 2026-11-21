@@ -360,7 +360,7 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
   const code = typeof req.body.code === 'string' ? req.body.code : '';
   const pseudoError = validatePseudo(req.body.pseudo);
   if (pseudoError) return res.status(400).json({ error: pseudoError });
-  if (!code.trim()) return res.status(400).json({ error: 'Code de soirée requis' });
+  if (!code.trim()) return res.status(400).json({ error: 'Mot de passe requis' });
   const p = cleanPseudo(req.body.pseudo);
 
   let user = await findUser(p);
@@ -371,8 +371,8 @@ app.post('/api/login', authLimiter, wrap(async (req, res) => {
     }
   } else {
     if (!await isAppOpen()) return res.status(403).json({ error: CLOSED_MESSAGE });
-    if (!PARTY_CODE) return res.status(503).json({ error: "Le code de soirée n'est pas encore configuré." });
-    if (code.trim().toUpperCase() !== PARTY_CODE) return res.status(401).json({ error: 'Code de soirée incorrect' });
+    if (!PARTY_CODE) return res.status(503).json({ error: "Le mot de passe de la soirée n'est pas encore configuré." });
+    if (code.trim().toUpperCase() !== PARTY_CODE) return res.status(401).json({ error: 'Mot de passe de la soirée incorrect' });
     if (!user) {
       if (/^admin/i.test(p)) return res.status(400).json({ error: 'Ce pseudo est réservé' });
       try {
