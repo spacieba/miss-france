@@ -14,8 +14,9 @@ function duelNoteName(m) { const r = Math.round(m); const n = ((r % 12) + 12) % 
 function duelMedian(a) { const b = Array.from(a).sort((x, y) => x - y); const n = b.length; if (!n) return NaN; return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; }
 function duelClamp01(v) { return Math.max(0, Math.min(1, v)); }
 
-// Hauteur d'une trame (algorithme YIN) : renvoie la fréquence en Hz, ou null si la trame n'est pas « chantée »
-function duelYinFrame(x, start, W, tauMax, tauMin, sr, thr) {
+// Hauteur d'une trame (algorithme YIN) : renvoie { f, c } (fréquence en Hz et « flou » de 0 = net à 1 = bruit),
+// ou null si rien de périodique. `strict` : seuil des trames nettes ; `loose` : repli pour une voix mêlée de musique.
+function duelYinFrame(x, start, W, tauMax, tauMin, sr, strict, loose) {
     const d = new Float32Array(tauMax + 2);
     for (let tau = 1; tau <= tauMax; tau++) {
         let s = 0;
@@ -26,14 +27,33 @@ function duelYinFrame(x, start, W, tauMax, tauMin, sr, thr) {
     for (let tau = 1; tau <= tauMax; tau++) { run += d[tau]; c[tau] = run === 0 ? 1 : d[tau] * tau / run; }
     let tau = tauMin, found = -1;
     while (tau < tauMax - 1) {
-        if (c[tau] < thr) { while (tau + 1 < tauMax - 1 && c[tau + 1] < c[tau]) tau++; found = tau; break; }
+        if (c[tau] < strict) { while (tau + 1 < tauMax - 1 && c[tau + 1] < c[tau]) tau++; found = tau; break; }
         tau++;
     }
-    if (found < 0) return null;
-    const a = c[found - 1], b = c[found], g = c[found + 1];
-    const den = a - 2 * b + g;
-    const t = den !== 0 ? found + (a - g) / (2 * den) : found;
-    return sr / t;
+    if (found < 0) {
+        // Pas de creux net : on prend le meilleur creux s'il reste raisonnable
+        let best = -1, bv = loose;
+        for (let t = tauMin + 1; t < tauMax - 1; t++) if (c[t] < bv && c[t] <= c[t - 1] && c[t] <= c[t + 1]) { bv = c[t]; best = t; }
+        if (best < 0) return null;
+        found = best;
+    }
+    const p = c[found - 1], q = c[found], g = c[found + 1];
+    const den = p - 2 * q + g;
+    const t = den !== 0 ? found + (p - g) / (2 * den) : found;
+    return { f: sr / t, c: q };
+}
+
+// Filtre du second ordre (passe-haut ou passe-bas), appliqué en place
+function duelBiquad(x, sr, type, f0) {
+    const w = 2 * Math.PI * f0 / sr, cs = Math.cos(w), al = Math.sin(w) / (2 * 0.7071);
+    let b0, b1, b2;
+    if (type === 'high') { b0 = (1 + cs) / 2; b1 = -(1 + cs); b2 = (1 + cs) / 2; } else { b0 = (1 - cs) / 2; b1 = 1 - cs; b2 = (1 - cs) / 2; }
+    const a0 = 1 + al, a1 = -2 * cs, a2 = 1 - al;
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let i = 0; i < x.length; i++) {
+        const y = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+        x2 = x1; x1 = x[i]; y2 = y1; y1 = y; x[i] = y;
+    }
 }
 
 // Courbe de hauteur de toute la prise (en demi-tons MIDI, NaN quand personne ne chante)
@@ -43,9 +63,12 @@ async function duelAnalyzeVoice(samples, sr, onProgress) {
     const x = new Float32Array(n2);
     for (let i = 0; i < n2; i++) { let s = 0; for (let j = 0; j < k; j++) s += samples[i * k + j]; x[i] = s / k; }
     const sr2 = sr / k;
+    // On ne garde que la bande utile à la voix : la basse et la batterie d'un accompagnement
+    // (en dessous de ~100 Hz) et les cymbales ou le souffle (au-dessus de ~2 kHz) trompent le suivi.
+    duelBiquad(x, sr2, 'high', 100); duelBiquad(x, sr2, 'high', 100); duelBiquad(x, sr2, 'low', 2000);
     const hop = Math.max(1, Math.round(0.02 * sr2));
-    const W = Math.round(0.03 * sr2);
-    const tauMax = Math.floor(sr2 / 70), tauMin = Math.max(2, Math.floor(sr2 / 1000));
+    const W = Math.round(0.035 * sr2);
+    const tauMax = Math.floor(sr2 / 75), tauMin = Math.max(2, Math.floor(sr2 / 900));
     const nF = Math.max(0, Math.floor((n2 - W - tauMax - 2) / hop));
     const rms = new Float32Array(nF);
     for (let f = 0; f < nF; f++) { let s = 0; const st = f * hop; for (let j = 0; j < W; j++) s += x[st + j] * x[st + j]; rms[f] = Math.sqrt(s / W); }
@@ -53,53 +76,74 @@ async function duelAnalyzeVoice(samples, sr, onProgress) {
     const ref = sorted.length ? sorted[Math.floor(sorted.length * 0.9)] : 0;
     const gate = Math.max(1e-4, 0.08 * ref);
     const raw = new Float32Array(nF).fill(NaN);
+    const blur = new Float32Array(nF).fill(1);
     let energetic = 0; // trames où l'on entend quelque chose
     for (let f = 0; f < nF; f++) {
         if (rms[f] > gate) {
             energetic++;
-            const fr = duelYinFrame(x, f * hop, W, tauMax, tauMin, sr2, 0.15);
-            if (fr && fr >= 70 && fr <= 1100) raw[f] = 69 + 12 * Math.log2(fr / 440);
+            const r = duelYinFrame(x, f * hop, W, tauMax, tauMin, sr2, 0.15, 0.4);
+            if (r && r.f >= 75 && r.f <= 900) { raw[f] = 69 + 12 * Math.log2(r.f / 440); blur[f] = r.c; }
         }
         if (onProgress && f % 400 === 0) await onProgress(f / nF);
     }
+    // Une trame floue n'est gardée que si elle prolonge ses voisines (sinon c'est l'accompagnement qui parle)
     const m = new Float32Array(nF).fill(NaN);
     for (let f = 0; f < nF; f++) {
         if (isNaN(raw[f])) continue;
         const v = []; for (let j = Math.max(0, f - 2); j <= Math.min(nF - 1, f + 2); j++) if (!isNaN(raw[j])) v.push(raw[j]);
-        if (v.length >= 3) m[f] = duelMedian(v);
+        if (v.length < 3) continue;
+        const med = duelMedian(v);
+        if (blur[f] > 0.15 && Math.abs(raw[f] - med) > 0.7) continue;
+        m[f] = med;
     }
     return { m, hop_s: hop / sr2, dur_s: samples.length / sr, energetic };
 }
 
-// Découpe la courbe en notes tenues (au moins 6 trames, soit ~0,12 s)
+// Découpe la courbe en notes tenues (au moins 8 trames, soit ~0,16 s).
+// Le vibrato est d'abord lissé (moyenne glissante sur ~180 ms, soit un cycle de vibrato) : la hauteur
+// d'une note est celle autour de laquelle la voix oscille, pas celle de chaque oscillation.
 function duelFindNotes(m, hop_s) {
-    const notes = []; const n = m.length; let i = 0;
+    const n = m.length;
+    const sm = new Float32Array(n).fill(NaN);
+    for (let f = 0; f < n; f++) {
+        if (isNaN(m[f])) continue;
+        let sum = 0, cnt = 0;
+        for (let j = Math.max(0, f - 4); j <= Math.min(n - 1, f + 4); j++) if (!isNaN(m[j]) && Math.abs(m[j] - m[f]) < 1.5) { sum += m[j]; cnt++; }
+        sm[f] = sum / cnt;
+    }
+    const notes = []; let i = 0;
     while (i < n) {
-        if (isNaN(m[i])) { i++; continue; }
-        const run = [m[i]]; let j = i + 1, gap = 0;
+        if (isNaN(sm[i])) { i++; continue; }
+        const run = [sm[i]]; let j = i + 1, gap = 0;
         while (j < n) {
-            if (isNaN(m[j])) {
-                if (gap < 1 && j + 1 < n && !isNaN(m[j + 1])) { gap++; j++; continue; }
+            if (isNaN(sm[j])) {
+                if (gap < 2 && j + 1 < n && !isNaN(sm[j + 1])) { gap++; j++; continue; }
                 break;
             }
-            if (Math.abs(m[j] - duelMedian(run)) < 0.5) { run.push(m[j]); j++; gap = 0; } else break;
+            if (Math.abs(sm[j] - duelMedian(run.slice(-12))) < 0.6) { run.push(sm[j]); j++; gap = 0; } else break;
         }
-        if (run.length >= 6) {
-            const mean = run.reduce((a, b) => a + b, 0) / run.length;
-            const sd = Math.sqrt(run.reduce((a, b) => a + (b - mean) * (b - mean), 0) / run.length);
-            notes.push({ i, len: j - i, med: duelMedian(run), stdc: sd * 100, dur: run.length * hop_s });
+        if (run.length >= 8) {
+            // On écarte l'attaque (souvent prise par en dessous) et la toute fin pour mesurer la note elle-même
+            const body = run.length >= 14 ? run.slice(4, run.length - 2) : run.slice(2);
+            const mean = body.reduce((p, q) => p + q, 0) / body.length;
+            const sd = Math.sqrt(body.reduce((p, q) => p + (q - mean) * (q - mean), 0) / body.length);
+            notes.push({ i, len: j - i, med: duelMedian(body), stdc: sd * 100, dur: run.length * hop_s });
         }
         i = Math.max(j, i + 1);
     }
     return notes;
 }
 
-// Note sur 100 : justesse (65 %) par rapport au demi-ton le plus proche, après correction
-// du décalage général de la voix ; stabilité (35 %) des notes tenues.
+// Barème, réglé pour de vraies voix (un bon chanteur amateur s'écarte de 10 à 15 cents du demi-ton) :
+//  - justesse : écart moyen au demi-ton le plus proche, après correction du décalage général de la voix.
+//    6 cents ou moins = 100 ; 25 cents ou plus = 0 (25 cents, c'est le hasard : on ne peut pas faire pire).
+//  - stabilité : dérive de la note une fois le vibrato lissé. 7 cents ou moins = 100 ; 22 cents ou plus = 0.
+const DUEL_SCALE = { justeFull: 6, justeZero: 25, stableFull: 7, stableZero: 22 };
+
 function duelScoreNotes(notes) {
     const n = notes.length;
     const voiced = notes.reduce((a, b) => a + b.dur, 0);
-    if (n === 0) return { n: 0, voiced: 0, offsetc: 0, justesse: 0, stabilite: 0, total: 0, low: NaN, high: NaN };
+    if (n === 0) return { n: 0, voiced: 0, offsetc: 0, justesse: 0, stabilite: 0, total: 0, low: NaN, high: NaN, devc: 0, driftc: 0 };
     let sx = 0, sy = 0;
     for (const o of notes) { const a = 2 * Math.PI * o.med; sx += o.dur * Math.cos(a); sy += o.dur * Math.sin(a); }
     const offset = Math.atan2(sy, sx) / (2 * Math.PI);
@@ -107,15 +151,15 @@ function duelScoreNotes(notes) {
     for (const o of notes) {
         const xx = o.med - offset;
         o.devc = Math.abs(xx - Math.round(xx)) * 100;
-        const dp = Math.max(0, o.devc - 8) / 42;
-        jsum += o.dur * dp;
+        jsum += o.dur * o.devc;
         ssum += o.dur * o.stdc;
         wsum += o.dur;
     }
-    const justesse = 100 * duelClamp01(1 - (jsum / wsum) / 0.42);
-    const stabilite = 100 * duelClamp01(1 - ((ssum / wsum) - 6) / 18);
+    const devc = jsum / wsum, driftc = ssum / wsum;
+    const justesse = 100 * duelClamp01((DUEL_SCALE.justeZero - devc) / (DUEL_SCALE.justeZero - DUEL_SCALE.justeFull));
+    const stabilite = 100 * duelClamp01((DUEL_SCALE.stableZero - driftc) / (DUEL_SCALE.stableZero - DUEL_SCALE.stableFull));
     const meds = notes.map(o => o.med);
-    return { n, voiced, offsetc: offset * 100, justesse, stabilite, total: 0.65 * justesse + 0.35 * stabilite, low: Math.min(...meds), high: Math.max(...meds) };
+    return { n, voiced, offsetc: offset * 100, justesse, stabilite, total: 0.65 * justesse + 0.35 * stabilite, low: Math.min(...meds), high: Math.max(...meds), devc, driftc };
 }
 
 function duelContour(m, hop_s, step) {
@@ -359,7 +403,8 @@ function duelRecHtml(slot) {
         </div>
         <audio id="duel-audio-${slot}" controls hidden></audio>
         <p class="small muted duel-status" id="duel-status-${slot}" aria-live="polite">${ref ? 'Pas de référence.' : 'Aucune prise.'}</p>
-        <label class="btn-link duel-import">ou importer un fichier audio<input type="file" data-duel-file="${slot}" accept="audio/*,video/*" hidden></label>`;
+        <label class="btn-link duel-import">ou importer un fichier audio<input type="file" data-duel-file="${slot}" accept="audio/*,video/*" hidden></label>
+        <a class="btn-link duel-import" id="duel-dl-${slot}" hidden>Télécharger cette prise</a>`;
 }
 
 function duelRefOptions(key) {
@@ -470,6 +515,14 @@ async function duelLoadTake(slot, file) {
         const player = duelEl(`duel-audio-${slot}`);
         if (player.src) URL.revokeObjectURL(player.src);
         player.src = URL.createObjectURL(file); player.hidden = false;
+        // Lien de téléchargement : pour garder une prise, ou l'envoyer afin de régler le barème
+        const dl = duelEl(`duel-dl-${slot}`);
+        if (dl) {
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            dl.href = player.src;
+            dl.download = `karaoke-${duelIsRef(slot) ? 'reference' : 'chanteur'}-${stamp}.${(file.name.split('.').pop() || 'webm').toLowerCase()}`;
+            dl.hidden = false;
+        }
         const secs = Math.round(audio.duration);
         const length = `${Math.floor(secs / 60)} min ${String(secs % 60).padStart(2, '0')} s${audio.duration > DUEL_MAX_SECONDS ? ' (limitée aux 4 premières minutes)' : ''}`;
         if (duelIsRef(slot)) await duelPrepareRef(slot, length);
@@ -488,10 +541,13 @@ async function duelCheckTake(slot, length) {
     take.analysis = a;
     const c = duelTakeClarity(a, a.notes);
     const pct = Math.round(c.coverage * 100);
+    // Mesures brutes, affichées pour pouvoir vérifier et régler le barème
+    const sc = duelScoreNotes(a.notes);
+    const raw = sc.n ? ` Écart moyen au demi-ton : ${Math.round(sc.devc)} cents · dérive des notes : ${Math.round(sc.driftc)} cents.` : '';
     const el = duelEl(`duel-status-${slot}`);
     el.classList.remove('good', 'fair', 'poor'); el.classList.add(c.level);
-    el.textContent = c.level === 'good' ? `Prise nette · ${length} · ${c.notes} notes (voix nette sur ${pct} % de la prise).`
-        : c.level === 'fair' ? `Prise moyenne · ${length} · ${c.notes} notes (voix nette sur ${pct} %). Utilisable, mais plus près du micro ou la musique moins fort, ce serait mieux.`
+    el.textContent = c.level === 'good' ? `Prise nette · ${length} · ${c.notes} notes (voix nette sur ${pct} % de la prise).${raw}`
+        : c.level === 'fair' ? `Prise moyenne · ${length} · ${c.notes} notes (voix nette sur ${pct} %). Utilisable, mais plus près du micro ou la musique moins fort, ce serait mieux.${raw}`
         : `Prise brouillée · ${c.notes} notes (voix nette sur ${pct} %). La musique ou le bruit couvre la voix : recommence, le téléphone tout près de la bouche.`;
 }
 
