@@ -975,6 +975,7 @@ function cleanDuelResult(body) {
     offsetc: round2(num(x?.offsetc, -50, 50)),
     devc: round2(num(x?.devc, 0, 50)),           // mesures brutes, gardées pour recaler le barème
     driftc: round2(num(x?.driftc, 0, 300)),
+    fidcost: x?.fidcost === null || x?.fidcost === undefined ? null : round2(num(x.fidcost, 0, 6)), // écart moyen à la référence, en demi-tons
     engine: Math.round(num(x?.engine, 0, 999)),
     dur: round2(num(x?.dur, 0, 600)),
     notes: (Array.isArray(x?.notes) ? x.notes.slice(0, 800) : [])

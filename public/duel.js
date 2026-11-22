@@ -140,8 +140,11 @@ function duelFindNotes(m, hop_s) {
 //    hauteur ne dit rien de la justesse. Repères mesurés : chanteuse professionnelle ≈ 10 cents,
 //    prise ratée ≈ 24 cents, hasard = 25 cents. 7 cents ou moins = 100 ; 25 cents ou plus = 0.
 //  - stabilité : dérive de la note une fois le vibrato lissé. 8 cents ou moins = 100 ; 24 cents ou plus = 0.
-const DUEL_ENGINE = 3;
-const DUEL_SCALE = { justeFull: 7, justeZero: 25, stableFull: 8, stableZero: 24, minNote: 0.2 };
+const DUEL_ENGINE = 4;
+// Repères réels (moteur v3) : voix professionnelles 12 à 19 cents d'écart et 10 à 12 de dérive ; prise fausse 18 et 18.
+// La dérive départage mieux que l'écart : elle pèse donc davantage quand il n'y a pas de référence.
+const DUEL_SCALE = { justeFull: 10, justeZero: 25, stableFull: 9, stableZero: 22, minNote: 0.2, fidFree: 0.05, fidZero: 0.8 };
+const DUEL_WEIGHTS = { solo: { stabilite: 0.6, justesse: 0.4 }, ref: { fidelite: 0.7, stabilite: 0.2, justesse: 0.1 } };
 
 // Médiane pondérée : la valeur telle que la moitié du temps chanté est en dessous
 function duelWeightedMedian(pairs) {
@@ -168,13 +171,23 @@ function duelScoreNotes(notes) {
     const justesse = 100 * duelClamp01((DUEL_SCALE.justeZero - devc) / (DUEL_SCALE.justeZero - DUEL_SCALE.justeFull));
     const stabilite = 100 * duelClamp01((DUEL_SCALE.stableZero - driftc) / (DUEL_SCALE.stableZero - DUEL_SCALE.stableFull));
     const meds = judged.map(o => o.med);
-    return { n, voiced, offsetc: offset * 100, justesse, stabilite, total: 0.65 * justesse + 0.35 * stabilite, low: Math.min(...meds), high: Math.max(...meds), devc, driftc };
+    return { n, voiced, offsetc: offset * 100, justesse, stabilite, total: DUEL_WEIGHTS.solo.justesse * justesse + DUEL_WEIGHTS.solo.stabilite * stabilite, low: Math.min(...meds), high: Math.max(...meds), devc, driftc };
 }
 
+// Courbe mélodique d'une prise : une hauteur toutes les 0,1 s de chant (les silences sont retirés).
+// Le vibrato est lissé d'abord (moyenne sur ~180 ms), sinon il compterait comme un écart à la mélodie.
 function duelContour(m, hop_s, step) {
+    const n = m.length;
+    const sm = new Float32Array(n).fill(NaN);
+    for (let f = 0; f < n; f++) {
+        if (isNaN(m[f])) continue;
+        let sum = 0, cnt = 0;
+        for (let j = Math.max(0, f - 4); j <= Math.min(n - 1, f + 4); j++) if (!isNaN(m[j]) && Math.abs(m[j] - m[f]) < 1.5) { sum += m[j]; cnt++; }
+        sm[f] = sum / cnt;
+    }
     const k = Math.max(1, Math.round((step || 0.1) / hop_s)); const out = [];
-    for (let i = 0; i < m.length; i += k) {
-        const v = []; for (let j = i; j < Math.min(m.length, i + k); j++) if (!isNaN(m[j])) v.push(m[j]);
+    for (let i = 0; i < n; i += k) {
+        const v = []; for (let j = i; j < Math.min(n, i + k); j++) if (!isNaN(sm[j])) v.push(sm[j]);
         if (v.length >= Math.ceil(k / 2)) out.push(duelMedian(v));
     }
     return out;
@@ -199,6 +212,46 @@ function duelSimilarityContours(a, b) {
     }
     return 100 * duelClamp01(1 - (pD[M] / pL[M]) / 3);
 }
+// Fidélité d'un chanteur à une référence : à quel point sa mélodie suit celle du modèle.
+// - le chanteur peut n'avoir chanté qu'un extrait : on cherche le meilleur passage de la référence ;
+// - il peut chanter dans une autre tonalité ou une autre octave : on cherche le décalage qui colle le mieux ;
+// - il peut être un peu en avance ou en retard : l'alignement est élastique.
+// Renvoie { score (0 à 100), cost (écart moyen en demi-tons), shift (transposition trouvée) }.
+function duelSubsequenceCost(a, b, shift) {
+    const N = a.length, M = b.length;
+    let pD = new Float32Array(M + 1), pL = new Int32Array(M + 1); // début libre le long de la référence
+    for (let i = 1; i <= N; i++) {
+        const cD = new Float32Array(M + 1), cL = new Int32Array(M + 1);
+        cD[0] = Infinity;
+        const ai = a[i - 1] + shift;
+        for (let j = 1; j <= M; j++) {
+            let x = ai - b[j - 1]; x = Math.abs(((x + 6) % 12 + 12) % 12 - 6); if (x > 2) x = 2;
+            let bd = pD[j - 1], bl = pL[j - 1];
+            if (pD[j] < bd) { bd = pD[j]; bl = pL[j]; }
+            if (cD[j - 1] < bd) { bd = cD[j - 1]; bl = cL[j - 1]; }
+            cD[j] = bd + x; cL[j] = bl + 1;
+        }
+        pD = cD; pL = cL;
+    }
+    let best = Infinity; // fin libre le long de la référence
+    for (let j = 1; j <= M; j++) { const v = pD[j] / pL[j]; if (v < best) best = v; }
+    return best;
+}
+function duelFidelity(singer, ref) {
+    if (singer.length < 10 || ref.length < 10) return { score: NaN, cost: NaN, shift: 0 };
+    // Recherche de la transposition : d'abord grossière sur des courbes allégées, puis affinée
+    const thin = (c) => c.filter((_, i) => i % 2 === 0);
+    const a2 = thin(singer), b2 = thin(ref);
+    let bestShift = 0, bestCost = Infinity;
+    for (let k = -6; k < 6; k += 0.5) { const c = duelSubsequenceCost(a2, b2, k); if (c < bestCost) { bestCost = c; bestShift = k; } }
+    for (const step of [0.25, 0.12, 0.06]) {
+        for (const k of [bestShift - step, bestShift + step]) { const c = duelSubsequenceCost(a2, b2, k); if (c < bestCost) { bestCost = c; bestShift = k; } }
+    }
+    const cost = duelSubsequenceCost(singer, ref, bestShift);
+    // Jusqu'à 0,05 demi-ton d'écart moyen : 100. À 0,8 demi-ton : 0 (un tout autre air donne environ 1).
+    return { score: 100 * duelClamp01(1 - Math.max(0, cost - DUEL_SCALE.fidFree) / (DUEL_SCALE.fidZero - DUEL_SCALE.fidFree)), cost, shift: bestShift };
+}
+
 function duelSimilarity(mA, mB, hop_s) {
     return duelSimilarityContours(duelContour(mA, hop_s), duelContour(mB, hop_s));
 }
@@ -221,12 +274,14 @@ function duelTakeClarity(analysis, notes) {
     return { ...q, level };
 }
 
-// Note finale. Sans référence : justesse 65 %, stabilité 35 %.
-// Avec référence : fidélité à la mélodie 40 %, justesse 40 %, stabilité 20 %.
+// Note finale.
+// Avec référence : fidélité à la mélodie 70 %, stabilité 20 %, justesse 10 %. C'est la formule fiable.
+// Sans référence : stabilité 60 %, justesse 40 %. Note indicative seulement : sans modèle, on ne peut pas
+// savoir si la bonne mélodie est chantée, et même une voix professionnelle n'y atteint pas 100.
 function duelFinalTotal(score, fidelite) {
     if (!score.n) return 0;
-    if (fidelite === null || fidelite === undefined || isNaN(fidelite)) return 0.65 * score.justesse + 0.35 * score.stabilite;
-    return 0.4 * fidelite + 0.4 * score.justesse + 0.2 * score.stabilite;
+    if (fidelite === null || fidelite === undefined || isNaN(fidelite)) return DUEL_WEIGHTS.solo.stabilite * score.stabilite + DUEL_WEIGHTS.solo.justesse * score.justesse;
+    return DUEL_WEIGHTS.ref.fidelite * fidelite + DUEL_WEIGHTS.ref.stabilite * score.stabilite + DUEL_WEIGHTS.ref.justesse * score.justesse;
 }
 // DUEL-CORE-END
 
@@ -307,8 +362,8 @@ function duelResultHtml(d, { canvasKey, admin = false, preview = false } = {}) {
 
     const refNames = [...new Set(d.singers.map(s => s.ref).filter(Boolean))];
     const footer = withRef
-        ? `Noté par rapport à ${d.different ? 'la référence de chaque chanson' : `la référence${refNames.length ? ` « ${escapeHtml(refNames[0])} »` : ''}`} : fidélité 40 %, justesse 40 %, stabilité 20 %.`
-        : `Sans mélodie de référence : justesse 65 %, stabilité 35 %.${d.different ? ' Chacun a chanté sa propre chanson.' : ''}${!solo && !d.different && d.sim !== null && d.sim !== undefined ? ` Ressemblance des deux mélodies : ${Math.round(d.sim)} % (indicatif).` : ''}`;
+        ? `Noté par rapport à ${d.different ? 'la référence de chaque chanson' : `la référence${refNames.length ? ` « ${escapeHtml(refNames[0])} »` : ''}`} : fidélité à la mélodie 70 %, stabilité 20 %, justesse 10 %.`
+        : `Note indicative, sans mélodie de référence : stabilité 60 %, justesse 40 %. Pour une note fiable, ajoute la voix d'origine comme référence.${d.different ? ' Chacun a chanté sa propre chanson.' : ''}${!solo && !d.different && d.sim !== null && d.sim !== undefined ? ` Ressemblance des deux mélodies : ${Math.round(d.sim)} % (indicatif).` : ''}`;
 
     return `
         <div class="duel-verdict ${wTeam ? `team-${wTeam.key}` : ''}">
@@ -426,7 +481,7 @@ function duelRefHtml(key, { compact = false } = {}) {
     return `
         <div class="duel-ref ${compact ? 'compact' : ''}">
             <p class="duel-team">${compact ? 'Sa référence' : 'La référence'} <span class="small muted">· facultative</span></p>
-            ${compact ? '' : `<p class="hint">Une version où l'on n'entend que la voix : un fichier a cappella, ou quelqu'un qui chante juste le passage sans musique. Avec elle, la note tient compte de la fidélité à la mélodie. Sans elle, seules la justesse et la tenue comptent.</p>`}
+            ${compact ? '' : `<p class="hint">Une version où l'on n'entend que la voix : un fichier a cappella, ou quelqu'un qui chante juste le passage sans musique. Avec elle, la note mesure surtout si le chanteur suit la mélodie du modèle : c'est la formule fiable. Sans elle, la note reste indicative.</p>`}
             <select class="input" data-duel-ref-select="${key}" aria-label="Référence enregistrée" ${Duel.refs.length ? '' : 'hidden'}>${duelRefOptions(key)}</select>
             ${duelRecHtml(key)}
             <div class="duel-ref-save" id="duel-ref-save-${key}" hidden>
@@ -656,13 +711,13 @@ async function duelRun() {
         const singers = raw.map((a, k) => {
             const i = who[k];
             const ref = Duel.refData[duelRefKey(i)] || null;
-            const f = ref && a.score.n ? duelSimilarityContours(duelContour(a.m, a.hop_s), ref.contour) : null;
-            const fidelite = f === null || isNaN(f) ? null : f;
+            const fd = ref && a.score.n ? duelFidelity(duelContour(a.m, a.hop_s), ref.contour) : null;
+            const fidelite = !fd || isNaN(fd.score) ? null : fd.score;
             return {
                 name: a.info.name, team: a.info.team, song: songOf(i) || null, ref: fidelite !== null ? (ref.title || 'prise du soir') : null,
                 total: 0, justesse: a.score.justesse, stabilite: a.score.stabilite, fidelite,
                 n: a.score.n, voiced: a.score.voiced, low: a.score.n ? a.score.low : null, high: a.score.n ? a.score.high : null,
-                offsetc: a.score.offsetc, dur: a.dur_s, devc: a.score.devc, driftc: a.score.driftc, engine: DUEL_ENGINE,
+                offsetc: a.score.offsetc, dur: a.dur_s, devc: a.score.devc, driftc: a.score.driftc, fidcost: fidelite === null ? null : fd.cost, engine: DUEL_ENGINE,
                 notes: a.notes.slice(0, 800).map(n => [Math.round(n.i * a.hop_s * 100) / 100, Math.round(n.len * a.hop_s * 100) / 100, Math.round(n.med * 100) / 100, Math.round(n.devc || 0)])
             };
         });
