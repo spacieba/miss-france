@@ -100,6 +100,7 @@ Le palmarès propose trois classements — général (tout le monde), sur place,
 
 #### Le duel de chant (épreuve d'équipe)
 Rubrique **Le duel de chant** (`public/duel.js`). Onglet **Capture**, réservé à l'admin : il enregistre sur son téléphone un chanteur de chaque équipe, et s'il le veut une **référence** où l'on n'entend que la voix (a cappella, ou quelqu'un qui chante juste). L'appli note chaque voix sur 100 — justesse 65 % et stabilité 35 % sans référence ; fidélité à la mélodie 40 %, justesse 40 %, stabilité 20 % avec — puis l'admin **publie** le résultat et choisit les points donnés à l'équipe gagnante. Onglet **Résultats**, pour tout le monde : le dernier duel et les précédents.
+Trois formules dans la capture : duel sur la même chanson, duel où chacun a sa chanson (un titre et une référence par chanteur ; la référence ne compte que si les deux en ont une) et **solo** (les chanteurs passent un par un et entrent dans un classement des solos, avec des points d'équipe facultatifs). Après chaque prise, un indicateur dit si la voix ressort assez (nette, moyenne, brouillée).
 L'analyse se fait dans le navigateur : aucun enregistrement n'est envoyé au serveur, seulement le résultat chiffré (table `duels`). Une référence peut être gardée pour plus tard sous forme de courbe de notes, sans audio ni paroles (table `duel_refs`). Une chanson avec accompagnement est refusée comme référence. Le micro exige HTTPS, l'autorisation du navigateur et l'en-tête `Permissions-Policy: microphone=(self)` de `vercel.json`.
 
 #### Le blind test (en direct)

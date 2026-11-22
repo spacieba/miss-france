@@ -953,9 +953,14 @@ const round2 = (n) => Math.round(n * 100) / 100;
 
 // Ne garde d'un résultat envoyé par le téléphone que des champs connus, bornés et typés
 function cleanDuelResult(body) {
-  const singers = Array.isArray(body?.singers) ? body.singers.slice(0, 2) : [];
-  if (singers.length !== 2) return null;
+  // Un duel a deux chanteurs, un passage en solo un seul
+  const solo = body?.mode === 'solo';
+  const singers = Array.isArray(body?.singers) ? body.singers.slice(0, solo ? 1 : 2) : [];
+  if (singers.length !== (solo ? 1 : 2)) return null;
+  const text = (v) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 60) : null);
   const clean = singers.map(x => ({
+    song: text(x?.song),
+    ref: text(x?.ref),
     name: String(x?.name ?? '').trim().slice(0, 24) || 'Chanteur',
     team: teamOf(x?.team)?.key || null,
     total: round2(num(x?.total, 0, 100)),
@@ -972,11 +977,14 @@ function cleanDuelResult(body) {
       .filter(n => Array.isArray(n) && n.length >= 4)
       .map(n => [round2(num(n[0], 0, 600)), round2(num(n[1], 0, 60)), round2(num(n[2], 0, 127)), Math.round(num(n[3], 0, 50))])
   }));
+  if (solo) return { mode: 'solo', different: false, ref: clean[0].ref, sim: null, winner: -1, singers: clean };
   const diff = clean[0].total - clean[1].total;
   const nobody = clean[0].n === 0 && clean[1].n === 0;
+  const different = body.different === true; // chacun sa chanson : la ressemblance n'a pas de sens
   return {
-    ref: typeof body.ref === 'string' && body.ref.trim() ? body.ref.trim().slice(0, 60) : null,
-    sim: body.sim === null || body.sim === undefined ? null : round2(num(body.sim, 0, 100)),
+    mode: 'duel', different,
+    ref: text(body.ref),
+    sim: different || body.sim === null || body.sim === undefined ? null : round2(num(body.sim, 0, 100)),
     winner: nobody || Math.abs(diff) < 3 ? -1 : diff > 0 ? 0 : 1,
     singers: clean
   };
@@ -1204,17 +1212,18 @@ admin.post('/duels', wrap(async (req, res) => {
   const points = Math.round(num(req.body.points, 0, 500));
   const id = await sql.begin(async tx => {
     let eventId = null;
-    const w = result.winner >= 0 ? result.singers[result.winner] : null;
-    if (w && w.team && points > 0) {
-      const l = result.singers[1 - result.winner];
-      const label = `Duel de chant : ${w.name} bat ${l.name}`.slice(0, 60);
+    // Points d'équipe : au vainqueur d'un duel, ou au chanteur d'un solo si l'admin en accorde
+    const solo = result.mode === 'solo';
+    const w = solo ? result.singers[0] : result.winner >= 0 ? result.singers[result.winner] : null;
+    if (w && w.team && points > 0 && (!solo || w.n > 0)) {
+      const label = (solo ? `Solo : ${w.name} (${Math.round(w.total)}/100)` : `Duel de chant : ${w.name} bat ${result.singers[1 - result.winner].name}`).slice(0, 60);
       const [ev] = await tx`insert into team_events (label, team, points) values (${label}, ${w.team}, ${points}) returning id`;
       eventId = ev.id;
     }
     const [d] = await tx`insert into duels (song, result, team_event_id) values (${song || null}, ${tx.json(result)}, ${eventId}) returning id`;
     return d.id;
   });
-  res.json({ success: true, id, message: 'Duel publié : tout le monde peut voir le résultat.' });
+  res.json({ success: true, id, message: `${result.mode === 'solo' ? 'Passage publié' : 'Duel publié'} : tout le monde peut voir le résultat.` });
 }));
 
 admin.delete('/duels/:id', wrap(async (req, res) => {

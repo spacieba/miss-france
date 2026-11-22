@@ -938,3 +938,16 @@ a:hover { color: var(--ink); }
 .duel-status.good { color: var(--success); font-weight: 600; }
 .duel-status.fair { color: var(--gold); font-weight: 600; }
 .duel-status.poor { color: var(--error); font-weight: 600; }
+
+/* Duel de chant : formules (même chanson, deux chansons, solo) et classement des solos */
+.duel-modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.duel-corners.solo, .duel-board.solo { grid-template-columns: 1fr; }
+.duel-ref.compact { margin: 4px 0 0; padding: 10px; }
+.duel-ref.compact .duel-team { font-size: 18px; }
+.duel-corner .field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.duel-solo-row { display: flex; align-items: baseline; gap: 12px; }
+.duel-solo-row .r { font-family: var(--serif); font-size: 26px; line-height: 1; color: var(--blue); width: 26px; flex-shrink: 0; }
+.duel-solo-row .serif { flex: 1 1 auto; min-width: 0; }
+.duel-solo-row .p { font-family: var(--serif); font-size: 28px; line-height: 1; white-space: nowrap; }
+.duel-solo-row .p small { font-family: var(--sans); font-size: 11px; color: var(--ink-3); }
+.duel-solo.latest { background: var(--blue-soft); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
