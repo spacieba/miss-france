@@ -150,13 +150,22 @@ function duelSimilarity(mA, mB, hop_s) {
     return duelSimilarityContours(duelContour(mA, hop_s), duelContour(mB, hop_s));
 }
 
+const DUEL_CLEAR = { ref: 0.35, good: 0.5, poor: 0.3 };
+
 // Qualité d'une prise de référence : sur une voix seule, presque tout ce qui est audible porte une note nette ;
 // sur une chanson avec accompagnement, le détecteur décroche et la couverture s'effondre.
 function duelRefQuality(analysis, notes) {
     const held = notes.reduce((n, o) => n + o.len, 0);
     const coverage = analysis.energetic ? held / analysis.energetic : 0;
     const voiced = notes.reduce((n, o) => n + o.dur, 0);
-    return { coverage, notes: notes.length, voiced, ok: notes.length >= 8 && voiced >= 5 && coverage >= 0.5 };
+    return { coverage, notes: notes.length, voiced, ok: notes.length >= 8 && voiced >= 5 && coverage >= DUEL_CLEAR.ref };
+}
+
+// Netteté d'une prise de chanteur : la voix ressort-elle assez par rapport à la musique et au bruit ?
+function duelTakeClarity(analysis, notes) {
+    const q = duelRefQuality(analysis, notes);
+    const level = q.notes < 8 || q.voiced < 5 || q.coverage < DUEL_CLEAR.poor ? 'poor' : q.coverage < DUEL_CLEAR.good ? 'fair' : 'good';
+    return { ...q, level };
 }
 
 // Note finale. Sans référence : justesse 65 %, stabilité 35 %.
@@ -365,6 +374,7 @@ async function duelLoadTake(slot, file) {
     if (!file) return;
     Duel.takes[slot] = null; duelCheckReady();
     if (slot === 'ref') { Duel.ref = null; duelEl('duel-ref-save').hidden = true; duelEl('duel-ref-select').value = ''; }
+    const st = duelEl(`duel-status-${slot}`); if (st) st.classList.remove('good', 'fair', 'poor');
     duelStatus(slot, 'Lecture de la prise…');
     try {
         const buf = await file.arrayBuffer();
@@ -385,11 +395,26 @@ async function duelLoadTake(slot, file) {
         const secs = Math.round(audio.duration);
         const length = `${Math.floor(secs / 60)} min ${String(secs % 60).padStart(2, '0')} s${audio.duration > DUEL_MAX_SECONDS ? ' (limitée aux 4 premières minutes)' : ''}`;
         if (slot === 'ref') await duelPrepareRef(length);
-        else duelStatus(slot, `Prise prête · ${length}`);
+        else await duelCheckTake(slot, length);
     } catch {
         duelStatus(slot, 'Cette prise ne peut pas être lue. Réessaie, ou importe un fichier mp3, m4a ou wav.');
     }
     duelCheckReady();
+}
+
+// Analyse la prise d'un chanteur dès qu'elle est faite : on sait tout de suite si la voix ressort assez
+async function duelCheckTake(slot, length) {
+    const take = Duel.takes[slot];
+    const a = await duelAnalyzeVoice(take.samples, take.sr, async (p) => { duelStatus(slot, `Vérification de la prise… ${Math.round(p * 100)} %`); await new Promise(r => setTimeout(r, 0)); });
+    a.notes = duelFindNotes(a.m, a.hop_s);
+    take.analysis = a;
+    const c = duelTakeClarity(a, a.notes);
+    const pct = Math.round(c.coverage * 100);
+    const el = duelEl(`duel-status-${slot}`);
+    el.classList.remove('good', 'fair', 'poor'); el.classList.add(c.level);
+    el.textContent = c.level === 'good' ? `Prise nette · ${length} · ${c.notes} notes (voix nette sur ${pct} % de la prise).`
+        : c.level === 'fair' ? `Prise moyenne · ${length} · ${c.notes} notes (voix nette sur ${pct} %). Utilisable, mais plus près du micro ou la musique moins fort, ce serait mieux.`
+        : `Prise brouillée · ${c.notes} notes (voix nette sur ${pct} %). La musique ou le bruit couvre la voix : recommence, le téléphone tout près de la bouche.`;
 }
 
 // Analyse la référence tout de suite, pour dire si elle est exploitable
@@ -472,11 +497,12 @@ async function duelRun() {
         for (const i of [0, 1]) {
             const name = duelSingerName(i);
             const take = Duel.takes[String(i)];
-            const a = await duelAnalyzeVoice(take.samples, take.sr, async (p) => {
+            // La prise a déjà été analysée à l'enregistrement : on réutilise le résultat
+            const a = take.analysis || await duelAnalyzeVoice(take.samples, take.sr, async (p) => {
                 label.textContent = `Analyse de ${name}… ${Math.round(p * 100)} %`;
                 await new Promise(r => setTimeout(r, 0));
             });
-            a.notes = duelFindNotes(a.m, a.hop_s);
+            a.notes = a.notes || duelFindNotes(a.m, a.hop_s);
             a.score = duelScoreNotes(a.notes);
             a.name = name;
             raw.push(a);

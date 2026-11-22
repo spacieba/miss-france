@@ -934,3 +934,7 @@ a:hover { color: var(--ink); }
 .duel-past summary .serif { font-family: var(--serif); font-size: 22px; line-height: 1.1; }
 .duel-past summary em { font-style: italic; color: var(--blue); }
 .duel-award .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+
+.duel-status.good { color: var(--success); font-weight: 600; }
+.duel-status.fair { color: var(--gold); font-weight: 600; }
+.duel-status.poor { color: var(--error); font-weight: 600; }
