@@ -962,3 +962,11 @@ a:hover { color: var(--ink); }
 .blind-remote .admin-blind-count { margin: 0 0 12px; color: var(--blue); }
 #admin-blind .admin-blind-count { margin: 0 0 12px; color: var(--blue); }
 #blind-players-view { margin-bottom: 10px; }
+
+/* Miss Karaoké : bibliothèque de références et nettoyage */
+.duel-lib-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1.5px solid var(--ink); }
+.duel-lib-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.duel-lib-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 160px; }
+.duel-lib-title .serif { font-family: var(--serif); font-size: 21px; line-height: 1.1; overflow-wrap: anywhere; }
+.duel-lib-actions { display: flex; gap: 6px; flex-shrink: 0; }
+#duel-cleanup { margin-top: 26px; }

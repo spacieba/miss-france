@@ -1231,6 +1231,16 @@ admin.post('/duels', wrap(async (req, res) => {
   res.json({ success: true, id, message: `${result.mode === 'solo' ? 'Passage publié' : 'Duel publié'} : tout le monde peut voir le résultat.` });
 }));
 
+// Nettoyage : efface tous les passages publiés (essais, répétitions) et retire les points qu'ils avaient rapportés
+admin.delete('/duels', wrap(async (req, res) => {
+  const n = await sql.begin(async tx => {
+    await tx`delete from team_events where id in (select team_event_id from duels where team_event_id is not null)`;
+    const gone = await tx`delete from duels returning id`;
+    return gone.length;
+  });
+  res.json({ success: true, deleted: n, message: n ? `${n} passage${n > 1 ? 's' : ''} effacé${n > 1 ? 's' : ''}, points retirés.` : 'Il n\'y avait rien à effacer.' });
+}));
+
 admin.delete('/duels/:id', wrap(async (req, res) => {
   const [d] = await sql`delete from duels where id = ${Number(req.params.id)} returning team_event_id`;
   if (!d) return res.status(404).json({ error: 'Duel non trouvé' });
@@ -1256,6 +1266,14 @@ admin.post('/duel-refs', wrap(async (req, res) => {
   if (contour.length < 30) return res.status(400).json({ error: 'Référence trop courte pour être utile' });
   const [r] = await sql`insert into duel_refs (title, contour) values (${title}, ${sql.json(contour)}) returning id`;
   res.json({ success: true, id: r.id, message: `Référence « ${title} » enregistrée.` });
+}));
+
+admin.put('/duel-refs/:id', wrap(async (req, res) => {
+  const title = typeof req.body.title === 'string' ? req.body.title.trim().slice(0, 60) : '';
+  if (!title) return res.status(400).json({ error: 'Donne un titre à la référence' });
+  const [r] = await sql`update duel_refs set title = ${title} where id = ${Number(req.params.id)} returning id`;
+  if (!r) return res.status(404).json({ error: 'Référence non trouvée' });
+  res.json({ success: true, message: `Référence renommée en « ${title} ».` });
 }));
 
 admin.delete('/duel-refs/:id', wrap(async (req, res) => {

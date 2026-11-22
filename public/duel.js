@@ -299,7 +299,7 @@ const DUEL_MAX_SECONDS = 240;
 const DUEL_MODES = { same: 'Duel · même chanson', diff: 'Duel · deux chansons', solo: 'Solo' };
 
 const duelEl = (id) => document.getElementById(id);
-const duelIsRef = (slot) => String(slot).startsWith('ref');
+const duelIsRef = (slot) => String(slot).startsWith('ref') || slot === 'lib'; // 'lib' : ajout à la bibliothèque de références
 const duelStatus = (slot, text) => { const el = duelEl(`duel-status-${slot}`); if (el) el.textContent = text; };
 const duelCents = (c) => { const r = Math.round(c); return `${r > 0 ? '+' : ''}${r} cents`; };
 const duelSingers = () => (Duel.mode === 'solo' ? [0] : [0, 1]);
@@ -416,6 +416,7 @@ async function refreshDuelList({ force = false } = {}) {
     const key = JSON.stringify(list.map(d => [d.id, d.awarded]));
     Duel.list = list;
     if (!force && key === Duel.listKey) return;
+    renderDuelCleanup();
     const fresh = Duel.listKey && list.length && !Duel.listKey.includes(`[${list[0].id},`);
     Duel.listKey = key;
     const box = duelEl('duel-list');
@@ -477,7 +478,19 @@ function duelRefOptions(key) {
         + Duel.refs.map(r => `<option value="${r.id}" ${String(r.id) === current ? 'selected' : ''}>${escapeHtml(r.title)}</option>`).join('');
 }
 
-function duelRefHtml(key, { compact = false } = {}) {
+function duelRefHtml(key, { compact = false, library = false } = {}) {
+    if (library) {
+        return `
+        <div class="duel-ref">
+            <p class="duel-team">Ajouter une référence</p>
+            <p class="hint">Lance la version a cappella (voix seule) de la chanson et enregistre-la, ou importe le fichier. Pièce silencieuse, téléphone à 20 ou 30 cm de l'enceinte, volume moyen. Seule la courbe des notes est gardée.</p>
+            ${duelRecHtml(key)}
+            <div class="duel-ref-save" id="duel-ref-save-${key}" hidden>
+                <input type="text" class="input" id="duel-ref-title-${key}" maxlength="60" placeholder="Titre de la chanson" autocomplete="off">
+                <button type="button" class="btn btn-blue btn-block" data-duel-ref-keep="${key}">Ajouter à la bibliothèque</button>
+            </div>
+        </div>`;
+    }
     return `
         <div class="duel-ref ${compact ? 'compact' : ''}">
             <p class="duel-team">${compact ? 'Sa référence' : 'La référence'} <span class="small muted">· facultative</span></p>
@@ -559,7 +572,7 @@ async function duelLoadTake(slot, file) {
     const st = duelEl(`duel-status-${slot}`); if (st) st.classList.remove('good', 'fair', 'poor');
     if (duelIsRef(slot)) {
         Duel.refData[slot] = null;
-        duelEl(`duel-ref-save-${slot}`).hidden = true;
+        const save = duelEl(`duel-ref-save-${slot}`); if (save) save.hidden = true;
         const sel = document.querySelector(`[data-duel-ref-select="${slot}"]`); if (sel) sel.value = '';
     }
     duelStatus(slot, 'Lecture de la prise…');
@@ -762,7 +775,59 @@ function renderDuelPreview() {
     box.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
 }
 
-// ---------- Navigation entre les deux onglets ----------
+// ---------- Onglet Références (admin) : la bibliothèque des chansons du karaoké ----------
+
+function renderDuelLibrary({ keepForm = false } = {}) {
+    const box = duelEl('duel-library');
+    const list = `
+        <h2 class="subhead">La <em>bibliothèque</em> <span class="small muted">· ${Duel.refs.length} chanson${Duel.refs.length > 1 ? 's' : ''}</span></h2>
+        ${Duel.refs.length ? `<ul class="duel-lib-list">${Duel.refs.map(r => `
+            <li data-ref-id="${r.id}">
+                <span class="duel-lib-title"><span class="serif">${escapeHtml(r.title)}</span><span class="small muted">${Math.round(r.points / 10)} s de chant analysées</span></span>
+                <span class="duel-lib-actions">
+                    <button type="button" class="icon-btn" data-duel-ref-rename="${r.id}">Renommer</button>
+                    <button type="button" class="icon-btn danger" data-duel-ref-delete="${r.id}">Supprimer</button>
+                </span>
+            </li>`).join('')}</ul>`
+            : '<p class="empty">Aucune référence pour l\'instant. Ajoute la première ci-dessus.</p>'}
+        <p class="hint" style="margin-top: 12px;">Ces références apparaissent dans la liste déroulante de l'onglet Capture, sur tous tes appareils. Vise une prise où la voix est nette sur au moins 60 % du temps.</p>`;
+    if (keepForm && duelEl('duel-lib-list-box')) { duelEl('duel-lib-list-box').innerHTML = list; return; }
+    box.innerHTML = `
+        <p class="hint">Prépare ici, avant la soirée, la voix d'origine de chaque chanson du karaoké. Avec une référence, la note mesure si le chanteur suit la mélodie de l'original.</p>
+        ${duelRefHtml('lib', { library: true })}
+        <div id="duel-lib-list-box">${list}</div>`;
+}
+
+async function refreshDuelRefs() {
+    Duel.refs = await api('/api/admin/duel-refs');
+    document.querySelectorAll('[data-duel-ref-select]').forEach(sel => { sel.innerHTML = duelRefOptions(sel.dataset.duelRefSelect); sel.hidden = !Duel.refs.length; });
+    if (duelEl('duel-library').children.length) renderDuelLibrary({ keepForm: true });
+}
+
+// ---------- Nettoyage des passages publiés (admin) ----------
+
+function renderDuelCleanup() {
+    const box = duelEl('duel-cleanup');
+    if (!box) return;
+    box.hidden = !App.user.isAdmin || !Duel.list.length;
+    if (box.hidden) return;
+    const n = Duel.list.length;
+    box.innerHTML = `
+        <h3>Le <em>nettoyage</em></h3>
+        <p class="hint">${n} passage${n > 1 ? 's' : ''} publié${n > 1 ? 's' : ''}. Tu peux en retirer un seul, ou tout effacer d'un coup après tes essais. Les points d'équipe qu'ils avaient rapportés sont retirés avec.</p>
+        <ul class="duel-lib-list">${Duel.list.map(d => {
+            const names = d.singers.map(s => s.name).join(' vs ');
+            const when = new Date(d.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const song = d.song || d.singers.map(s => s.song).filter(Boolean).join(' / ');
+            return `<li>
+                <span class="duel-lib-title"><span class="serif">${escapeHtml(names)}</span><span class="small muted">${d.mode === 'solo' ? 'Solo' : 'Duel'} · ${escapeHtml(when)}${song ? ` · ${escapeHtml(song)}` : ''} · ${d.singers.map(s => Math.round(s.total)).join(' – ')}${d.awarded ? ` · +${d.awarded} pts` : ''}</span></span>
+                <span class="duel-lib-actions"><button type="button" class="icon-btn danger" data-duel-delete="${d.id}" data-quick="1">Supprimer</button></span>
+            </li>`;
+        }).join('')}</ul>
+        <button type="button" class="btn btn-danger btn-block" id="duel-clear-all" style="margin-top: 12px;">Tout effacer (${n})</button>`;
+}
+
+// ---------- Navigation entre les onglets ----------
 
 function duelShow(view) {
     Duel.view = App.user.isAdmin ? view : 'results';
@@ -770,6 +835,8 @@ function duelShow(view) {
     document.querySelectorAll('[data-duel-view]').forEach(b => b.classList.toggle('active', b.dataset.duelView === Duel.view));
     duelEl('duel-results-view').hidden = Duel.view !== 'results';
     duelEl('duel-capture').hidden = Duel.view !== 'capture';
+    duelEl('duel-library').hidden = Duel.view !== 'library';
+    if (Duel.view === 'library' && !duelEl('duel-library').children.length) renderDuelLibrary();
     if (Duel.view === 'results') duelDrawAll();
 }
 
@@ -779,6 +846,7 @@ async function loadDuel() {
     if (!App.user.isAdmin) return;
     const [data, refs] = await Promise.all([api('/api/teams'), api('/api/admin/duel-refs')]);
     Duel.refs = refs;
+    if (duelEl('duel-library').children.length) renderDuelLibrary({ keepForm: true });
     // On ne redessine la capture que si les équipes ont changé (pour ne pas perdre une prise en cours)
     const key = JSON.stringify(data.teams.map(t => [t.key, t.members.map(m => m.id)]));
     if (key !== Duel.teamsKey || !duelEl('duel-capture').children.length) {
@@ -811,9 +879,43 @@ document.addEventListener('app:ready', () => {
                 const data = await api('/api/admin/duel-refs', { method: 'POST', body: { title, contour: Duel.refData[key].contour } });
                 toast(data.message, 'success');
                 Duel.refData[key].id = data.id; Duel.refData[key].title = title;
-                Duel.refs = await api('/api/admin/duel-refs');
-                document.querySelectorAll('[data-duel-ref-select]').forEach(sel => { sel.innerHTML = duelRefOptions(sel.dataset.duelRefSelect); sel.hidden = !Duel.refs.length; });
-                duelEl(`duel-ref-save-${key}`).hidden = true;
+                if (key === 'lib') { Duel.takes.lib = null; Duel.refData.lib = null; renderDuelLibrary(); }
+                else duelEl(`duel-ref-save-${key}`).hidden = true;
+                await refreshDuelRefs();
+            } catch (err) { toast(err.message, 'error'); }
+            return;
+        }
+        const rename = e.target.closest('[data-duel-ref-rename]');
+        if (rename) {
+            const ref = Duel.refs.find(r => String(r.id) === rename.dataset.duelRefRename);
+            const title = prompt('Nouveau titre :', ref ? ref.title : '');
+            if (!title || !title.trim() || (ref && title.trim() === ref.title)) return;
+            try {
+                const data = await api(`/api/admin/duel-refs/${rename.dataset.duelRefRename}`, { method: 'PUT', body: { title: title.trim() } });
+                toast(data.message, 'success');
+                await refreshDuelRefs();
+            } catch (err) { toast(err.message, 'error'); }
+            return;
+        }
+        const refDel = e.target.closest('[data-duel-ref-delete]');
+        if (refDel) {
+            const ref = Duel.refs.find(r => String(r.id) === refDel.dataset.duelRefDelete);
+            if (!confirm(`Supprimer la référence « ${ref ? ref.title : ''} » ?\n\nLes passages déjà publiés ne changent pas.`)) return;
+            try {
+                const data = await api(`/api/admin/duel-refs/${refDel.dataset.duelRefDelete}`, { method: 'DELETE' });
+                toast(data.message, 'success');
+                Object.keys(Duel.refData).forEach(k => { if (Duel.refData[k] && String(Duel.refData[k].id) === refDel.dataset.duelRefDelete) Duel.refData[k] = null; });
+                await refreshDuelRefs();
+            } catch (err) { toast(err.message, 'error'); }
+            return;
+        }
+        if (e.target.closest('#duel-clear-all')) {
+            const n = Duel.list.length;
+            if (!confirm(`Effacer les ${n} passages publiés ?\n\nLes points d'équipe qu'ils avaient rapportés sont retirés. Les références enregistrées sont conservées.`)) return;
+            try {
+                const data = await api('/api/admin/duels', { method: 'DELETE' });
+                toast(data.message, 'success');
+                await refreshDuelList({ force: true });
             } catch (err) { toast(err.message, 'error'); }
             return;
         }

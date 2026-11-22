@@ -260,10 +260,12 @@
             <div class="seg" id="duel-tabs" role="tablist" aria-label="Miss Karaoké" hidden>
                 <button type="button" class="seg-btn active" role="tab" data-duel-view="results">Résultats</button>
                 <button type="button" class="seg-btn" role="tab" data-duel-view="capture">Capture</button>
+                <button type="button" class="seg-btn" role="tab" data-duel-view="library">Références</button>
             </div>
             <div id="duel-results-view">
                 <p class="hint">En duel, un chanteur de chaque équipe s'affronte ; en solo, chacun passe à son tour. L'appli écoute et note chaque voix.</p>
                 <div id="duel-list"></div>
+                <div class="admin-block" id="duel-cleanup" hidden></div>
                 <details class="duel-how">
                     <summary>Comment le duel est noté</summary>
                     <ul>
@@ -276,6 +278,7 @@
                 </details>
             </div>
             <div id="duel-capture" hidden></div>
+            <div id="duel-library" hidden></div>
         </section>
 
         <!-- COSTUME -->
