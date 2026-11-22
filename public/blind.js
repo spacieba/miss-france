@@ -154,20 +154,17 @@ function updateBlindBanner(state) {
 }
 
 function loadBlind() {
-    $('blind-remote-link').hidden = !App.user.isAdmin;
+    // L'admin pilote d'ici : la télécommande s'affiche au-dessus de l'écran des joueurs
+    const admin = App.user.isAdmin;
+    $('blind-remote').hidden = !admin;
+    $('blind-players-view').hidden = !admin;
+    if (admin && typeof renderAdminBlind === 'function') renderAdminBlind().catch(() => {});
     return refreshBlind({ force: true });
 }
 
-// Depuis la rubrique, l'admin saute directement à la télécommande de l'onglet Admin
-function openBlindRemote() {
-    go('admin');
-    const scroll = () => { const el = $('admin-blind'); if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70 }); };
-    setTimeout(scroll, 150); setTimeout(scroll, 700);
-}
 App.loaders.blind = loadBlind;
 
 document.addEventListener('app:ready', () => {
-    $('blind-open-remote').addEventListener('click', openBlindRemote);
     // Réponse à une chanson
     $('blind-body').addEventListener('click', async (e) => {
         const btn = e.target.closest('[data-blind-answer]');

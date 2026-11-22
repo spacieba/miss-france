@@ -956,3 +956,9 @@ a:hover { color: var(--ink); }
 
 .blind-remote-link { margin-bottom: 20px; padding: 14px; background: var(--paper-2); display: flex; flex-direction: column; gap: 8px; }
 .blind-remote-link .hint { margin: 0; }
+
+.blind-remote { margin-bottom: 22px; padding: 14px; background: var(--paper-2); border-left: 4px solid var(--blue); }
+.blind-remote .kicker { margin-bottom: 4px; }
+.blind-remote .admin-blind-count { margin: 0 0 12px; color: var(--blue); }
+#admin-blind .admin-blind-count { margin: 0 0 12px; color: var(--blue); }
+#blind-players-view { margin-bottom: 10px; }

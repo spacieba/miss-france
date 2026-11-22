@@ -246,11 +246,8 @@
                 <div class="page-head-row"><p class="kicker blue" id="blind-kicker">En attente</p><p class="kicker">Mon score · <span id="blind-score">0 pt</span></p></div>
                 <h1 class="headline" id="blind-title">Le <em>blind test</em></h1>
             </div>
-            <div class="blind-remote-link" id="blind-remote-link" hidden>
-                <p class="kicker">Admin</p>
-                <p class="hint">C'est toi qui pilotes : la télécommande (ouvrir une chanson, révéler la réponse) se trouve dans l'onglet Admin.</p>
-                <button type="button" class="btn btn-blue btn-block btn-between" id="blind-open-remote"><span>Ouvrir la télécommande</span><svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg></button>
-            </div>
+            <div class="admin-block blind-remote" id="blind-remote" data-blind-remote hidden></div>
+            <p class="kicker" id="blind-players-view" hidden>Ce que voient les joueurs</p>
             <div id="blind-body"></div>
         </section>
 
@@ -377,7 +374,7 @@
             <div class="admin-block" id="admin-step2"></div>
             <div class="admin-block" id="admin-step3"></div>
             <div class="admin-block" id="admin-teams"></div>
-            <div class="admin-block" id="admin-blind"></div>
+            <div class="admin-block" id="admin-blind" data-blind-remote></div>
             <div class="admin-block" id="admin-games"></div>
             <div class="admin-block" id="admin-players">
                 <h3>Les <em>joueurs</em></h3>

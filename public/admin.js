@@ -266,13 +266,13 @@ document.addEventListener('app:ready', () => {
 const BLIND_ASK_ADMIN = { title: 'on demande le titre', artist: 'on demande l\'artiste' };
 
 async function renderAdminBlind(data) {
-    const box = $('admin-blind');
-    if (!box) return;
+    const boxes = [...document.querySelectorAll('[data-blind-remote]')];
+    if (!boxes.length) return;
     const d = data || await api('/api/admin/blind');
     Admin.blind = d;
-    if (!d.enabled) { box.innerHTML = ''; return; }
+    if (!d.enabled) { boxes.forEach(b => { b.innerHTML = ''; }); return; }
     const song = (x) => (x ? `<p class="blind-admin-song"><span class="serif">${escapeHtml(x.title)}</span><span>${escapeHtml(x.artist)} · ${BLIND_ASK_ADMIN[x.ask] || ''}</span><span class="small muted">Passage : ${escapeHtml(x.cue || '')}</span></p>` : '');
-    const count = `<p class="kicker" id="admin-blind-count">${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}</p>`;
+    const count = `<p class="kicker admin-blind-count">${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}</p>`;
     const btn = (action, label, cls = 'btn-blue') => `<button type="button" class="btn ${cls} btn-block btn-between" data-blind-act="${action}"><span>${label}</span>${ARROW}</button>`;
     let status, body;
     if (d.phase === 'idle') {
@@ -294,22 +294,27 @@ async function renderAdminBlind(data) {
         status = statusTag('Terminé · points attribués', 'ok');
         body = '<p class="hint">Le podium est affiché sur les téléphones et les points sont ajoutés au classement général.</p>';
     }
-    box.innerHTML = `${status}<h3>Le <em>blind test</em></h3>${body}
-        <button type="button" class="btn-link" data-go="blind" style="margin-top: 12px; display: block;">Voir l'écran des joueurs</button>
-        ${d.phase === 'idle' ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-blind-act="reset" style="margin-top: 12px;">Recommencer le blind test à zéro</button>'}`;
+    const reset = d.phase === 'idle' ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-blind-act="reset" style="margin-top: 12px;">Recommencer le blind test à zéro</button>';
+    boxes.forEach(box => {
+        const inRubric = box.id === 'blind-remote';
+        box.innerHTML = `${status}<h3>${inRubric ? 'La <em>télécommande</em>' : 'Le <em>blind test</em>'}</h3>${body}
+            ${inRubric ? '' : '<button type="button" class="btn-link" data-go="blind" style="margin-top: 12px; display: block;">Piloter depuis la rubrique, avec l\'écran des joueurs</button>'}
+            ${reset}`;
+    });
 }
 
 document.addEventListener('app:ready', () => {
-    const box = $('admin-blind');
-    if (!box) return;
-    box.addEventListener('click', async (e) => {
-        const b = e.target.closest('[data-blind-act]');
+    if (!document.querySelector('[data-blind-remote]')) return;
+    document.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-blind-remote] [data-blind-act]');
         if (!b || b.disabled) return;
         const action = b.dataset.blindAct;
         if (action === 'reset' && !confirm('Recommencer le blind test à zéro ?\n\nToutes les réponses et les points du blind test seront effacés.')) return;
         b.disabled = true;
         try {
             await renderAdminBlind(await api('/api/admin/blind', { method: 'POST', body: { action } }));
+            // Dans la rubrique, l'écran des joueurs affiché juste en dessous suit tout de suite
+            if (App.current === 'blind' && typeof refreshBlind === 'function') refreshBlind({ force: true }).catch(() => {});
         } catch (err) {
             toast(err.message, 'error');
             renderAdminBlind().catch(() => {});
@@ -317,13 +322,12 @@ document.addEventListener('app:ready', () => {
     });
     // Compteur de réponses en direct pendant qu'une question est ouverte
     setInterval(() => {
-        if (App.current !== 'admin' || document.visibilityState !== 'visible' || !Admin.blind) return;
+        if (!App.user.isAdmin || (App.current !== 'admin' && App.current !== 'blind') || document.visibilityState !== 'visible' || !Admin.blind) return;
         if (Admin.blind.phase !== 'open' && Admin.blind.phase !== 'theme') return;
         api('/api/admin/blind').then(d => {
             if (d.phase !== Admin.blind.phase || d.index !== Admin.blind.index) return renderAdminBlind(d);
             Admin.blind = d;
-            const el = $('admin-blind-count');
-            if (el) el.textContent = `${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}`;
+            document.querySelectorAll('.admin-blind-count').forEach(el => { el.textContent = `${d.answered} réponse${d.answered > 1 ? 's' : ''} sur ${d.players} joueur${d.players > 1 ? 's' : ''}`; });
         }).catch(() => {});
     }, 3000);
 });
