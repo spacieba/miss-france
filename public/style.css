@@ -951,3 +951,5 @@ a:hover { color: var(--ink); }
 .duel-solo-row .p { font-family: var(--serif); font-size: 28px; line-height: 1; white-space: nowrap; }
 .duel-solo-row .p small { font-family: var(--sans); font-size: 11px; color: var(--ink-3); }
 .duel-solo.latest { background: var(--blue-soft); margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+
+.update-banner { background: var(--ink); z-index: 45; }

@@ -324,6 +324,7 @@ const recalculateCostumePoints = () => sql.begin(async tx => awardByRank(tx, awa
 app.get('/api/edition', wrap(async (req, res) => {
   res.json({
     open: await isAppOpen(),
+    build: (process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 12),
     place: edition.party?.place || null,
     teams: TEAMS,
     theme: edition.theme || null,
@@ -972,6 +973,9 @@ function cleanDuelResult(body) {
     low: x?.n ? round2(num(x?.low, 0, 127)) : null,
     high: x?.n ? round2(num(x?.high, 0, 127)) : null,
     offsetc: round2(num(x?.offsetc, -50, 50)),
+    devc: round2(num(x?.devc, 0, 50)),           // mesures brutes, gardées pour recaler le barème
+    driftc: round2(num(x?.driftc, 0, 300)),
+    engine: Math.round(num(x?.engine, 0, 999)),
     dur: round2(num(x?.dur, 0, 600)),
     notes: (Array.isArray(x?.notes) ? x.notes.slice(0, 800) : [])
       .filter(n => Array.isArray(n) && n.length >= 4)

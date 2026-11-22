@@ -490,6 +490,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     refreshScore().catch(() => {});
     go((location.hash || '#une').slice(1), { push: false });
     document.dispatchEvent(new CustomEvent('app:ready'));
+    // Page restée ouverte pendant une mise à jour : on propose de recharger (sans le faire d'office,
+    // pour ne pas perdre une saisie ou un enregistrement en cours)
+    $('update-banner').addEventListener('click', () => location.reload());
+    setInterval(() => {
+        if (document.visibilityState !== 'visible' || !App.edition.build) return;
+        fetch('/api/edition').then(r => (r.ok ? r.json() : null)).then(e => {
+            if (e && e.build && e.build !== App.edition.build) $('update-banner').hidden = false;
+        }).catch(() => {});
+    }, 60000);
     // Compte créé avant l'ajout de la question : on la pose une fois
     if (!App.user.isAdmin && !App.user.location) askWhere({ required: true });
 

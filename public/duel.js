@@ -134,31 +134,40 @@ function duelFindNotes(m, hop_s) {
     return notes;
 }
 
-// Barème, réglé pour de vraies voix (un bon chanteur amateur s'écarte de 10 à 15 cents du demi-ton) :
-//  - justesse : écart moyen au demi-ton le plus proche, après correction du décalage général de la voix.
-//    6 cents ou moins = 100 ; 25 cents ou plus = 0 (25 cents, c'est le hasard : on ne peut pas faire pire).
-//  - stabilité : dérive de la note une fois le vibrato lissé. 7 cents ou moins = 100 ; 22 cents ou plus = 0.
-const DUEL_SCALE = { justeFull: 6, justeZero: 25, stableFull: 7, stableZero: 22 };
+// Barème (version 3), calé sur de vraies prises :
+//  - justesse : écart MÉDIAN au demi-ton le plus proche (pondéré par la durée), sur les notes d'au moins 0,2 s,
+//    après correction du décalage général de la voix. Les notes très courtes sont des transitions : leur
+//    hauteur ne dit rien de la justesse. Repères mesurés : chanteuse professionnelle ≈ 10 cents,
+//    prise ratée ≈ 24 cents, hasard = 25 cents. 7 cents ou moins = 100 ; 25 cents ou plus = 0.
+//  - stabilité : dérive de la note une fois le vibrato lissé. 8 cents ou moins = 100 ; 24 cents ou plus = 0.
+const DUEL_ENGINE = 3;
+const DUEL_SCALE = { justeFull: 7, justeZero: 25, stableFull: 8, stableZero: 24, minNote: 0.2 };
+
+// Médiane pondérée : la valeur telle que la moitié du temps chanté est en dessous
+function duelWeightedMedian(pairs) {
+    const p = pairs.slice().sort((x, y) => x[0] - y[0]);
+    const total = p.reduce((n, x) => n + x[1], 0);
+    let acc = 0;
+    for (const [v, w] of p) { acc += w; if (acc >= total / 2) return v; }
+    return p.length ? p[p.length - 1][0] : 0;
+}
 
 function duelScoreNotes(notes) {
     const n = notes.length;
     const voiced = notes.reduce((a, b) => a + b.dur, 0);
     if (n === 0) return { n: 0, voiced: 0, offsetc: 0, justesse: 0, stabilite: 0, total: 0, low: NaN, high: NaN, devc: 0, driftc: 0 };
+    // Seules les notes assez longues servent à juger ; s'il y en a trop peu, on prend tout
+    const long = notes.filter(o => o.dur >= DUEL_SCALE.minNote);
+    const judged = long.length >= 8 ? long : notes;
     let sx = 0, sy = 0;
-    for (const o of notes) { const a = 2 * Math.PI * o.med; sx += o.dur * Math.cos(a); sy += o.dur * Math.sin(a); }
+    for (const o of judged) { const a = 2 * Math.PI * o.med; sx += o.dur * Math.cos(a); sy += o.dur * Math.sin(a); }
     const offset = Math.atan2(sy, sx) / (2 * Math.PI);
-    let wsum = 0, jsum = 0, ssum = 0;
-    for (const o of notes) {
-        const xx = o.med - offset;
-        o.devc = Math.abs(xx - Math.round(xx)) * 100;
-        jsum += o.dur * o.devc;
-        ssum += o.dur * o.stdc;
-        wsum += o.dur;
-    }
-    const devc = jsum / wsum, driftc = ssum / wsum;
+    for (const o of notes) { const xx = o.med - offset; o.devc = Math.abs(xx - Math.round(xx)) * 100; }
+    const devc = duelWeightedMedian(judged.map(o => [o.devc, o.dur]));
+    const driftc = duelWeightedMedian(judged.map(o => [o.stdc, o.dur]));
     const justesse = 100 * duelClamp01((DUEL_SCALE.justeZero - devc) / (DUEL_SCALE.justeZero - DUEL_SCALE.justeFull));
     const stabilite = 100 * duelClamp01((DUEL_SCALE.stableZero - driftc) / (DUEL_SCALE.stableZero - DUEL_SCALE.stableFull));
-    const meds = notes.map(o => o.med);
+    const meds = judged.map(o => o.med);
     return { n, voiced, offsetc: offset * 100, justesse, stabilite, total: 0.65 * justesse + 0.35 * stabilite, low: Math.min(...meds), high: Math.max(...meds), devc, driftc };
 }
 
@@ -543,7 +552,7 @@ async function duelCheckTake(slot, length) {
     const pct = Math.round(c.coverage * 100);
     // Mesures brutes, affichées pour pouvoir vérifier et régler le barème
     const sc = duelScoreNotes(a.notes);
-    const raw = sc.n ? ` Écart moyen au demi-ton : ${Math.round(sc.devc)} cents · dérive des notes : ${Math.round(sc.driftc)} cents.` : '';
+    const raw = sc.n ? ` Écart médian au demi-ton : ${Math.round(sc.devc)} cents · dérive des notes : ${Math.round(sc.driftc)} cents (moteur v${DUEL_ENGINE}).` : '';
     const el = duelEl(`duel-status-${slot}`);
     el.classList.remove('good', 'fair', 'poor'); el.classList.add(c.level);
     el.textContent = c.level === 'good' ? `Prise nette · ${length} · ${c.notes} notes (voix nette sur ${pct} % de la prise).${raw}`
@@ -653,7 +662,7 @@ async function duelRun() {
                 name: a.info.name, team: a.info.team, song: songOf(i) || null, ref: fidelite !== null ? (ref.title || 'prise du soir') : null,
                 total: 0, justesse: a.score.justesse, stabilite: a.score.stabilite, fidelite,
                 n: a.score.n, voiced: a.score.voiced, low: a.score.n ? a.score.low : null, high: a.score.n ? a.score.high : null,
-                offsetc: a.score.offsetc, dur: a.dur_s,
+                offsetc: a.score.offsetc, dur: a.dur_s, devc: a.score.devc, driftc: a.score.driftc, engine: DUEL_ENGINE,
                 notes: a.notes.slice(0, 800).map(n => [Math.round(n.i * a.hop_s * 100) / 100, Math.round(n.len * a.hop_s * 100) / 100, Math.round(n.med * 100) / 100, Math.round(n.devc || 0)])
             };
         });

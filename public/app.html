@@ -35,6 +35,9 @@
         </div>
     </header>
 
+    <button type="button" class="blind-banner update-banner" id="update-banner" hidden>
+        <span>Une nouvelle version de l'appli est disponible</span><span class="blind-banner-go">Recharger</span>
+    </button>
     <button type="button" class="blind-banner" id="blind-banner" data-go="blind" hidden>
         <span class="blind-dot" aria-hidden="true"></span><span id="blind-banner-text">Blind test en cours</span><span class="blind-banner-go">Jouer</span>
     </button>
@@ -262,7 +265,7 @@
                 <details class="duel-how">
                     <summary>Comment le duel est noté</summary>
                     <ul>
-                        <li><b>Justesse</b> : chaque note tenue est comparée au demi-ton le plus proche. Jusqu'à 6 centièmes de demi-ton d'écart en moyenne, c'est 100 ; à 25, c'est 0. Une voix entièrement décalée, un peu trop haute ou trop basse, n'est pas pénalisée.</li>
+                        <li><b>Justesse</b> : chaque note tenue est comparée au demi-ton le plus proche. Jusqu'à 7 centièmes de demi-ton d'écart sur la moitié du temps chanté, c'est 100 ; à 25, c'est 0. Les notes très courtes ne comptent pas. Une voix entièrement décalée, un peu trop haute ou trop basse, n'est pas pénalisée.</li>
                         <li><b>Stabilité</b> : une note tenue ne doit pas dériver. Le vibrato n'est pas pénalisé, une voix qui glisse ou qui tremble perd des points.</li>
                         <li><b>Fidélité à la mélodie</b> : seulement quand une référence a été enregistrée. Elle mesure si le chanteur suit les mêmes montées et descentes que le modèle, quelle que soit sa tonalité.</li>
                     </ul>
