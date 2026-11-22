@@ -1,5 +1,5 @@
 /* ============================================================
-   Le duel de chant (épreuve d'équipe)
+   Miss Karaoké : duels et solos de chant (épreuve d'équipe)
    L'admin enregistre sur son téléphone un chanteur de chaque équipe (et, s'il le veut, une
    référence où l'on n'entend que la voix). L'appli mesure la justesse et la stabilité de chaque
    voix, plus la fidélité à la référence quand il y en a une, puis l'admin publie le résultat :

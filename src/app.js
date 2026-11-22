@@ -1204,7 +1204,7 @@ admin.post('/team-events', wrap(async (req, res) => {
   res.json({ success: true, message: `${points > 0 ? '+' : ''}${points} pts pour l'${team.name}.`, teams: await teamStandings() });
 }));
 
-// Duels de chant : publier un résultat (et, au passage, donner les points à l'équipe gagnante)
+// Miss Karaoké (duels et solos de chant) : publier un résultat (et, au passage, donner les points à l'équipe gagnante)
 admin.post('/duels', wrap(async (req, res) => {
   const result = cleanDuelResult(req.body.result);
   if (!result) return res.status(400).json({ error: 'Résultat de duel invalide' });
@@ -1216,7 +1216,7 @@ admin.post('/duels', wrap(async (req, res) => {
     const solo = result.mode === 'solo';
     const w = solo ? result.singers[0] : result.winner >= 0 ? result.singers[result.winner] : null;
     if (w && w.team && points > 0 && (!solo || w.n > 0)) {
-      const label = (solo ? `Solo : ${w.name} (${Math.round(w.total)}/100)` : `Duel de chant : ${w.name} bat ${result.singers[1 - result.winner].name}`).slice(0, 60);
+      const label = (solo ? `Miss Karaoké solo : ${w.name} (${Math.round(w.total)}/100)` : `Miss Karaoké : ${w.name} bat ${result.singers[1 - result.winner].name}`).slice(0, 60);
       const [ev] = await tx`insert into team_events (label, team, points) values (${label}, ${w.team}, ${points}) returning id`;
       eventId = ev.id;
     }
