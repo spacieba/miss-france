@@ -295,6 +295,7 @@ async function renderAdminBlind(data) {
         body = '<p class="hint">Le podium est affiché sur les téléphones et les points sont ajoutés au classement général.</p>';
     }
     box.innerHTML = `${status}<h3>Le <em>blind test</em></h3>${body}
+        <button type="button" class="btn-link" data-go="blind" style="margin-top: 12px; display: block;">Voir l'écran des joueurs</button>
         ${d.phase === 'idle' ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-blind-act="reset" style="margin-top: 12px;">Recommencer le blind test à zéro</button>'}`;
 }
 
