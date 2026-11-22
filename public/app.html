@@ -246,6 +246,37 @@
             <div id="blind-body"></div>
         </section>
 
+        <!-- DUEL DE CHANT -->
+        <section id="duel" class="section" aria-labelledby="duel-title">
+            <div class="page-head">
+                <div class="page-head-row"><p class="kicker blue">Épreuve d'équipe</p><p class="kicker">Au micro</p></div>
+                <h1 class="headline" id="duel-title">Le <em>duel</em><br>de chant</h1>
+            </div>
+            <div id="duel-away" hidden>
+                <h2 class="subhead">Le duel se chante <em>à <span class="place-name">Jarrie</span></em></h2>
+                <p class="hint">C'est une épreuve entre les deux équipes présentes sur place.</p>
+            </div>
+            <div id="duel-play">
+                <p class="hint">Un chanteur par équipe, le même passage de la même chanson, chacun son tour. Tiens le téléphone près de la bouche : l'appli note la justesse et la tenue de la voix, puis désigne le vainqueur.</p>
+                <div class="duel-corners" id="duel-corners"></div>
+                <button type="button" class="btn btn-blue btn-block btn-between" id="duel-go" disabled>
+                    <span id="duel-go-label">Lancer le duel</span>
+                    <svg class="arrow" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M0 7h20M14 1l6 6-6 6"/></svg>
+                </button>
+                <div id="duel-results" hidden></div>
+                <details class="duel-how">
+                    <summary>Comment le duel est noté</summary>
+                    <p>Il n'y a pas de mélodie de référence : l'appli ne sait pas quelle note était attendue, elle juge si chaque voix est propre en elle-même.</p>
+                    <ul>
+                        <li><b>Justesse (65 %)</b> : chaque note tenue est comparée au demi-ton le plus proche. Une voix entièrement décalée, un peu trop haute ou trop basse, n'est pas pénalisée.</li>
+                        <li><b>Stabilité (35 %)</b> : les notes tenues doivent rester stables. Un léger vibrato passe, une voix qui tremble ou dérive perd des points.</li>
+                        <li><b>Ressemblance</b> : donnée à titre indicatif, elle signale si les deux n'ont pas chanté le même passage.</li>
+                    </ul>
+                    <p>Limites : la musique et le bruit de fond brouillent la mesure, et quelqu'un qui glisse exprès d'une note à l'autre perd des points. C'est fait pour départager un duel entre amis, pas pour juger une voix. Rien n'est envoyé au serveur : les enregistrements restent sur l'appareil.</p>
+                </details>
+            </div>
+        </section>
+
         <!-- COSTUME -->
         <section id="costume" class="section" aria-labelledby="costume-title">
             <div class="page-head">
@@ -382,6 +413,7 @@
     <script src="pronostics.js"></script>
     <script src="games.js"></script>
     <script src="blind.js"></script>
+    <script src="duel.js"></script>
     <script src="costume.js"></script>
     <script src="leaderboard.js"></script>
     <script src="admin.js"></script>

@@ -870,3 +870,51 @@ a:hover { color: var(--ink); }
 .team-col .team-total small { font-family: var(--sans); font-size: 12px; }
 .team-form { display: flex; flex-direction: column; gap: 8px; }
 .team-form-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) auto; gap: 8px; }
+
+/* ============================================================
+   Duel de chant
+   ============================================================ */
+.duel-corners { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 16px; }
+@media (max-width: 420px) { .duel-corners { grid-template-columns: 1fr; } }
+.duel-corner { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; border: 1.5px solid var(--team, var(--ink)); border-top-width: 6px; min-width: 0; }
+.duel-team { margin: 0; font-family: var(--serif); font-style: italic; font-size: 24px; line-height: 1; color: var(--team, var(--ink)); }
+.duel-corner .input { width: 100%; }
+.duel-rec { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.duel-rec .btn.on { background: var(--error); border-color: var(--error); color: #fff; }
+.duel-timer { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.duel-meter { flex: 1 1 60px; height: 8px; background: var(--paper-3); overflow: hidden; }
+.duel-meter i { display: block; height: 100%; width: 0; background: var(--team, var(--blue)); }
+.duel-corner audio { width: 100%; height: 36px; }
+.duel-status { margin: 0; min-height: 19px; }
+.duel-import { align-self: flex-start; font-size: 13px; cursor: pointer; }
+
+#duel-results { margin-top: 22px; }
+.duel-verdict { padding: 26px 18px; text-align: center; background: var(--team, var(--ink)); color: var(--team-on, var(--paper)); }
+.duel-verdict .kicker { color: inherit; opacity: 0.75; }
+.duel-winner { margin: 8px 0 4px; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(44px, 14vw, 72px); line-height: 0.95; }
+.duel-winner-team { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.duel-verdict .small { margin: 0; opacity: 0.9; }
+.duel-award { margin-top: 14px; padding: 14px; background: var(--paper-2); display: flex; flex-direction: column; gap: 8px; }
+.duel-award-row { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; }
+.duel-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 6px; }
+@media (max-width: 420px) { .duel-board { grid-template-columns: 1fr; } }
+.duel-card { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; border: 1.5px solid var(--line-strong); min-width: 0; }
+.duel-card.win { outline: 3px solid var(--team, var(--blue)); outline-offset: -3px; }
+.duel-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.duel-card header .serif { font-family: var(--serif); font-size: 22px; line-height: 1.05; color: var(--team, var(--ink)); overflow-wrap: anywhere; }
+.duel-total { font-family: var(--serif); font-size: 44px; line-height: 0.95; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.duel-total small { font-family: var(--sans); font-size: 12px; color: var(--ink-3); }
+.duel-crit .row { display: flex; justify-content: space-between; font-size: 13px; }
+.duel-bar { height: 8px; background: var(--paper-3); overflow: hidden; }
+.duel-bar i { display: block; height: 100%; background: var(--team, var(--blue)); }
+.duel-facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 12.5px; }
+.duel-facts dt { color: var(--ink-3); } .duel-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.duel-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 8px; font-size: 12.5px; color: var(--ink-2); }
+.duel-legend span::before { content: ''; display: inline-block; width: 12px; height: 8px; margin-right: 6px; }
+.duel-legend .ok::before { background: var(--success); } .duel-legend .mid::before { background: var(--gold); } .duel-legend .ko::before { background: var(--error); }
+.duel-strip-label { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; font-weight: 600; }
+.duel-canvas { width: 100%; height: 120px; display: block; border-bottom: 1px solid var(--line); }
+.duel-how { margin-top: 22px; padding: 12px 14px; border: 1px solid var(--line); font-size: 14.5px; }
+.duel-how summary { cursor: pointer; font-weight: 700; }
+.duel-how p, .duel-how li { color: var(--ink-2); }
+.duel-how ul { padding-left: 18px; }

@@ -98,6 +98,9 @@ Le thème (nom, accroche, règles du dress code, programme) se règle dans `them
 Les joueurs sur place sont tirés au sort entre les équipes de `party.teams` (effectifs toujours égaux à un joueur près) ; l'équipe est stockée dans `users.team`, modifiable par l'admin. Onglet Admin → **Les équipes** : attribuer des points d'épreuves collectives (karaoké…), stockés dans `team_events`.
 Le palmarès propose trois classements — général (tout le monde), sur place, par équipe — chacun en « toutes les épreuves » ou « pronostics seuls ». Score d'équipe = moyenne des points des joueurs + épreuves collectives (ou moyenne des pronostics seuls).
 
+#### Le duel de chant (épreuve d'équipe)
+Rubrique **Le duel de chant** (`public/duel.js`) : un chanteur par équipe s'enregistre au micro sur le même passage ; l'appli note chaque voix sur 100 (justesse 65 %, stabilité 35 %), sans mélodie de référence, et désigne le vainqueur. L'analyse se fait entièrement dans le navigateur : aucun enregistrement n'est envoyé au serveur. L'admin attribue ensuite les points à l'équipe gagnante (ils deviennent une épreuve d'équipe). Le micro exige HTTPS et l'autorisation du navigateur ; à défaut, on peut importer un fichier audio.
+
 #### Le blind test (en direct)
 Onglet Admin → **Le blind test** : l'admin lance chaque chanson sur son enceinte, ouvre les réponses (les propositions s'affichent sur tous les téléphones), puis révèle. Après la dernière chanson, chacun tente de deviner le thème caché (réponse libre, bonus de points). Les 3 premiers gagnent 15, 10 et 5 points au classement général.
 Les chansons, propositions, repères et mots-clés acceptés pour le thème sont dans `blindTest` du fichier d'édition ; l'état est dans `official_results.blind`, les réponses dans la table `blind_answers`.
