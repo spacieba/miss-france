@@ -918,3 +918,19 @@ a:hover { color: var(--ink); }
 .duel-how summary { cursor: pointer; font-weight: 700; }
 .duel-how p, .duel-how li { color: var(--ink-2); }
 .duel-how ul { padding-left: 18px; }
+
+/* Duel de chant : onglets, référence, duels publiés */
+#duel-tabs { margin-bottom: 16px; }
+.duel-ref { margin: 16px 0; padding: 14px 12px; border: 1.5px dashed var(--line-strong); display: flex; flex-direction: column; gap: 10px; }
+.duel-ref .duel-team { color: var(--ink); }
+.duel-ref .hint { margin: 0; }
+.duel-ref .input, .duel-ref audio { width: 100%; }
+.duel-ref-save { display: flex; flex-direction: column; gap: 8px; }
+.duel-result { margin: 8px 0 18px; }
+.duel-result .duel-winner { margin: 8px 0 4px; }
+.duel-result .btn { margin-top: 12px; }
+.duel-past { border-top: 1px solid var(--line); padding: 12px 0; }
+.duel-past summary { cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.duel-past summary .serif { font-family: var(--serif); font-size: 22px; line-height: 1.1; }
+.duel-past summary em { font-style: italic; color: var(--blue); }
+.duel-award .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }

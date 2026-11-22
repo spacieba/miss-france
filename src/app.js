@@ -114,7 +114,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '400kb' }));
 app.use((req, res, next) => { if (!req.body || typeof req.body !== 'object') req.body = {}; next(); });
 
 app.use(async (req, res, next) => {
@@ -943,6 +943,53 @@ app.get('/api/teams', requireAuth, wrap(async (req, res) => {
 }));
 
 // ============================================
+// DUELS DE CHANT : l'admin enregistre et analyse les voix sur son téléphone (rien d'audio
+// n'arrive ici), puis publie le résultat chiffré pour que tout le monde puisse le consulter.
+// Les références (mélodie d'une version a cappella) sont gardées sous forme de courbe de notes.
+// ============================================
+
+const num = (v, min, max, fallback = 0) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback; };
+const round2 = (n) => Math.round(n * 100) / 100;
+
+// Ne garde d'un résultat envoyé par le téléphone que des champs connus, bornés et typés
+function cleanDuelResult(body) {
+  const singers = Array.isArray(body?.singers) ? body.singers.slice(0, 2) : [];
+  if (singers.length !== 2) return null;
+  const clean = singers.map(x => ({
+    name: String(x?.name ?? '').trim().slice(0, 24) || 'Chanteur',
+    team: teamOf(x?.team)?.key || null,
+    total: round2(num(x?.total, 0, 100)),
+    justesse: round2(num(x?.justesse, 0, 100)),
+    stabilite: round2(num(x?.stabilite, 0, 100)),
+    fidelite: x?.fidelite === null || x?.fidelite === undefined ? null : round2(num(x.fidelite, 0, 100)),
+    n: Math.round(num(x?.n, 0, 5000)),
+    voiced: round2(num(x?.voiced, 0, 600)),
+    low: x?.n ? round2(num(x?.low, 0, 127)) : null,
+    high: x?.n ? round2(num(x?.high, 0, 127)) : null,
+    offsetc: round2(num(x?.offsetc, -50, 50)),
+    dur: round2(num(x?.dur, 0, 600)),
+    notes: (Array.isArray(x?.notes) ? x.notes.slice(0, 800) : [])
+      .filter(n => Array.isArray(n) && n.length >= 4)
+      .map(n => [round2(num(n[0], 0, 600)), round2(num(n[1], 0, 60)), round2(num(n[2], 0, 127)), Math.round(num(n[3], 0, 50))])
+  }));
+  const diff = clean[0].total - clean[1].total;
+  const nobody = clean[0].n === 0 && clean[1].n === 0;
+  return {
+    ref: typeof body.ref === 'string' && body.ref.trim() ? body.ref.trim().slice(0, 60) : null,
+    sim: body.sim === null || body.sim === undefined ? null : round2(num(body.sim, 0, 100)),
+    winner: nobody || Math.abs(diff) < 3 ? -1 : diff > 0 ? 0 : 1,
+    singers: clean
+  };
+}
+
+app.get('/api/duels', requireAuth, wrap(async (req, res) => {
+  const rows = await sql`
+    select d.id, d.song, d.result, d.created_at, e.points as awarded
+    from duels d left join team_events e on e.id = d.team_event_id order by d.id desc limit 30`;
+  res.json(rows.map(r => ({ id: r.id, song: r.song, at: r.created_at, awarded: r.awarded ?? 0, ...r.result })));
+}));
+
+// ============================================
 // ROUTES : CLASSEMENT
 // ============================================
 
@@ -1149,6 +1196,59 @@ admin.post('/team-events', wrap(async (req, res) => {
   res.json({ success: true, message: `${points > 0 ? '+' : ''}${points} pts pour l'${team.name}.`, teams: await teamStandings() });
 }));
 
+// Duels de chant : publier un résultat (et, au passage, donner les points à l'équipe gagnante)
+admin.post('/duels', wrap(async (req, res) => {
+  const result = cleanDuelResult(req.body.result);
+  if (!result) return res.status(400).json({ error: 'Résultat de duel invalide' });
+  const song = typeof req.body.song === 'string' ? req.body.song.trim().slice(0, 60) : '';
+  const points = Math.round(num(req.body.points, 0, 500));
+  const id = await sql.begin(async tx => {
+    let eventId = null;
+    const w = result.winner >= 0 ? result.singers[result.winner] : null;
+    if (w && w.team && points > 0) {
+      const l = result.singers[1 - result.winner];
+      const label = `Duel de chant : ${w.name} bat ${l.name}`.slice(0, 60);
+      const [ev] = await tx`insert into team_events (label, team, points) values (${label}, ${w.team}, ${points}) returning id`;
+      eventId = ev.id;
+    }
+    const [d] = await tx`insert into duels (song, result, team_event_id) values (${song || null}, ${tx.json(result)}, ${eventId}) returning id`;
+    return d.id;
+  });
+  res.json({ success: true, id, message: 'Duel publié : tout le monde peut voir le résultat.' });
+}));
+
+admin.delete('/duels/:id', wrap(async (req, res) => {
+  const [d] = await sql`delete from duels where id = ${Number(req.params.id)} returning team_event_id`;
+  if (!d) return res.status(404).json({ error: 'Duel non trouvé' });
+  if (d.team_event_id) await sql`delete from team_events where id = ${d.team_event_id}`;
+  res.json({ success: true, message: d.team_event_id ? 'Duel supprimé, points retirés.' : 'Duel supprimé.' });
+}));
+
+// Références enregistrées (courbe de notes d'une version a cappella, sans audio ni paroles)
+admin.get('/duel-refs', wrap(async (req, res) => {
+  res.json(await sql`select id, title, jsonb_array_length(contour) as points from duel_refs order by title`);
+}));
+
+admin.get('/duel-refs/:id', wrap(async (req, res) => {
+  const [r] = await sql`select id, title, contour from duel_refs where id = ${Number(req.params.id)}`;
+  if (!r) return res.status(404).json({ error: 'Référence non trouvée' });
+  res.json(r);
+}));
+
+admin.post('/duel-refs', wrap(async (req, res) => {
+  const title = typeof req.body.title === 'string' ? req.body.title.trim().slice(0, 60) : '';
+  const contour = (Array.isArray(req.body.contour) ? req.body.contour.slice(0, 3000) : []).map(v => round2(num(v, 0, 127, NaN))).filter(Number.isFinite);
+  if (!title) return res.status(400).json({ error: 'Donne un titre à la référence' });
+  if (contour.length < 30) return res.status(400).json({ error: 'Référence trop courte pour être utile' });
+  const [r] = await sql`insert into duel_refs (title, contour) values (${title}, ${sql.json(contour)}) returning id`;
+  res.json({ success: true, id: r.id, message: `Référence « ${title} » enregistrée.` });
+}));
+
+admin.delete('/duel-refs/:id', wrap(async (req, res) => {
+  await sql`delete from duel_refs where id = ${Number(req.params.id)}`;
+  res.json({ success: true, message: 'Référence supprimée.' });
+}));
+
 admin.delete('/team-events/:id', wrap(async (req, res) => {
   await sql`delete from team_events where id = ${Number(req.params.id)}`;
   res.json({ success: true, message: 'Épreuve supprimée.', teams: await teamStandings() });
@@ -1267,6 +1367,7 @@ admin.post('/reset-all-data', wrap(async (req, res) => {
     await tx`update scores set quiz_score = 0, quiz_correct = 0, culture_g_score = 0, culture_g_correct = 0,
       pronostics_score = 0, defis_score = 0, blind_points = 0, total_score = 0`;
     await tx`delete from blind_answers`;
+    await tx`delete from duels`;
     await tx`delete from team_events`;
     await tx`update official_results set blind = ${tx.json({ phase: 'idle', index: -1 })} where id = 1`;
     await tx`update official_results set top15 = null, top5 = null, classement_final = null, miss_france = null,

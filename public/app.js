@@ -274,7 +274,7 @@ async function loadUne() {
         { go: 'quiz', title: 'Le quiz Miss France', sub: quiz.totalAnswers ? `${quiz.totalAnswers}/${App.edition.quizCount} réponses · ${quiz.correctAnswers} justes` : `${App.edition.quizCount} questions`, pts: s.quiz_score },
         { go: 'culture-g', title: 'La Culture G', sub: cg.totalAnswers ? `${cg.totalAnswers}/${cg.totalQuestions} réponses` : 'Le vrai test des candidates', pts: s.culture_g_score },
         ...(isAway() ? [] : [{ go: 'blind', title: 'Le blind test', sub: `En direct, à ${placeName()}`, pts: s.blind_points }]),
-        ...(isAway() ? [] : [{ go: 'duel', title: 'Le duel de chant', sub: 'Une équipe contre l\'autre, au micro', pts: null }]),
+        { go: 'duel', title: 'Le duel de chant', sub: 'Une équipe contre l\'autre, au micro', pts: null },
         { go: 'costume', title: 'Le meilleur costume', sub: myPhoto.photo ? (myPhoto.isPublic ? 'Mon look est en ligne' : 'Mon look est privé') : 'Poster mon look', pts: s.defis_score },
         { go: 'leaderboard', title: 'Le palmarès', sub: 'Le classement du comité', pts: null }
     ];
