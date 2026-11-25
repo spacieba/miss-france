@@ -59,7 +59,18 @@
             </button>
             <p class="une-where" id="une-where" hidden><span id="une-where-text"></span> <button type="button" class="btn-link" id="une-where-change">Changer</button></p>
 
-            <div class="stat-row">
+            <div class="countdown preview-countdown" id="une-preview" hidden role="timer" aria-label="Compte à rebours avant l'ouverture des jeux">
+                <div class="countdown-cells">
+                    <div><span class="v" id="pv-d">–</span><span class="l" id="pv-d-l">Jours</span></div>
+                    <div><span class="v" id="pv-h">–</span><span class="l">Heures</span></div>
+                    <div><span class="v" id="pv-m">–</span><span class="l">Minutes</span></div>
+                    <div><span class="v" id="pv-s">–</span><span class="l">Secondes</span></div>
+                </div>
+                <p class="countdown-caption" id="une-preview-caption">Avant l'ouverture des jeux</p>
+            </div>
+            <p class="hint preview-hint" id="une-preview-hint" hidden>Ton inscription au comité est enregistrée. Les pronostics, les quiz et les jeux s'ouvriront à la fin du compte à rebours. En attendant, fais connaissance avec <button type="button" class="btn-link" data-go="candidates">les candidates</button>.</p>
+
+            <div class="stat-row" id="une-stats">
                 <div class="stat-cell"><span class="v" id="une-score">0</span><span class="l">Points</span></div>
                 <div class="stat-cell"><span class="v" id="une-rank">–</span><span class="l">Rang</span></div>
                 <div class="stat-cell"><span class="v" id="une-countdown">–</span><span class="l" id="une-countdown-label">Jours</span></div>

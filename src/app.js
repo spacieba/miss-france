@@ -114,6 +114,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// Sur Vercel, l'instance est gelée dès qu'elle n'a plus de requête en cours : après une pause,
+// on repart d'une connexion neuve à la base (voir src/db.js). Le seuil doit rester inférieur
+// à l'idle_timeout du client Postgres (20 s).
+const STALE_AFTER_MS = 8000;
+let lastActivity = Date.now();
+let inFlight = 0;
+app.use((req, res, next) => {
+  if (process.env.VERCEL && inFlight === 0 && Date.now() - lastActivity > STALE_AFTER_MS) sql.recycle?.();
+  inFlight++;
+  let settled = false;
+  const settle = () => {
+    if (settled) return;
+    settled = true;
+    inFlight--;
+    lastActivity = Date.now();
+  };
+  res.on('finish', settle);
+  res.on('close', settle);
+  next();
+});
+
 app.use(express.json({ limit: '400kb' }));
 app.use((req, res, next) => { if (!req.body || typeof req.body !== 'object') req.body = {}; next(); });
 
@@ -171,7 +192,7 @@ const authLimiter = rateLimit('auth', { windowMs: 15 * 60 * 1000, max: 80 });
 const uploadLimiter = rateLimit('upload', { windowMs: 10 * 60 * 1000, max: 15 });
 
 // Ouverture aux joueurs : tant que l'admin n'a pas ouvert l'appli (official_results.app_open),
-// seule la page de couverture est visible et seuls les admins peuvent se connecter.
+// les joueurs peuvent s'inscrire et voir les candidates, mais aucun jeu n'est accessible.
 let openCache = { value: false, at: 0 };
 async function isAppOpen() {
   if (Date.now() - openCache.at < 5000) return openCache.value;
@@ -179,7 +200,10 @@ async function isAppOpen() {
   openCache = { value: Boolean(row?.app_open), at: Date.now() };
   return openCache.value;
 }
-const CLOSED_MESSAGE = "L'appli n'est pas encore ouverte : rendez-vous bientôt !";
+const CLOSED_MESSAGE = 'Les jeux ouvrent à la fin du compte à rebours : rendez-vous bientôt !';
+// Avant l'ouverture, un joueur inscrit peut déjà entrer, voir les candidates et dire où il sera :
+// seules ces routes lui répondent, tout le reste est refusé (et grisé à l'écran).
+const PREVIEW_ROUTES = new Set(['GET /api/me', 'POST /api/me/location', 'GET /api/candidates', 'GET /api/official-results', 'GET /api/leaderboard']);
 
 // Authentification : utilisateur rechargé depuis la base à chaque requête
 const requireAuth = async (req, res, next) => {
@@ -187,7 +211,9 @@ const requireAuth = async (req, res, next) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Non authentifié' });
     const [user] = await sql`select id, pseudo::text as pseudo, is_admin, location, team from users where id = ${req.session.userId}`;
     if (!user) return res.status(401).json({ error: 'Non authentifié' });
-    if (!user.is_admin && !await isAppOpen()) return res.status(401).json({ error: CLOSED_MESSAGE });
+    if (!user.is_admin && !PREVIEW_ROUTES.has(`${req.method} ${req.baseUrl}${req.path}`) && !await isAppOpen()) {
+      return res.status(403).json({ error: CLOSED_MESSAGE });
+    }
     req.user = user;
     next();
   } catch (e) { next(e); }
@@ -252,6 +278,9 @@ const SCORING = { top15: 5, bonusTop15: 10, top5: 8, bonusTop5: 20, finalPositio
 
 const recomputeTotals = (tx) => tx`update scores set total_score = quiz_score + culture_g_score + pronostics_score + defis_score + blind_points`;
 
+const bonusTop5Won = (prono, official) => Boolean(prono.bonus_top5)
+  && (official.top15 || []).includes(prono.bonus_top5) && !(official.top5 || []).includes(prono.bonus_top5);
+
 function computePronoScore(prono, official) {
   const step = official.current_step || 0;
   const top15 = official.top15 || [];
@@ -265,7 +294,9 @@ function computePronoScore(prono, official) {
   }
   if (step >= 2) {
     (prono.top5 || []).forEach(c => { if (top5.includes(c)) score += SCORING.top5; });
-    if (prono.bonus_top5 && !top5.includes(prono.bonus_top5)) { score += SCORING.bonusTop5; stats.bonusTop5 = true; }
+    // La « déception » doit être une qualifiée du premier tour qui rate le Top 5 : un choix fait avant
+    // le premier tour et éliminé d'emblée ne rapporte rien (l'écran demande alors d'en choisir une autre).
+    if (bonusTop5Won(prono, official)) { score += SCORING.bonusTop5; stats.bonusTop5 = true; }
   }
   if (step >= 3) {
     (prono.classement_final || []).forEach((c, i) => { if (final[i] === c) score += SCORING.finalPosition; });
@@ -353,8 +384,8 @@ function startSession(req, userId) {
 // Connexion : un joueur entre avec son pseudo + le code de soirée (variable PARTY_CODE,
 // insensible à la casse) ; son compte est créé à la première connexion.
 // Les admins, eux, gardent leur mot de passe (ADMIN_USERS), saisi dans le même champ.
-// Tant que l'appli est fermée, un joueur identifié ne voit que la page de couverture
-// (requireAuth lui refuse toutes les routes de l'appli).
+// Tant que l'appli est fermée, un joueur identifié ne voit que la Une (compte à rebours) et les candidates
+// (requireAuth lui refuse les autres routes, voir PREVIEW_ROUTES).
 const PARTY_CODE = String(process.env.PARTY_CODE || '').trim().toUpperCase();
 if (!PARTY_CODE) console.warn('⚠️  PARTY_CODE non défini : les joueurs ne peuvent pas se connecter.');
 const NO_PASSWORD = '!'; // les joueurs n'ont pas de mot de passe (valeur qu'aucun hash bcrypt ne peut égaler)
@@ -1058,7 +1089,7 @@ app.get('/api/reveal', requireAuth, wrap(async (req, res) => {
       const picks = mine.top5 || [];
       me.correct = picks.filter(c => base.official.top5.includes(c));
       me.picks = picks.length;
-      me.bonus = mine.bonus_top5 ? { name: mine.bonus_top5, won: !base.official.top5.includes(mine.bonus_top5) } : null;
+      me.bonus = mine.bonus_top5 ? { name: mine.bonus_top5, won: bonusTop5Won(mine, official) } : null;
     } else {
       const picks = mine.classement_final || [];
       me.correct = picks.filter((c, i) => base.official.classement_final[i] === c);
@@ -1170,7 +1201,7 @@ admin.post('/app-open', wrap(async (req, res) => {
   const open = req.body.open === true;
   await sql`update official_results set app_open = ${open} where id = 1`;
   openCache = { value: open, at: Date.now() };
-  res.json({ success: true, open, message: open ? "L'appli est ouverte aux joueurs." : "L'appli est refermée : seule la couverture est visible." });
+  res.json({ success: true, open, message: open ? "L'appli est ouverte aux joueurs." : "L'appli est refermée : les joueurs ne voient plus que les candidates." });
 }));
 
 admin.get('/stats', wrap(async (req, res) => {
@@ -1320,6 +1351,7 @@ admin.delete('/users/:id', wrap(async (req, res) => {
   await recalculateQuizPoints();
   await recalculateCultureGPoints();
   await recalculateCostumePoints();
+  if (BLIND && blindState(await getOfficial()).phase === 'done') await recalculateBlindPoints();
   res.json({ success: true, message: `Joueur "${user.pseudo}" supprimé` });
 }));
 

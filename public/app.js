@@ -164,9 +164,27 @@ function openCandidateGallery(name, options = {}) {
 
 // ---------- Navigation ----------
 
+// Avant l'ouverture par l'admin : les joueurs sont inscrits, voient le compte à rebours et les candidates,
+// tout le reste est grisé.
+const PREVIEW_SECTIONS = ['une', 'candidates', 'rules'];
+const isPreview = () => Boolean(App.user) && !App.user.isAdmin && !App.edition.open;
+const isLocked = (section) => isPreview() && !PREVIEW_SECTIONS.includes(section);
+function markLocked() {
+    document.querySelectorAll('[data-go]').forEach(el => {
+        const locked = isLocked(el.dataset.go);
+        el.classList.toggle('locked', locked);
+        if (locked) el.setAttribute('aria-disabled', 'true'); else el.removeAttribute('aria-disabled');
+    });
+}
+
 function go(section, { push = true } = {}) {
     if (!$(section)) section = 'une';
     if (section === 'admin' && !App.user?.isAdmin) section = 'une';
+    if (isLocked(section)) {
+        toast('Ça ouvre à la fin du compte à rebours. En attendant, découvre les candidates !');
+        if (App.started) return;
+        section = 'une';
+    }
     App.current = section;
     document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === section));
     document.querySelectorAll('.nav-btn').forEach(b => {
@@ -236,7 +254,10 @@ function renderCountdown() {
 }
 
 async function loadUne() {
-    const [pronos, quiz, cg, myPhoto] = await Promise.all([
+    const preview = isPreview();
+    renderPreview();
+    // Avant l'ouverture, les jeux ne répondent pas encore : rien à charger
+    const [pronos, quiz, cg, myPhoto] = preview ? [null, {}, {}, {}] : await Promise.all([
         api('/api/pronostics'),
         api('/api/quiz/score'),
         api('/api/culture-g/progress'),
@@ -278,12 +299,38 @@ async function loadUne() {
         { go: 'costume', title: 'Le meilleur costume', sub: myPhoto.photo ? (myPhoto.isPublic ? 'Mon look est en ligne' : 'Mon look est privé') : 'Poster mon look', pts: s.defis_score },
         { go: 'leaderboard', title: 'Le palmarès', sub: 'Le classement du comité', pts: null }
     ];
-    $('une-toc').innerHTML = items.map((it, i) => `
+    $('une-toc').innerHTML = items.map((it, i) => {
+        const locked = isLocked(it.go);
+        return `
         <li><button type="button" class="toc-item" data-go="${it.go}">
             <span class="toc-num">${String(i + 1).padStart(2, '0')}</span>
-            <span class="toc-body"><span class="toc-title">${escapeHtml(it.title)}</span><span class="toc-sub">${escapeHtml(it.sub)}</span></span>
-            <span class="toc-pts">${it.pts === null || it.pts === undefined ? ARROW : `${it.pts} pts`}</span>
-        </button></li>`).join('');
+            <span class="toc-body"><span class="toc-title">${escapeHtml(it.title)}</span><span class="toc-sub">${escapeHtml(locked ? 'Ouvre à la fin du compte à rebours' : it.sub)}</span></span>
+            <span class="toc-pts">${locked ? 'Bientôt' : it.pts === null || it.pts === undefined ? ARROW : `${it.pts} pts`}</span>
+        </button></li>`;
+    }).join('');
+    markLocked();
+}
+
+// Grand compte à rebours de la Une, tant que l'admin n'a pas ouvert les jeux
+function renderPreview() {
+    const box = $('une-preview');
+    const preview = isPreview();
+    box.hidden = !preview;
+    $('une-preview-hint').hidden = !preview;
+    $('une-stats').hidden = preview;
+    if (!preview) return;
+    const diff = electionDate() - Date.now();
+    const over = diff <= 0;
+    box.classList.toggle('live', over);
+    $('une-preview-caption').textContent = over ? "C'est l'heure : le comité ouvre d'un instant à l'autre" : "Avant l'ouverture des jeux";
+    if (over) return;
+    const pad = (n) => String(n).padStart(2, '0');
+    const days = Math.floor(diff / 86400000);
+    $('pv-d').textContent = days;
+    $('pv-d-l').textContent = days > 1 ? 'Jours' : 'Jour';
+    $('pv-h').textContent = pad(Math.floor(diff / 3600000) % 24);
+    $('pv-m').textContent = pad(Math.floor(diff / 60000) % 60);
+    $('pv-s').textContent = pad(Math.floor(diff / 1000) % 60);
 }
 App.loaders.une = loadUne;
 
@@ -486,19 +533,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderFxToggle();
     if (isIOS() && !isStandalone()) $('open-install').hidden = false;
     setInterval(renderCountdown, 30000);
+    setInterval(() => { if (isPreview() && App.current === 'une') renderPreview(); }, 1000);
+    markLocked();
 
     refreshScore().catch(() => {});
     go((location.hash || '#une').slice(1), { push: false });
+    App.started = true;
     document.dispatchEvent(new CustomEvent('app:ready'));
     // Page restée ouverte pendant une mise à jour : on propose de recharger (sans le faire d'office,
     // pour ne pas perdre une saisie ou un enregistrement en cours)
     $('update-banner').addEventListener('click', () => location.reload());
-    setInterval(() => {
-        if (document.visibilityState !== 'visible' || !App.edition.build) return;
+    // Même vérification pour l'ouverture (ou la fermeture) des jeux par l'admin : là, on recharge tout de suite
+    const checkEdition = () => {
+        if (document.visibilityState !== 'visible') return;
         fetch('/api/edition').then(r => (r.ok ? r.json() : null)).then(e => {
-            if (e && e.build && e.build !== App.edition.build) $('update-banner').hidden = false;
+            if (!e) return;
+            if (!App.user.isAdmin && Boolean(e.open) !== Boolean(App.edition.open)) return location.reload();
+            if (e.build && App.edition.build && e.build !== App.edition.build) $('update-banner').hidden = false;
         }).catch(() => {});
-    }, 60000);
+    };
+    setInterval(checkEdition, 20000);
+    document.addEventListener('visibilitychange', checkEdition);
     // Compte créé avant l'ajout de la question : on la pose une fois
     if (!App.user.isAdmin && !App.user.location) askWhere({ required: true });
 

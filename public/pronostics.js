@@ -86,6 +86,9 @@ function renderTop5() {
     const locked = lockedPanel('p-top5');
     const names = candidatesForTop5();
     Prono.top5 = Prono.top5.filter(n => names.includes(n));
+    // Une « déception » éliminée dès le premier tour n'est plus un choix possible : on la retire,
+    // sinon le serveur refuserait tout l'enregistrement du Top 5
+    if (!names.includes(Prono.bonus5)) Prono.bonus5 = '';
     renderGrid('top5-grid', names, Prono.top5, App.official.top5, locked);
     let banner = '';
     if (locked) {
@@ -103,6 +106,8 @@ function renderTop5() {
 function renderFinal() {
     const locked = lockedPanel('p-final');
     const names = candidatesForFinal();
+    // Une candidate éliminée entre-temps libère sa place (sinon le compteur et l'enregistrement seraient faux)
+    Prono.final = Prono.final.map(n => (names.includes(n) ? n : ''));
     const labels = RANK_LABELS();
     $('final-list').innerHTML = labels.map((label, i) => {
         const pick = names.includes(Prono.final[i]) ? Prono.final[i] : '';

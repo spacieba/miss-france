@@ -196,11 +196,11 @@ document.addEventListener('app:ready', () => {
     // Rafraîchissement : rapide sur l'écran du blind test, plus lent ailleurs (pour le bandeau)
     let tick = 0;
     setInterval(() => {
-        if (document.visibilityState !== 'visible' || App.current === 'admin' || isAway()) return;
+        if (document.visibilityState !== 'visible' || App.current === 'admin' || isAway() || isPreview()) return;
         tick++;
         const typing = document.activeElement && document.activeElement.id === 'blind-theme-input';
         if (App.current === 'blind') { if (!typing) refreshBlind().catch(() => {}); }
         else if (tick % 4 === 0) api('/api/blind').then(d => { Blind.data = d; Blind.lastPhaseKey = `${d.phase}:${d.index}`; updateBlindBanner(d); }).catch(() => {});
     }, 2500);
-    api('/api/blind').then(d => { Blind.data = d; Blind.lastPhaseKey = `${d.phase}:${d.index}`; updateBlindBanner(d); }).catch(() => {});
+    if (!isPreview()) api('/api/blind').then(d => { Blind.data = d; Blind.lastPhaseKey = `${d.phase}:${d.index}`; updateBlindBanner(d); }).catch(() => {});
 });

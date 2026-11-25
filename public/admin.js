@@ -27,14 +27,14 @@ function renderAdmin() {
     // Ouverture aux joueurs
     const open = Boolean(o.app_open);
     $('admin-open').innerHTML = `
-        ${statusTag(open ? 'Ouverte aux joueurs' : 'Fermée : couverture seule', open ? 'ok' : 'wait')}
+        ${statusTag(open ? 'Jeux ouverts' : 'Jeux fermés : candidates seules', open ? 'ok' : 'wait')}
         <h3>L'<em>ouverture</em></h3>
         <p class="hint">${open
-            ? 'Les joueurs peuvent entrer avec leur pseudo et le code de soirée.'
-            : "Les invités ne voient que la page de couverture (thème, règles, compte à rebours). Ouvre quand tu veux qu'ils puissent entrer et jouer."}</p>
-        <button type="button" class="btn ${open ? 'btn-ghost' : 'btn-blue'} btn-block" id="admin-toggle-open">${open ? "Refermer l'appli" : "Ouvrir l'appli aux joueurs"}</button>`;
+            ? 'Tous les jeux sont accessibles aux joueurs.'
+            : "Les invités peuvent déjà s'inscrire et découvrir les candidates. Le reste est grisé, avec le compte à rebours. Ouvre quand tu veux lancer les jeux : leurs écrans se mettent à jour tout seuls en moins de 20 secondes."}</p>
+        <button type="button" class="btn ${open ? 'btn-ghost' : 'btn-blue'} btn-block" id="admin-toggle-open">${open ? 'Refermer les jeux' : 'Lancer les jeux'}</button>`;
     $('admin-toggle-open').addEventListener('click', async () => {
-        if (!confirm(open ? "Refermer l'appli ?\n\nLes joueurs ne pourront plus entrer tant que tu ne la rouvres pas. Rien n'est effacé." : "Ouvrir l'appli aux joueurs ?\n\nIls pourront entrer avec leur pseudo et le code de soirée.")) return;
+        if (!confirm(open ? "Refermer les jeux ?\n\nLes joueurs ne verront plus que les candidates tant que tu ne rouvres pas. Rien n'est effacé." : "Lancer les jeux ?\n\nPronostics, quiz et jeux deviennent accessibles à tous les inscrits.")) return;
         try {
             const data = await api('/api/admin/app-open', { method: 'POST', body: { open: !open } });
             toast(data.message, 'success');

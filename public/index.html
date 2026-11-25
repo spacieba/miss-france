@@ -249,18 +249,13 @@
         // Déjà identifié : l'appli si elle est ouverte (ou pour l'organisateur), sinon la couverture
         function enter(session) {
             appOpen = Boolean(session.open);
-            if (session.isAdmin || appOpen) { location.replace('/app.html'); return; }
-            me = { pseudo: session.pseudo };
-            render();
-            window.scrollTo({ top: 0 });
+            // Même avant l'ouverture des jeux : l'appli montre alors le compte à rebours et les candidates
+            location.replace('/app.html');
         }
         function checkSession() {
             return fetch('/api/session').then(r => r.ok ? r.json() : null).then(s => { if (s && s.loggedIn) enter(s); }).catch(() => {});
         }
         checkSession();
-        // La couverture reste affichée : on regarde de temps en temps si l'appli a ouvert
-        setInterval(() => { if (me && !document.hidden) checkSession(); }, 30000);
-        document.addEventListener('visibilitychange', () => { if (me && !document.hidden) checkSession(); });
 
         $('logout-btn').addEventListener('click', async () => {
             await fetch('/api/logout', { method: 'POST' }).catch(() => {});

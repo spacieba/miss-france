@@ -970,3 +970,13 @@ a:hover { color: var(--ink); }
 .duel-lib-title .serif { font-family: var(--serif); font-size: 21px; line-height: 1.1; overflow-wrap: anywhere; }
 .duel-lib-actions { display: flex; gap: 6px; flex-shrink: 0; }
 #duel-cleanup { margin-top: 26px; }
+
+/* ---------- Avant l'ouverture : compte à rebours et rubriques grisées ---------- */
+
+.preview-countdown { margin: 0 -16px 16px; }
+.preview-hint { margin: 0 0 26px; }
+.nav-btn.locked, .toc-item.locked, .score-pill.locked { opacity: 0.35; }
+.toc-item.locked:hover .toc-title { color: inherit; }
+.toc-item.locked .toc-num { color: var(--ink-2); }
+.toc-item.locked .toc-pts { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; }
+.preview-hint .btn-link { display: inline; padding: 0; min-height: 0; }
